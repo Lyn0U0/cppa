@@ -105,6 +105,28 @@
   .tilt-hint.hide { opacity: 0; }
   @media (prefers-reduced-motion: reduce) { .petal > i { animation: none; opacity: 0; } }
 
+  /* ---------- 🔮 今日幸運花束 ---------- */
+  .lucky-btn { position: relative; overflow: hidden; color: #5B4A5E; font-weight: 700;
+    background: linear-gradient(115deg, #EFE3F5 0%, #FBE3DA 45%, #F6E6BE 100%); border: 1px solid rgba(201,166,120,.55);
+    box-shadow: 0 6px 16px -8px rgba(176,128,150,.75), inset 0 1px 0 rgba(255,255,255,.8); }
+  .lucky-btn::after { content: ""; position: absolute; inset: -40% -70%; pointer-events: none;
+    background: linear-gradient(110deg, transparent 42%, rgba(255,255,255,.9) 50%, transparent 58%); animation: sheen 3.2s ease-in-out infinite; }
+  .lucky-btn:active { transform: scale(.95); }
+  .lucky-btn[disabled] { opacity: .7; }
+  .magic { position: absolute; inset: 0; pointer-events: none; z-index: 40; overflow: hidden; }
+  .magic .glow { position: absolute; left: 50%; top: 50%; width: 260px; height: 260px; margin: -130px 0 0 -130px; border-radius: 999px;
+    background: radial-gradient(circle, rgba(255,248,226,.95) 0, rgba(246,214,190,.55) 35%, transparent 70%); animation: glow .75s ease-out forwards; }
+  .magic .bp { position: absolute; left: 50%; top: 50%; animation: burst .7s cubic-bezier(.2,.8,.3,1) forwards; animation-delay: var(--dl); opacity: 0; }
+  @keyframes glow { 0% { transform: scale(.3); opacity: 0; } 35% { opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
+  @keyframes burst { 0% { transform: translate(-50%, -50%) scale(.3) rotate(0deg); opacity: 0; } 15% { opacity: 1; }
+    100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1) rotate(var(--r)); opacity: 0; } }
+  .poof { animation: poof .45s ease-in forwards; transform-origin: 50% 100%; }
+  @keyframes poof { to { transform: scale(.5) rotate(12deg); opacity: 0; } }
+  .fortune { transition: opacity .45s ease, transform .5s cubic-bezier(.3,1.3,.5,1); }
+  .fortune.hide { opacity: 0; transform: translateY(-10px) scale(.97); pointer-events: none; }
+  .fortune-box { background: linear-gradient(135deg, #FBF5EA 0%, #F6EDF4 100%); border: 1px dashed rgba(168,139,110,.55); }
+  @media (prefers-reduced-motion: reduce) { .lucky-btn::after, .magic .bp, .magic .glow { animation: none; opacity: 0; } }
+
   .flower { position: absolute; transform-origin: 50% 100%; pointer-events: none; will-change: transform; }
   .flower svg { width: 100%; height: 100%; display: block; overflow: visible; }
   .flower svg * { pointer-events: visiblePainted; cursor: grab; }
@@ -259,14 +281,28 @@
       </div>
     </div>
 
+    <!-- 🔮 今日幸運花束 -->
+    <button id="btnLucky" class="lucky-btn absolute top-2 left-3 z-30 rounded-full px-3 py-[7px] text-[12px] leading-tight transition">🔮 抽今日幸運花</button>
+    <div id="fortune" class="fortune hide absolute left-3 right-3 top-[48px] z-[35] rounded-2xl bg-white/70 backdrop-blur-md border border-white/80 shadow-[0_10px_24px_-12px_rgba(74,64,58,.5)] px-3 py-2" role="status" aria-live="polite">
+      <div class="flex items-center gap-2">
+        <div class="min-w-0 flex-1">
+          <div class="text-[9.5px] tracking-[.18em] text-milk-deep leading-tight">✨ 今日花籤 · TODAY'S FORTUNE</div>
+          <div id="fortuneTitle" class="text-[13px] font-bold leading-tight mt-0.5 truncate"></div>
+        </div>
+        <button id="fortuneToCard" class="shrink-0 rounded-full bg-milk text-white px-2.5 py-1 text-[11px] active:scale-95 transition">💌 寫入小卡</button>
+        <button id="fortuneClose" class="shrink-0 w-6 h-6 rounded-full text-ink/50 text-[16px] leading-none" aria-label="關閉花籤">×</button>
+      </div>
+      <p id="fortuneText" class="text-[11.5px] leading-[1.55] text-ink/80 mt-1"></p>
+    </div>
+
     <!-- 編輯 / 3D 預覽切換 -->
-    <div class="mode-ui absolute top-2 right-3 z-30 flex flex-col items-end gap-1.5">
-      <div class="seg" id="modeSeg" role="tablist" aria-label="檢視模式">
+    <div class="mode-ui absolute top-2 right-3 z-30 flex flex-col items-end gap-1.5 pointer-events-none">
+      <div class="seg pointer-events-auto" id="modeSeg" role="tablist" aria-label="檢視模式">
         <span class="thumb" id="modeThumb"></span>
         <button data-mode="edit" class="on" role="tab">✏️ 編輯</button>
         <button data-mode="3d" role="tab">✨ 3D 預覽</button>
       </div>
-      <button id="gyroBtn" class="gyro-btn hide rounded-full border border-ink/15 bg-white/75 px-2.5 py-1 text-[11px] shadow-sm">📱 搖晃手機轉視角</button>
+      <button id="gyroBtn" class="gyro-btn hide pointer-events-auto rounded-full border border-ink/15 bg-white/75 px-2.5 py-1 text-[11px] shadow-sm">📱 搖晃手機轉視角</button>
     </div>
     <div id="tiltHint" class="tilt-hint hide absolute left-1/2 -translate-x-1/2 bottom-3 z-30 rounded-full bg-white/80 border border-ink/10 px-3 py-1.5 text-[11.5px] text-ink/70 pointer-events-none whitespace-nowrap">
       滑動手指或移動滑鼠，轉轉看立體花束
@@ -622,7 +658,7 @@
 
   /* ================= 狀態 ================= */
   const state = {
-    flowers: [], sel: null, mode3d: false, focus: null, activeMat: 'rose', tab: 'main', wrapSub: 'outer', finished: false,
+    flowers: [], sel: null, mode3d: false, fortune: null, focus: null, activeMat: 'rose', tab: 'main', wrapSub: 'outer', finished: false,
     wrap: { outer: 'korean', outerColor: 'oat', tissue: 'tissue', tissueColor: 'white', tie: 'long', tieColor: 'gold' },
     card: { style: 'cream', msg: '願你被世界溫柔以待', sign: '想你的人', show: true },
     curColor: Object.fromEntries(Object.keys(MAT).map(k => [k, 0])),
@@ -927,9 +963,9 @@
     zMap = depthMap();
     layerFlowers.innerHTML = state.flowers.map((f, i) =>
       `<div class="flower${f.id === state.sel ? ' is-sel' : ''}" data-id="${f.id}" style="${flowerStyle(f, i)}">
-        <div class="flip${f.flip ? ' on' : ''}"><div class="${f.id === lastAdded ? 'pop' : ''}" style="width:100%;height:100%">${flowerSVG(f.type, f.color)}</div></div>
+        <div class="flip${f.flip ? ' on' : ''}"><div class="${f.id === lastAdded || popIds.has(f.id) ? 'pop' : ''}" style="width:100%;height:100%${popIds.has(f.id) ? `;animation-delay:${popIds.get(f.id)}ms` : ''}">${flowerSVG(f.type, f.color)}</div></div>
       </div>`).join('');
-    lastAdded = null;
+    lastAdded = null; popIds = new Map();
     $('#emptyHint').style.display = state.flowers.length ? 'none' : '';
     updateSel();
   }
@@ -1096,7 +1132,7 @@
 
   /* ---------- 拖曳 / 旋轉縮放 ---------- */
   canvasWrap.addEventListener('pointerdown', e => {
-    if (state.finished || state.mode3d || e.target.closest('#toolbar, .mode-ui')) return;
+    if (state.finished || state.mode3d || e.target.closest('#toolbar, .mode-ui, #btnLucky, #fortune')) return;
     const handle = e.target.closest('#handle');
     const fl = e.target.closest('.flower');
     if (handle && state.sel) {
@@ -1189,7 +1225,8 @@
   /* ---------- 頂部列 ---------- */
   $('#btnClear').onclick = () => {
     if (!state.flowers.length) return toast('花束已經是空的');
-    state.flowers = []; state.sel = null; state.focus = null; renderFlowers(); renderWorkspace(); toast('已清空，重新開始吧');
+    state.flowers = []; state.sel = null; state.focus = null; state.fortune = null; hideFortune();
+    renderFlowers(); renderWorkspace(); toast('已清空，重新開始吧');
   };
   $('#btnShuffle').onclick = reshuffle;
   $('#btnDone').onclick = finish;
@@ -1255,6 +1292,12 @@
         <div class="text-[11px] tracking-[.2em] text-ink/55 mb-1">專屬花語</div>
         <p class="text-[14px] leading-relaxed">${poem}</p>
         ${state.card.show && state.card.msg ? `<div class="mt-3 rounded-xl bg-[#F3ECE2] px-3 py-2 text-[13px]">✉️ 「${esc(state.card.msg)}」<div class="text-right text-[12px] text-ink/60 mt-1">— ${esc(state.card.sign)}</div></div>` : ''}
+        ${state.fortune ? `<div class="fortune-box mt-4 rounded-xl px-3 py-3 text-center">
+          <div class="text-[11px] tracking-[.14em] font-bold text-milk-deep">【 TODAY'S FORTUNE 今日花籤 】</div>
+          <div class="text-[14px] font-bold mt-1.5">${state.fortune.emoji} ${state.fortune.name}</div>
+          <div class="text-[10px] tracking-[.2em] text-ink/45 mt-0.5">${state.fortune.en.toUpperCase()}</div>
+          <p class="text-[12.5px] leading-relaxed text-ink/80 mt-1.5">${state.fortune.fortune}</p>
+        </div>` : ''}
         <div class="barcode mt-4"></div>
         <div class="text-center text-[10px] tracking-[.25em] text-ink/50 mt-1.5">THANK YOU · 謝謝你把心意包起來</div>
         <div class="mt-3 pt-2 border-t border-dashed border-ink/20 text-[10px] leading-relaxed text-ink/60" style="font-family:ui-monospace,Menlo,monospace">Wrap Recipe: ${recipe}</div>
@@ -1410,6 +1453,134 @@
     }
     $('#petals').innerHTML = h;
   }
+
+  /* ================= 🔮 今日幸運花束（花藝師主題靈感庫 + 黃金結構插花） ================= */
+  // 每個主題：主花 / 配花與果實（花材 → 可用色票名）、葉材、包裝組合 [款式, 色票]、籤詩
+  const THEMES = [
+    { id: 'sun', emoji: '☀️', name: '晨間暖陽與元氣', en: 'Morning Sunshine',
+      mains: { sunflower: ['陽光黃'], tulip: ['鵝黃', '鬱金香橘'], gerbera: ['暖陽橘', '奶油白'], rose: ['奶油黃'] },
+      fillers: { chamomile: ['純白'], freesia: ['鵝黃', '奶白'], babysbreath: ['白'] },
+      foliage: ['eucalyptus', 'olive', 'fern'],
+      outer: [['craft', 'kraft'], ['craft', 'oat'], ['korean', 'oat']], tissue: [['news', 'apricot'], ['news', 'beige']], tie: [['jute', 'caramel'], ['jute', 'gold'], ['long', 'caramel']],
+      fortune: '把生活調成喜歡的頻道，今天的你自帶溫暖光芒，好事正順著陽光向你走來。', card: '今天的你自帶溫暖光芒，好事正向你走來' },
+    { id: 'romance', emoji: '🩰', name: '溫柔芭蕾與初戀', en: 'Soft Romance',
+      mains: { rose: ['茱萸粉', '香檳白'], tulip: ['蜜桃粉'], ranunculus: ['藕粉'], gerbera: ['珊瑚粉'] },
+      fillers: { babysbreath: ['淺粉', '白'], freesia: ['奶白'], lily: ['純白'] },
+      foliage: ['eucalyptus', 'fern', 'olive'],
+      outer: [['korean', 'pink'], ['korean', 'cream']], tissue: [['tulle', 'pink'], ['tulle', 'white']], tie: [['chiffon', 'rose'], ['chiffon', 'cream']],
+      fortune: '允許自己偶爾慢下來，今天適合買杯喜歡的飲料，溫柔地偏愛自己一回。', card: '慢下來，溫柔地偏愛自己一回' },
+    { id: 'forest', emoji: '🌿', name: '森林微風與深呼吸', en: 'Forest Breeze',
+      mains: { hydrangea: ['雪球白', '霧霾藍'], tulip: ['純白'], ranunculus: ['奶白'], rose: ['香檳白'], gerbera: ['奶油白'] },
+      fillers: { lily: ['純白'], babysbreath: ['白'], chamomile: ['純白'], berries: ['青綠果實'] },
+      foliage: ['eucalyptus', 'olive', 'fern'],
+      outer: [['korean', 'sage'], ['korean', 'blue'], ['craft', 'sage'], ['cello', 'cream'], ['cello', 'sage']], tissue: [['tissue', 'white'], ['tissue', 'apricot']], tie: [['long', 'forest'], ['long', 'cream']],
+      fortune: '那些困擾你的小事都會隨風散去，今天的幸運藏在一次深呼吸與放寬心裡。', card: '小事隨風散去，幸運藏在深呼吸裡' },
+    { id: 'vintage', emoji: '🍷', name: '復古電影與微醺', en: 'Vintage Muse',
+      mains: { rose: ['經典紅'], ranunculus: ['香檳杏'], sunflower: ['復古焦糖橘'], tulip: ['鬱金香橘'] },
+      fillers: { berries: ['紅棕果實'], cotton: ['原色'], babysbreath: ['白'] },
+      foliage: ['eucalyptus', 'olive', 'fern'],
+      outer: [['korean', 'black'], ['cone', 'black'], ['craft', 'kraft'], ['cone', 'kraft']], tissue: [['news', 'beige']], tie: [['long', 'wine'], ['seal', 'wine']],
+      fortune: '不必迎合所有人的期待，你獨特的靈魂與神秘感，就是今天最迷人的風景。', card: '你獨特的靈魂，就是今天最迷人的風景' },
+    { id: 'miracle', emoji: '✨', name: '奇蹟降臨・季節限定特調', en: 'Seasonal Miracle', seasonal: true,
+      mains: { rose: ['香檳白', '茱萸粉'], ranunculus: ['奶白', '藕粉'], tulip: ['純白'] },
+      fillers: { babysbreath: ['白'], lily: ['純白'] },
+      foliage: ['eucalyptus', 'fern', 'olive'],
+      outer: [['korean', 'cream'], ['korean', 'oat']], tissue: [['tulle', 'white'], ['tissue', 'white']], tie: [['lace', 'gold']],
+      fortune: '恭喜抽中隱藏版季節花束！今天會有意想不到的小確幸敲門，請準備好微笑收下。', card: '小確幸正在敲門，請微笑收下' },
+  ];
+  const pick = a => a[(Math.random() * a.length) | 0];
+  const rint = (a, b) => a + ((Math.random() * (b - a + 1)) | 0);
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  let popIds = new Map(), luckyBusy = false;
+
+  // 25% 觸發季節限定特調，其餘四個主題平均抽
+  const pickTheme = () => Math.random() < .25 ? THEMES[4] : pick(THEMES.slice(0, 4));
+
+  function generateLucky(th) {
+    state.flowers = []; state.sel = null; state.focus = null; popIds = new Map();
+    const counts = {}, lean = (Math.random() - .5) * 8;
+    let order = 0;
+    const place = (type, colorNames) => {
+      const m = MAT[type], i = (counts[m.slot] = (counts[m.slot] ?? -1) + 1);
+      const want = pick(colorNames || [m.colors[0].n]);
+      const ci = Math.max(0, m.colors.findIndex(c => c.n === want));
+      const f = { id: 'f' + uidN++, type, color: ci, flip: Math.random() < .5, ...slotFor(m.slot, i) };
+      // 避免呆板對稱：整束微微偏一邊，每支再加上高低與角度落差
+      f.rot += lean + (Math.random() - .5) * 6;
+      f.scale *= .94 + Math.random() * .12;
+      f.x = PIVOT.x + Math.sin(f.rot * Math.PI / 180) * 8 + (Math.random() - .5) * 6;
+      const at = state.flowers.findIndex(g => rankOf(g) > RANK[m.slot]);
+      if (at < 0) state.flowers.push(f); else state.flowers.splice(at, 0, f);
+      popIds.set(f.id, order++ * 75);
+    };
+    // Step 1｜後排打底：葉材 2~3 支，撐開輪廓
+    shuffleArr([...th.foliage]).slice(0, rint(2, 3)).forEach(t => place(t));
+    // Step 2｜視覺核心：主花 2~3 種、共 3~4 朵
+    const nMain = rint(3, 4), mainList = [];
+    if (th.seasonal) {
+      const m = new Date().getMonth() + 1, sp = m >= 3 && m <= 8 ? 'peony' : 'pinecone';
+      const n = rint(1, 2);
+      for (let k = 0; k < n; k++) mainList.push([sp, null]);
+      if (sp === 'pinecone') th = { ...th, fillers: { ...th.fillers, berries: ['紅棕果實'], cotton: ['原色'] } };
+    }
+    const species = shuffleArr(Object.keys(th.mains)).slice(0, rint(th.seasonal ? 1 : 2, th.seasonal ? 2 : 3));
+    species.forEach(sp => mainList.length < nMain && mainList.push([sp, th.mains[sp]]));
+    while (mainList.length < nMain) { const sp = pick(species); mainList.push([sp, th.mains[sp]]); }
+    shuffleArr(mainList).forEach(([t, cols]) => place(t, cols));
+    // Step 3｜空氣感點綴：配花與果實 2~3 支
+    const fk = shuffleArr(Object.keys(th.fillers)), nF = rint(2, 3);
+    for (let k = 0; k < nF; k++) { const t = fk[k % fk.length]; place(t, th.fillers[t]); }
+    // 三明治包裝
+    const [outer, outerColor] = pick(th.outer), [tissue, tissueColor] = pick(th.tissue), [tie, tieColor] = pick(th.tie);
+    state.wrap = { outer, outerColor, tissue, tissueColor, tie, tieColor };
+    state.fortune = th;
+  }
+
+  function magicBurst() {
+    const box = document.createElement('div');
+    box.className = 'magic';
+    const colors = ['#F5C6CF', '#F6E2A6', '#FBF4EA', '#DCE5D2', '#E7D3EC', '#EFA9B0'];
+    let h = '<div class="glow"></div>';
+    for (let i = 0; i < 22; i++) {
+      const a = (i / 22) * Math.PI * 2 + Math.random() * .3, dist = 90 + Math.random() * 110, spark = i % 3 === 0;
+      const style = `--dx:${Math.round(Math.cos(a) * dist)}px;--dy:${Math.round(Math.sin(a) * dist)}px;--r:${rint(-200, 200)}deg;--dl:${(Math.random() * .12).toFixed(2)}s`;
+      h += `<span class="bp" style="${style}">${spark ? '<span class="spark" style="display:block"></span>' :
+        `<svg width="12" height="15" viewBox="0 0 16 20"><path d="M8 1 C 14 5, 15 12, 8 19 C 1 12, 2 5, 8 1 Z" fill="${colors[i % colors.length]}" stroke="${INK}" stroke-width=".9" stroke-opacity=".55"/></svg>`}</span>`;
+    }
+    box.innerHTML = h;
+    canvasWrap.appendChild(box);
+    setTimeout(() => box.remove(), 1000);
+  }
+
+  function showFortune(th) {
+    $('#fortuneTitle').textContent = `${th.emoji} ${th.name}`;
+    $('#fortuneText').textContent = th.fortune;
+    $('#fortune').classList.remove('hide');
+  }
+  const hideFortune = () => $('#fortune').classList.add('hide');
+  $('#fortuneClose').onclick = hideFortune;
+  $('#fortuneToCard').onclick = () => {
+    if (!state.fortune) return;
+    state.card.msg = state.fortune.card; state.card.show = true;
+    renderTag(); renderWorkspace(); hideFortune(); toast('花籤已寫進吊牌小卡 💌');
+  };
+
+  async function drawLucky() {
+    if (luckyBusy || state.finished) return;
+    luckyBusy = true; $('#btnLucky').disabled = true;
+    select(null); hideFortune();
+    magicBurst();
+    layerFlowers.querySelectorAll('.flip').forEach(el => el.classList.add('poof'));
+    await wait(600);
+    const th = pickTheme();
+    generateLucky(th);
+    renderWraps(); renderRibbon();
+    state.tab = 'main'; state.activeMat = state.flowers[state.flowers.length - 1].type;
+    renderFlowers(); renderWorkspace();
+    setMode(true);
+    setTimeout(() => { showFortune(th); luckyBusy = false; $('#btnLucky').disabled = false; }, 650);
+  }
+  $('#btnLucky').onclick = drawLucky;
 
   /* ================= 初始化 ================= */
   renderWraps(); renderRibbon(); renderTag(); renderFlowers(); renderWorkspace(); buildPetals(); fit();
