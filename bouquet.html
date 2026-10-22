@@ -6,19 +6,19 @@
 <title>花語包花室</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Caveat:wght@500;700&family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Noto+Serif+TC:wght@500&family=Special+Elite&family=Noto+Sans+TC:wght@400&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet" />
 <script src="https://cdn.tailwindcss.com/3.4.16"></script>
 <script>
   tailwind.config = {
     theme: {
       extend: {
         colors: {
-          ink: '#4A403A',
-          paper: '#FAF7F2',
-          milk: { DEFAULT: '#C8A98B', light: '#EADDCD', deep: '#A88B6E' },
+          ink: '#333333',
+          paper: '#F5F5F0',
+          milk: { DEFAULT: '#55554F', light: '#DCDCD5', deep: '#6B6B63' },
           sage: { DEFAULT: '#9CAF88', dark: '#7D9471', light: '#DCE5D2' },
         },
-        fontFamily: { hand: ['"LXGW WenKai TC"', '"Noto Serif TC"', 'serif'] },
+        fontFamily: { ui: ['Inter', '"Helvetica Neue"', 'Helvetica', '"Noto Sans TC"', '"PingFang TC"', 'sans-serif'] },
       },
     },
   };
@@ -28,21 +28,17 @@
   body {
     margin: 0; min-height: 100dvh; padding: 16px; box-sizing: border-box;
     display: flex; align-items: center; justify-content: center;
-    font-family: "LXGW WenKai TC", "Noto Serif TC", serif; color: #4A403A;
-    background: radial-gradient(circle at 20% 15%, #F3ECE2 0, transparent 40%),
-                radial-gradient(circle at 85% 80%, #E4EADB 0, transparent 45%), #E9E1D6;
+    font-family: Inter, "Helvetica Neue", Helvetica, "Noto Sans TC", "PingFang TC", sans-serif; color: #333;
+    background: #E0E0E0;
     -webkit-tap-highlight-color: transparent; overscroll-behavior: none;
   }
-  /* 米白紙張紋理 */
-  .paper-tex {
-    background-color: #FAF7F2;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .29 0 0 0 0 .25 0 0 0 0 .22 0 0 0 .08 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-  }
+  /* 純淨平面底色（不使用紙紋） */
+  .paper-tex { background: #F5F5F0; }
   .phone {
     position: relative; overflow: hidden; display: flex; flex-direction: column;
     width: 390px; height: min(844px, calc(100dvh - 32px));
-    border-radius: 48px; border: 10px solid #3E3632;
-    box-shadow: 0 30px 60px -20px rgba(74, 64, 58, .45), 0 0 0 2px #5A4F49, inset 0 0 0 1px rgba(255,255,255,.4);
+    border-radius: 44px; border: 9px solid #2B2B2B;
+    box-shadow: 0 24px 50px -24px rgba(0, 0, 0, .35);
   }
   @media (max-width: 480px) {
     body { padding: 0; }
@@ -50,7 +46,7 @@
   }
 
   /* ---------- 畫布與圖層 ---------- */
-  .canvas-wrap { touch-action: none; background: radial-gradient(ellipse at 50% 45%, rgba(234,221,205,.55) 0, transparent 62%); }
+  .canvas-wrap { touch-action: none; }
   .stage { position: absolute; left: 50%; top: 50%; width: 360px; height: 480px; transform-origin: center; touch-action: none; user-select: none; -webkit-user-select: none; }
   .layer { position: absolute; inset: 0; }
   .layer > svg { width: 100%; height: 100%; display: block; overflow: visible; }
@@ -60,64 +56,34 @@
   .layer-ribbon { z-index: 5; } .layer-card { z-index: 6; pointer-events: none; } .sel-layer { z-index: 7; pointer-events: none; }
   .stage.xray .layer-front { opacity: .4; }
 
-  /* ---------- 2.5D 立體書（只在 3D 預覽／收據中啟用 preserve-3d，編輯模式維持平面） ---------- */
-  .canvas-wrap, .pv-3d { perspective: 1000px; }
+  /* ---------- 微景深（圖鑑排列為主，只保留極輕微的前後層次） ---------- */
+  .canvas-wrap, .pv-3d { perspective: 1400px; }
   .layer { transition: transform .5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity .25s ease; }
   .z-anim .flower { transition: transform .5s cubic-bezier(0.2, 0.8, 0.2, 1); }
   .stage.is3d, .stage.is3d-out, .stage.is3d .layer-flowers, .stage.is3d-out .layer-flowers { transform-style: preserve-3d; }
-  .stage.is3d .layer-back   { transform: translateZ(-40px); }
-  .stage.is3d .layer-tissue { transform: translateZ(-20px); }
-  /* 前包裝紙拆成左右側翼：中心在 Z 30，外緣往後彎，從兩側抱住花莖。
-     角度刻意壓在 3.5°：外緣最深約 Z 21，仍在花材層（最高 Z 20）之前，
-     不與花朵平面相交，避免瀏覽器切割相交平面時出現破洞 */
-  .stage.is3d .fold-l { transform: translateZ(30px) rotateY(-3.5deg); }
-  .stage.is3d .fold-r { transform: translateZ(30px) rotateY(3.5deg); }
-  .stage.is3d .layer-ribbon { transform: translateZ(45px); }
-  .stage.is3d .layer-card   { transform: translateZ(60px); }
-  .stage.is3d .layer > svg, .stage.is3d .flower svg, .stage.is3d .card-el svg { filter: drop-shadow(0 8px 9px rgba(74, 64, 58, .2)); }
-  .stage.is3d .layer-back > svg, .stage.is3d .layer-front > svg { filter: drop-shadow(0 15px 15px rgba(0, 0, 0, .15)) drop-shadow(0 3px 4px rgba(0, 0, 0, .1)); }
-  .glare { opacity: 0; transition: opacity .5s; }
-  .stage.is3d .glare { opacity: 1; }
-
-  /* 飄落花瓣與微光 */
-  .petals { position: absolute; inset: 0; pointer-events: none; display: none; transform-style: preserve-3d; }
-  .stage.is3d .petals { display: block; }
-  .petal { position: absolute; top: -34px; }
-  .petal > i { display: block; animation: fall var(--d) linear var(--dl) infinite; }
-  @keyframes fall {
-    0%   { transform: translate(0, -10px) rotate(0deg); opacity: 0; }
-    8%   { opacity: var(--o); }
-    25%  { transform: translate(var(--sw), 120px) rotate(95deg); }
-    50%  { transform: translate(0, 250px) rotate(180deg); }
-    75%  { transform: translate(calc(var(--sw) * -1), 380px) rotate(275deg); }
-    92%  { opacity: var(--o); }
-    100% { transform: translate(0, 520px) rotate(360deg); opacity: 0; }
-  }
-  .spark { width: 6px; height: 6px; border-radius: 999px; background: radial-gradient(circle, #FFFBEA 0 30%, rgba(246,215,140,.9) 45%, transparent 72%); box-shadow: 0 0 8px 2px rgba(246,222,160,.75); }
+  .stage.is3d .layer-back   { transform: translateZ(-12px); }
+  .stage.is3d .layer-tissue { transform: translateZ(-6px); }
+  .stage.is3d .layer-front  { transform: translateZ(9px); }
+  .stage.is3d .layer-ribbon { transform: translateZ(13px); }
+  .stage.is3d .layer-card   { transform: translateZ(18px); }
+  .stage.is3d .layer-front > svg, .stage.is3d .card-el svg { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .08)); }
 
   /* 編輯 / 3D 切換膠囊 */
-  .mode-ui .seg { display: flex; padding: 3px; border-radius: 999px; background: rgba(255,255,255,.75); border: 1px solid rgba(74,64,58,.14);
-    box-shadow: 0 6px 16px -8px rgba(74,64,58,.45); backdrop-filter: blur(6px); position: relative; }
-  .mode-ui .seg button { position: relative; z-index: 1; padding: 5px 10px; border-radius: 999px; font-size: 12px; line-height: 1.2; color: rgba(74,64,58,.7); transition: color .25s; white-space: nowrap; }
+  .mode-ui .seg { display: flex; padding: 3px; border-radius: 999px; background: #FFFFFF; border: 1px solid #CFCFC8; position: relative; }
+  .mode-ui .seg button { position: relative; z-index: 1; padding: 5px 10px; border-radius: 999px; font-size: 12px; line-height: 1.2; color: #666; transition: color .25s; white-space: nowrap; }
   .mode-ui .seg button.on { color: #fff; }
-  .mode-ui .seg .thumb { position: absolute; top: 3px; bottom: 3px; border-radius: 999px; background: #7D9471; box-shadow: 0 3px 8px -3px rgba(125,148,113,.9);
+  .mode-ui .seg .thumb { position: absolute; top: 3px; bottom: 3px; border-radius: 999px; background: #55554F;
     transition: left .35s cubic-bezier(.3,1.3,.5,1), width .35s cubic-bezier(.3,1.3,.5,1); }
-  .mode-ui .seg.is3d .thumb { background: linear-gradient(120deg, #C8A98B, #D9B98A 60%, #E7CBA0); }
   .tilt-hint { transition: opacity .4s; }
   .tilt-hint.hide { opacity: 0; }
-  @media (prefers-reduced-motion: reduce) { .petal > i { animation: none; opacity: 0; } }
 
   /* ---------- 🔮 今日幸運花束 ---------- */
-  .lucky-btn { position: relative; overflow: hidden; color: #5B4A5E; font-weight: 700;
-    background: linear-gradient(115deg, #EFE3F5 0%, #FBE3DA 45%, #F6E6BE 100%); border: 1px solid rgba(201,166,120,.55);
-    box-shadow: 0 6px 16px -8px rgba(176,128,150,.75), inset 0 1px 0 rgba(255,255,255,.8); }
-  .lucky-btn::after { content: ""; position: absolute; inset: -40% -70%; pointer-events: none;
-    background: linear-gradient(110deg, transparent 42%, rgba(255,255,255,.9) 50%, transparent 58%); animation: sheen 3.2s ease-in-out infinite; }
+  .lucky-btn { color: #333; font-weight: 500; background: #FFFFFF; border: 1px solid #555; }
   .lucky-btn:active { transform: scale(.95); }
   .lucky-btn[disabled] { opacity: .7; }
   .magic { position: absolute; inset: 0; pointer-events: none; z-index: 40; overflow: hidden; }
   .magic .glow { position: absolute; left: 50%; top: 50%; width: 260px; height: 260px; margin: -130px 0 0 -130px; border-radius: 999px;
-    background: radial-gradient(circle, rgba(255,248,226,.95) 0, rgba(246,214,190,.55) 35%, transparent 70%); animation: glow .75s ease-out forwards; }
+    border: 1px solid #555; background: rgba(255,255,255,.55); animation: glow .75s ease-out forwards; }
   .magic .bp { position: absolute; left: 50%; top: 50%; animation: burst .7s cubic-bezier(.2,.8,.3,1) forwards; animation-delay: var(--dl); opacity: 0; }
   @keyframes glow { 0% { transform: scale(.3); opacity: 0; } 35% { opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
   @keyframes burst { 0% { transform: translate(-50%, -50%) scale(.3) rotate(0deg); opacity: 0; } 15% { opacity: 1; }
@@ -126,13 +92,13 @@
   @keyframes poof { to { transform: scale(.5) rotate(12deg); opacity: 0; } }
   .fortune { transition: opacity .45s ease, transform .5s cubic-bezier(.3,1.3,.5,1); }
   .fortune.hide { opacity: 0; transform: translateY(-10px) scale(.97); pointer-events: none; }
-  .fortune-box { background: linear-gradient(135deg, #FBF5EA 0%, #F6EDF4 100%); border: 1px dashed rgba(168,139,110,.55); }
-  @media (prefers-reduced-motion: reduce) { .lucky-btn::after, .magic .bp, .magic .glow { animation: none; opacity: 0; } }
+  .fortune-box { background: #F4F4EF; border: 1px solid #DADAD3; }
+  @media (prefers-reduced-motion: reduce) { .magic .bp, .magic .glow { animation: none; opacity: 0; } }
 
   .flower { position: absolute; transform-origin: 50% 100%; pointer-events: none; will-change: transform; }
   .flower svg { width: 100%; height: 100%; display: block; overflow: visible; }
   .flower svg * { pointer-events: visiblePainted; cursor: grab; }
-  .flower.is-sel svg { filter: drop-shadow(0 6px 10px rgba(125, 148, 113, .45)); }
+  .flower.is-sel svg { filter: drop-shadow(0 0 0.5px #555); }
   .flip { width: 100%; height: 100%; transform-origin: 50% 100%; }
   .flip.on { transform: scaleX(-1); }
   .pop { width: 100%; height: 100%; transform-origin: 50% 100%; animation: pop .55s cubic-bezier(.3, 1.5, .5, 1) both; }
@@ -140,39 +106,31 @@
   .animate .flower { transition: left .6s cubic-bezier(.3,1.25,.5,1), top .6s cubic-bezier(.3,1.25,.5,1), transform .6s cubic-bezier(.3,1.25,.5,1); }
   .animate .flip { transition: transform .6s ease; }
 
-  .sel-box { position: absolute; transform-origin: 50% 100%; border: 1.5px dashed #7D9471; border-radius: 18px;
-    background: rgba(156, 175, 136, .07); box-shadow: 0 0 0 4px rgba(156, 175, 136, .12); pointer-events: none; display: none; }
+  .sel-box { position: absolute; transform-origin: 50% 100%; border: 1px dashed #555; border-radius: 4px; pointer-events: none; display: none; }
   .sel-handle { position: absolute; right: -15px; bottom: -15px; width: 30px; height: 30px; border-radius: 999px;
-    background: #fff; border: 1.5px solid #7D9471; box-shadow: 0 3px 8px rgba(74,64,58,.2);
+    background: #fff; border: 1px solid #555;
     display: flex; align-items: center; justify-content: center; pointer-events: auto; touch-action: none; cursor: grab; }
 
   /* ---------- 小卡（可拖曳） ---------- */
   .card-el { position: absolute; pointer-events: auto; cursor: grab; touch-action: none; transform-origin: 50% 0; }
   .card-el.dragging { cursor: grabbing; }
   .card-el > svg { position: absolute; left: 0; top: 0; overflow: visible; }
-  .ct { position: absolute; display: flex; flex-direction: column; justify-content: space-between; color: #4A403A; overflow: hidden; pointer-events: none; }
-  .ct-to, .ct-from { font-size: calc(var(--fs) * 7.6px); line-height: 1.2; opacity: .72; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ct { position: absolute; display: flex; flex-direction: column; justify-content: space-between; color: #333; overflow: hidden; pointer-events: none;
+    font-family: Inter, "Helvetica Neue", Helvetica, "Noto Sans TC", sans-serif; }
+  .ct-to, .ct-from { font-size: 6.8px; line-height: 1.25; letter-spacing: .04em; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ct-from { text-align: right; }
-  .ct-msg { font-size: calc(var(--fs) * 9.2px); line-height: 1.32; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: var(--lines, 3); overflow: hidden; }
-  .font-hand { --fs: 1.06; font-family: "Caveat", "LXGW WenKai TC", cursive; }
-  .font-serif { --fs: 1; font-family: "Cormorant Garamond", "Noto Serif TC", "Songti TC", serif; }
-  .font-type { --fs: .94; font-family: "Special Elite", "Noto Sans TC", "Courier New", monospace; letter-spacing: .02em; }
-  .fld { display: flex; align-items: center; gap: 6px; border-radius: 14px; border: 1px solid rgba(74,64,58,.15); background: rgba(255,255,255,.75); padding: 0 10px; }
-  .fld > span { font-size: 11px; color: rgba(74,64,58,.55); white-space: nowrap; }
+  .ct-msg { font-size: 8.6px; line-height: 1.38; font-weight: 500; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: var(--lines, 3); overflow: hidden; }
+  .fld { display: flex; align-items: center; gap: 6px; border-radius: 10px; border: 1px solid #D5D5CE; background: #FFFFFF; padding: 0 10px; }
+  .fld > span { font-size: 10.5px; letter-spacing: .04em; color: #888; white-space: nowrap; }
   .fld input, .fld textarea { flex: 1; min-width: 0; background: transparent; outline: none; font-size: 13.5px; padding: 6px 0; resize: none; }
-  .fld:focus-within { border-color: #7D9471; box-shadow: 0 0 0 2px rgba(125,148,113,.2); }
+  .fld:focus-within { border-color: #555; }
 
   /* ---------- 空間背景與窗邊光影 ---------- */
   .scene { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; transition: background .5s; }
   .gobo { position: absolute; inset: -36px; z-index: 20; pointer-events: none; }
   .gobo > * { position: absolute; inset: 0; }
-  .gobo .leafs { transform-origin: 92% 0; animation: sway 7s ease-in-out infinite alternate; }
-  @keyframes sway { from { transform: rotate(-2.5deg); } to { transform: rotate(2.5deg) translateX(6px); } }
-  .ff { position: absolute; width: 4px; height: 4px; border-radius: 999px; background: #FFE9A8; box-shadow: 0 0 8px 3px rgba(255, 220, 130, .55);
-    animation: ff var(--d) ease-in-out var(--dl) infinite alternate; }
-  @keyframes ff { from { opacity: .12; transform: translate(0, 0); } to { opacity: 1; transform: translate(7px, -12px); } }
+  .dotty { position: absolute; width: 3px; height: 3px; border-radius: 999px; background: #E8E4D6; opacity: .55; }
   .scene-dark .empty-hint { color: rgba(255, 248, 235, .7); }
-  @media (prefers-reduced-motion: reduce) { .gobo .leafs, .ff { animation: none; } }
 
   /* ---------- 工作台 ---------- */
   .workspace { transition: transform .45s cubic-bezier(.4,0,.2,1), opacity .35s; }
@@ -181,31 +139,23 @@
   .no-scrollbar::-webkit-scrollbar { display: none; } .no-scrollbar { scrollbar-width: none; }
   .mat-card { transition: transform .15s, box-shadow .2s, border-color .2s; }
   .mat-card:active { transform: scale(.95); }
-  .dot { width: 16px; height: 16px; border-radius: 999px; border: 1.5px solid rgba(74,64,58,.55); transition: transform .15s; }
-  .dot.on { box-shadow: 0 0 0 2px #FAF7F2, 0 0 0 3.5px #7D9471; transform: scale(1.1); }
-  .mini-dot { width: 7px; height: 7px; border-radius: 999px; border: 1px solid rgba(74,64,58,.45); }
-  .mat-card.is-active { border-color: #7D9471; box-shadow: 0 0 0 2px rgba(125,148,113,.3); }
+  .mini-dot { width: 7px; height: 7px; border-radius: 999px; border: 1px solid #555; }
+  .mat-card.is-active { border-color: #555 !important; }
 
   /* 色票列 */
-  .swatch-bar { background: #F3ECE2; }
-  .sw { width: 24px; height: 24px; border-radius: 999px; border: 1.5px solid rgba(74,64,58,.6); flex-shrink: 0;
-    background-image: radial-gradient(circle at 35% 30%, rgba(255,255,255,.7) 0 18%, transparent 40%); transition: transform .15s; }
+  .swatch-bar { background: #EDEDE8; }
+  .sw { width: 24px; height: 24px; border-radius: 999px; border: 1px solid #555; flex-shrink: 0; transition: transform .15s; }
   .sw.sm { width: 20px; height: 20px; }
-  .sw.on { box-shadow: 0 0 0 2.5px #F3ECE2, 0 0 0 4.5px #7D9471; transform: scale(1.08); }
+  .sw.on { box-shadow: 0 0 0 2px #EDEDE8, 0 0 0 3px #555; }
   .sw:active { transform: scale(.9); }
 
   /* 季節限定卡片 */
-  .seasonal { position: relative; overflow: hidden; border: 1.5px solid #D6B583 !important;
-    background: linear-gradient(160deg, #FFF9EF 0%, #F9EADB 55%, #FFF5E6 100%) !important; }
-  .seasonal::after { content: ""; position: absolute; inset: -30% -60%; pointer-events: none;
-    background: linear-gradient(110deg, transparent 42%, rgba(255,255,255,.85) 50%, transparent 58%);
-    animation: sheen 3.8s ease-in-out infinite; }
-  @keyframes sheen { 0%, 55% { transform: translateX(-45%); } 100% { transform: translateX(45%); } }
-  .badge { font-size: 8.5px; line-height: 1; padding: 3px 4px; border-radius: 999px; white-space: nowrap;
-    background: #FFFDF8; border: 1px solid #D6B583; color: #9A6F3F; letter-spacing: .02em; }
-  .stamp { display: inline-block; font-size: 8.5px; letter-spacing: .12em; font-family: ui-monospace, Menlo, monospace; font-weight: 700;
-    color: #B4535E; border: 1.5px solid #B4535E; border-radius: 4px; padding: 0 4px; line-height: 1.5; transform: rotate(-4deg); opacity: .88; vertical-align: 1px; margin-left: 4px; }
-  @media (prefers-reduced-motion: reduce) { .seasonal::after { animation: none; opacity: 0; } .pop { animation: none; } }
+  .seasonal { border-color: #555 !important; background: #FFFFFF !important; }
+  .badge { font-size: 8px; line-height: 1; padding: 3px 5px; border-radius: 3px; white-space: nowrap; letter-spacing: .08em;
+    background: #333; color: #F5F5F0; }
+  .stamp { display: inline-block; font-size: 8.5px; letter-spacing: .12em; font-weight: 600; color: #555; border: 1px solid #555;
+    border-radius: 3px; padding: 0 4px; line-height: 1.6; vertical-align: 1px; margin-left: 6px; }
+  @media (prefers-reduced-motion: reduce) { .pop { animation: none; } }
 
   .toolbar { transition: opacity .2s, transform .25s cubic-bezier(.3,1.4,.5,1); }
   .toolbar.hide { opacity: 0; transform: translate(-50%, 16px) scale(.95); pointer-events: none; }
@@ -215,56 +165,19 @@
   .modal.hide { opacity: 0; pointer-events: none; }
   .modal .sheet { transition: transform .45s cubic-bezier(.3,1.3,.5,1); }
   .modal.hide .sheet { transform: translateY(40px) scale(.96); }
-  .polaroid { background: #FFFEFB; box-shadow: 0 14px 30px -10px rgba(74,64,58,.35), 0 0 0 1px rgba(74,64,58,.06); transform: rotate(-2deg); }
-  .receipt { background: #FFFDF8; position: relative; box-shadow: 0 10px 24px -12px rgba(74,64,58,.35); }
-  .receipt::before, .receipt::after { content: ""; position: absolute; left: 0; right: 0; height: 8px;
-    background: conic-gradient(from -45deg at 50% 100%, #FFFDF8 90deg, transparent 0) 0 0 / 14px 8px repeat-x; }
-  .receipt::before { top: -8px; }
-  .receipt::after { bottom: -8px; transform: scaleY(-1); }
-  .barcode { height: 34px; background: repeating-linear-gradient(90deg, #4A403A 0 2px, transparent 2px 4px, #4A403A 4px 5px, transparent 5px 8px, #4A403A 8px 11px, transparent 11px 12px); opacity: .85; }
+  .order { background: #FFFFFF; border: 1px solid #D5D5CE; }
+  .order h4 { font-size: 10px; letter-spacing: .18em; color: #888; font-weight: 500; margin: 0 0 6px; }
+  .order .sec { padding: 14px 20px; border-top: 1px solid #ECECE6; }
+  .mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
   .toast { transition: opacity .25s, transform .25s; }
   .toast.hide { opacity: 0; transform: translate(-50%, -8px); }
 </style>
 </head>
 <body>
 
-<!-- 共用 SVG 定義：手繪抖動濾鏡、紙紋 -->
+<!-- 共用 SVG 定義：內襯印刷紋樣 -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
-    <filter id="rough" x="-8%" y="-8%" width="116%" height="116%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="7" result="n" />
-      <feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G" />
-    </filter>
-    <pattern id="grain" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(20)">
-      <path d="M0 3.5 H7" stroke="#4A403A" stroke-opacity=".07" stroke-width="1" />
-    </pattern>
-    <!-- 前層包裝紙的動態反光（由 JS 依傾斜角度更新） -->
-    <linearGradient id="glare" gradientUnits="userSpaceOnUse" x1="40" y1="220" x2="320" y2="470">
-      <stop offset="0" stop-color="#fff" stop-opacity="0" />
-      <stop id="g1" offset=".32" stop-color="#fff" stop-opacity="0" />
-      <stop id="g2" offset=".5" stop-color="#fff" stop-opacity=".3" />
-      <stop id="g3" offset=".68" stop-color="#fff" stop-opacity="0" />
-      <stop offset="1" stop-color="#fff" stop-opacity="0" />
-    </linearGradient>
-    <!-- 包裝紙內側陰影：後背紙越往收腰越深；左右側翼外緣（彎向後方）較暗 -->
-    <radialGradient id="shadeBack" gradientUnits="userSpaceOnUse" cx="180" cy="330" r="240">
-      <stop offset="0" stop-color="#2B1E14" stop-opacity=".3" /><stop offset=".55" stop-color="#2B1E14" stop-opacity=".08" /><stop offset="1" stop-color="#2B1E14" stop-opacity="0" />
-    </radialGradient>
-    <linearGradient id="shadeL" gradientUnits="userSpaceOnUse" x1="36" y1="0" x2="190" y2="0">
-      <stop offset="0" stop-color="#2B1E14" stop-opacity=".28" /><stop offset=".35" stop-color="#2B1E14" stop-opacity=".1" /><stop offset=".75" stop-color="#2B1E14" stop-opacity="0" />
-    </linearGradient>
-    <linearGradient id="shadeR" gradientUnits="userSpaceOnUse" x1="324" y1="0" x2="170" y2="0">
-      <stop offset="0" stop-color="#2B1E14" stop-opacity=".28" /><stop offset=".35" stop-color="#2B1E14" stop-opacity=".1" /><stop offset=".75" stop-color="#2B1E14" stop-opacity="0" />
-    </linearGradient>
-    <!-- 牛皮紙橫紋與紙漿斑點 -->
-    <pattern id="kraftTex" width="40" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(-8)">
-      <path d="M0 2.5 H14 M18 2.5 H40" stroke="#4A403A" stroke-opacity=".08" stroke-width=".9" />
-    </pattern>
-    <pattern id="speckle" width="34" height="34" patternUnits="userSpaceOnUse">
-      <circle cx="5" cy="7" r=".9" fill="#5E4633" fill-opacity=".35" /><circle cx="22" cy="4" r=".6" fill="#5E4633" fill-opacity=".3" />
-      <circle cx="14" cy="19" r="1.1" fill="#5E4633" fill-opacity=".25" /><circle cx="29" cy="25" r=".7" fill="#fff" fill-opacity=".5" />
-      <circle cx="8" cy="29" r=".6" fill="#5E4633" fill-opacity=".35" /><circle cx="26" cy="14" r=".5" fill="#fff" fill-opacity=".45" />
-    </pattern>
     <!-- 英文報紙段落 -->
     <pattern id="news" width="64" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(-6)">
       <path d="M2 3 H19 M22 3 H30 M33 3 H48 M51 3 H62 M2 7 H11 M14 7 H32 M35 7 H43 M46 7 H62" stroke="#4A403A" stroke-opacity=".3" stroke-width="1.1" stroke-linecap="round" />
@@ -279,26 +192,25 @@
   </defs>
 </svg>
 
-<div id="app" class="phone paper-tex font-hand">
+<div id="app" class="phone paper-tex font-ui">
 
   <!-- 1. 頂部列 8% -->
   <header class="h-[8%] shrink-0 flex items-center justify-between px-4 pt-1 relative z-20">
     <div class="flex gap-2">
-      <button id="btnClear" class="flex items-center gap-1 rounded-full border border-ink/25 bg-white/60 px-3 py-1.5 text-[13px] active:scale-95 transition">
+      <button id="btnClear" class="flex items-center gap-1 rounded-full border border-[#CFCFC8] bg-white px-3 py-1.5 text-[12.5px] active:scale-95 transition">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>清空
       </button>
-      <button id="btnShuffle" class="flex items-center gap-1 rounded-full border border-ink/25 bg-white/60 px-3 py-1.5 text-[13px] active:scale-95 transition">
+      <button id="btnShuffle" class="flex items-center gap-1 rounded-full border border-[#CFCFC8] bg-white px-3 py-1.5 text-[12.5px] active:scale-95 transition">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>隨機重排
       </button>
     </div>
-    <button id="btnDone" class="rounded-full bg-sage-dark text-white px-4 py-2 text-[14px] font-bold shadow-[0_4px_12px_-4px_rgba(125,148,113,.8)] active:scale-95 transition">完成包裝 ✨</button>
+    <button id="btnDone" class="rounded-full bg-[#333] text-white px-4 py-2 text-[13.5px] font-medium active:scale-95 transition">完成包裝</button>
   </header>
 
   <!-- 2. 中央畫布 57% -->
   <main id="canvasWrap" class="canvas-wrap h-[57%] shrink-0 relative overflow-hidden">
     <div id="scene" class="scene"></div>
     <div id="stage" class="stage">
-      <div class="petals" id="petals"></div>
       <div class="layer layer-back" id="layerBack"></div>
       <div class="layer layer-tissue" id="layerTissue"></div>
       <div class="layer layer-flowers" id="layerFlowers"></div>
@@ -309,26 +221,26 @@
       <div class="layer sel-layer">
         <div id="selBox" class="sel-box">
           <div id="handle" class="sel-handle" title="拖曳旋轉／縮放">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7D9471" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>
           </div>
         </div>
       </div>
-      <div class="empty-hint absolute left-0 right-0 top-[118px] text-center text-[15px] text-ink/55 pointer-events-none z-[7] leading-relaxed" id="emptyHint">
-        點一下下方花材<br/>花朵會自動排成扇形花束 🌷
+      <div class="empty-hint absolute left-0 right-0 top-[118px] text-center text-[13.5px] text-[#888] pointer-events-none z-[5] leading-relaxed" id="emptyHint">
+        點選下方花材<br/>花朵會自動排成對稱的倒三角花束
       </div>
     </div>
 
     <div id="gobo" class="gobo" aria-hidden="true"></div>
 
     <!-- 🔮 今日幸運花束 -->
-    <button id="btnLucky" class="lucky-btn absolute top-2 left-3 z-30 rounded-full px-3 py-[7px] text-[12px] leading-tight transition">🔮 抽今日幸運花</button>
-    <div id="fortune" class="fortune hide absolute left-3 right-3 top-[48px] z-[35] rounded-2xl bg-white/70 backdrop-blur-md border border-white/80 shadow-[0_10px_24px_-12px_rgba(74,64,58,.5)] px-3 py-2" role="status" aria-live="polite">
+    <button id="btnLucky" class="lucky-btn absolute top-2 left-3 z-30 rounded-full px-3 py-[7px] text-[12px] leading-tight transition">✦ 今日幸運花束</button>
+    <div id="fortune" class="fortune hide absolute left-3 right-3 top-[48px] z-[35] rounded-xl bg-white border border-[#D5D5CE] px-3 py-2" role="status" aria-live="polite">
       <div class="flex items-center gap-2">
         <div class="min-w-0 flex-1">
-          <div class="text-[9.5px] tracking-[.18em] text-milk-deep leading-tight">✨ 今日花籤 · TODAY'S FORTUNE</div>
+          <div class="text-[9.5px] tracking-[.18em] text-[#888] leading-tight">TODAY'S FORTUNE · 今日花籤</div>
           <div id="fortuneTitle" class="text-[13px] font-bold leading-tight mt-0.5 truncate"></div>
         </div>
-        <button id="fortuneToCard" class="shrink-0 rounded-full bg-milk text-white px-2.5 py-1 text-[11px] active:scale-95 transition">✏️ 改小卡</button>
+        <button id="fortuneToCard" class="shrink-0 rounded-full border border-[#555] px-2.5 py-1 text-[11px] active:scale-95 transition">編輯小卡</button>
         <button id="fortuneClose" class="shrink-0 w-6 h-6 rounded-full text-ink/50 text-[16px] leading-none" aria-label="關閉花籤">×</button>
       </div>
       <p id="fortuneText" class="text-[11.5px] leading-[1.55] text-ink/80 mt-1"></p>
@@ -338,16 +250,16 @@
     <div class="mode-ui absolute top-2 right-3 z-30 flex flex-col items-end gap-1.5 pointer-events-none">
       <div class="seg pointer-events-auto" id="modeSeg" role="tablist" aria-label="檢視模式">
         <span class="thumb" id="modeThumb"></span>
-        <button data-mode="edit" class="on" role="tab">✏️ 編輯</button>
-        <button data-mode="3d" role="tab">✨ 3D 預覽</button>
+        <button data-mode="edit" class="on" role="tab">平面</button>
+        <button data-mode="3d" role="tab">微景深</button>
       </div>
     </div>
-    <div id="tiltHint" class="tilt-hint hide absolute left-1/2 -translate-x-1/2 bottom-3 z-30 rounded-full bg-white/80 border border-ink/10 px-3 py-1.5 text-[11.5px] text-ink/70 pointer-events-none whitespace-nowrap">
-      用手指拖曳或移動滑鼠，轉轉看立體花束
+    <div id="tiltHint" class="tilt-hint hide absolute left-1/2 -translate-x-1/2 bottom-3 z-30 rounded-full bg-white border border-[#D5D5CE] px-3 py-1.5 text-[11.5px] text-[#666] pointer-events-none whitespace-nowrap">
+      拖曳可微微轉動視角
     </div>
 
     <!-- 懸浮微調工具列 -->
-    <div id="toolbar" class="toolbar hide absolute left-1/2 -translate-x-1/2 bottom-3 z-30 flex items-center gap-0.5 rounded-full bg-white/90 backdrop-blur px-2 py-1.5 border border-ink/10 shadow-[0_8px_22px_-8px_rgba(74,64,58,.45)]">
+    <div id="toolbar" class="toolbar hide absolute left-1/2 -translate-x-1/2 bottom-3 z-30 flex items-center gap-0.5 rounded-full bg-white px-2 py-1.5 border border-[#CFCFC8]">
       <button data-tool="fwd" class="tb">
         <svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg><span>往前</span></button>
       <button data-tool="back" class="tb">
@@ -361,257 +273,162 @@
     </div>
     <style>
       .tb { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 3px 9px; border-radius: 999px; font-size: 10.5px; line-height: 1; transition: background .15s, transform .15s; }
-      .tb:active { transform: scale(.9); background: #DCE5D2; }
-      .tb svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+      .tb:active { transform: scale(.9); background: #EDEDE8; }
+      .tb svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
     </style>
   </main>
 
   <!-- 3. 底部花藝工作台 35% -->
-  <section id="workspace" class="workspace h-[35%] shrink-0 relative z-20 flex flex-col rounded-t-[28px] bg-[#F3ECE2] border-t border-ink/10 shadow-[0_-10px_24px_-14px_rgba(74,64,58,.35)]">
+  <section id="workspace" class="workspace h-[35%] shrink-0 relative z-20 flex flex-col rounded-t-[24px] bg-[#EDEDE8] border-t border-[#DADAD3]">
     <div class="mx-auto mt-2 h-1 w-10 rounded-full bg-ink/15"></div>
     <nav id="tabs" class="no-scrollbar flex gap-1.5 overflow-x-auto px-3 pt-2 pb-1.5 shrink-0"></nav>
     <div id="panel" class="no-scrollbar flex-1 overflow-y-auto px-3 pb-4"></div>
   </section>
 
   <!-- 提示 -->
-  <div id="toast" class="toast hide absolute left-1/2 -translate-x-1/2 top-[calc(8%+50px)] z-[60] rounded-full bg-ink/85 text-white text-[13px] px-4 py-2 pointer-events-none whitespace-nowrap"></div>
+  <div id="toast" class="toast hide absolute left-1/2 -translate-x-1/2 top-[calc(8%+50px)] z-[60] rounded-full bg-[#333] text-white text-[12.5px] px-4 py-2 pointer-events-none whitespace-nowrap"></div>
 
   <!-- 完成：拍立得 / 今日花語收據 -->
-  <div id="receiptModal" class="modal hide absolute inset-0 z-[90] bg-[#EFE7DC]/85 backdrop-blur-sm overflow-y-auto no-scrollbar">
+  <div id="receiptModal" class="modal hide absolute inset-0 z-[90] bg-[#E6E6E1] overflow-y-auto no-scrollbar">
     <div class="sheet min-h-full flex flex-col items-center px-6 pt-8 pb-8" id="receiptBody"></div>
   </div>
 </div>
 
 <script>
 (() => {
-  /* ================= 繪圖工具 ================= */
-  const INK = '#4A403A';
-  const S = `stroke="${INK}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"`;
-  const S1 = `stroke="${INK}" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"`;
-  const stem = (d, c = '#86A074', w = 3.4) =>
-    `<path d="${d}" fill="none" stroke="${INK}" stroke-width="${w + 2.2}" stroke-linecap="round"/>` +
-    `<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`;
-  const leaf = (d, vein, fill = '#A5BA91') =>
-    `<path d="${d}" fill="${fill}" ${S}/>` +
-    (vein ? `<path d="${vein}" fill="none" stroke="${INK}" stroke-width="1.1" stroke-linecap="round" opacity=".6"/>` : '');
-  const line = (d, o = 1, w = 1.5) => `<path d="${d}" fill="none" stroke="${INK}" stroke-width="${w}" stroke-linecap="round" opacity="${o}"/>`;
-  const shine = d => `<path d="${d}" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="2.4" stroke-linecap="round"/>`;
+  /* ================= 繪圖工具（極簡植物圖鑑：1px #555 線條＋平面色塊，無漸層） ================= */
+  const INK = '#555555';
+  const S = `stroke="${INK}" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"`;
+  const S1 = S;
+  const LEAF = '#9CAF88', LEAF2 = '#B7C4A7', LEAF3 = '#7F9474';
+  const f1 = n => (+n).toFixed(1);
   const rng = seed => () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
-  const f1 = n => n.toFixed(1);
-
-  const daisyHead = (cx, cy, r, c) => {
+  const line = (d, o = 1) => `<path d="${d}" fill="none" stroke="${INK}" stroke-width="1" stroke-linecap="round" opacity="${o}"/>`;
+  const stem = d => line(d);
+  const leaf = (d, vein, fill = LEAF) => `<path d="${d}" fill="${fill}" ${S}/>` + (vein ? line(vein, .45) : '');
+  const C = (cx, cy, r, fill) => `<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${f1(r)}" fill="${fill}" ${S}/>`;
+  const E = (cx, cy, rx, ry, rot, fill) => `<ellipse cx="${f1(cx)}" cy="${f1(cy)}" rx="${f1(rx)}" ry="${f1(ry)}" transform="rotate(${f1(rot)} ${f1(cx)} ${f1(cy)})" fill="${fill}" ${S}/>`;
+  // n 片橢圓花瓣，等角度環繞 (cx, cy)
+  const ring = (cx, cy, n, dist, rx, ry, fill, off = 0) => {
     let s = '';
-    for (let i = 0; i < 12; i++) s += `<ellipse cx="${cx}" cy="${cy - r * 0.55}" rx="${r * 0.21}" ry="${r * 0.5}" transform="rotate(${i * 30 + 8} ${cx} ${cy})" fill="${c.p}" stroke="${INK}" stroke-width="1.2"/>`;
-    return s + `<circle cx="${cx}" cy="${cy}" r="${r * 0.3}" fill="${c.c}" ${S}/><circle cx="${cx - r * 0.1}" cy="${cy - r * 0.1}" r="${r * 0.08}" fill="#fff" opacity=".7"/>`;
+    for (let i = 0; i < n; i++) { const a = off + (i * 360) / n, r = a * Math.PI / 180; s += E(cx + dist * Math.sin(r), cy - dist * Math.cos(r), rx, ry, a, fill); }
+    return s;
   };
-  const cluster = (cx, cy, c, r = 4.6) => [[0, 0], [-7, 4], [7, 4], [-4, -6], [5, -6], [0, 9]].map(([dx, dy]) =>
-    `<circle cx="${cx + dx}" cy="${cy + dy}" r="${r}" fill="${c.p}" ${S1}/><circle cx="${cx + dx - 1.4}" cy="${cy + dy - 1.6}" r="1.1" fill="#fff" opacity=".6"/><circle cx="${cx + dx}" cy="${cy + dy + r * .45}" r=".9" fill="${c.d}"/>`).join('');
+  // 兩端尖的葉片：從 (x, y) 朝 ang 度（0 = 正上方）伸出
+  const lens = (x, y, len, w, ang, fill) => {
+    const r = ang * Math.PI / 180, tx = x + len * Math.sin(r), ty = y - len * Math.cos(r), mx = (x + tx) / 2, my = (y + ty) / 2, px = Math.cos(r) * w, py = Math.sin(r) * w;
+    return `<path d="M${f1(x)} ${f1(y)} Q ${f1(mx + px)} ${f1(my + py)}, ${f1(tx)} ${f1(ty)} Q ${f1(mx - px)} ${f1(my - py)}, ${f1(x)} ${f1(y)} Z" fill="${fill}" ${S}/>` +
+      line(`M${f1(x)} ${f1(y)} L ${f1(x + (tx - x) * .8)} ${f1(y + (ty - y) * .8)}`, .4);
+  };
+  const pair = (y, len, w, ang, fill = LEAF) => lens(60, y, len, w, -ang, fill) + lens(60, y, len, w, ang, fill);
+  const STEM = (top, bottom = 298) => line(`M60 ${bottom} L60 ${top}`);
+  const daisyHead = (cx, cy, r, c) => ring(cx, cy, 12, r * .58, r * .19, r * .4, c.p) + C(cx, cy, r * .3, c.c);
+  const cluster = (cx, cy, c, r = 4.2) => [[0, 0], [-7.5, 0], [7.5, 0], [-3.75, -6.5], [3.75, -6.5], [-3.75, 6.5], [3.75, 6.5]].map(([dx, dy]) => C(cx + dx, cy + dy, r, c.p)).join('');
 
-  /* ================= 手繪花材 SVG（viewBox 0 0 120 300，花莖底部 = 旋轉支點） ================= */
+  /* ================= 幾何花材 SVG（viewBox 0 0 120 300，花莖底部 = 旋轉支點；造型左右對稱） ================= */
   const DRAW = {
-    rose: c =>
-      stem('M60 298 C 57 240, 63 170, 60 92') +
-      leaf('M60 212 C 72 194, 92 188, 104 194 C 96 210, 78 218, 60 212 Z', 'M62 211 C 76 204, 88 199, 100 195') +
-      leaf('M60 166 C 48 151, 28 147, 16 153 C 24 169, 42 175, 60 166 Z', 'M58 165 C 46 158, 32 155, 20 154') +
-      `<path d="M61 246 l7 -5 l-5 9z M59 135 l-7 -4 l5 8z" fill="${INK}"/>` +
-      `<path d="M60 94 C 50 99, 40 99, 32 92 C 43 89, 52 88, 60 94 C 68 88, 77 89, 88 92 C 80 99, 70 99, 60 94 Z" fill="#8FA77E" ${S}/>` +
-      `<path d="M26 56 C 22 30, 44 14, 62 16 C 84 17, 100 34, 96 58 C 93 80, 77 93, 60 93 C 41 93, 29 78, 26 56 Z" fill="${c.p}" ${S}/>` +
-      `<path d="M38 52 C 39 35, 53 28, 65 30 C 79 32, 87 44, 84 57 C 80 50, 72 44, 62 44 C 50 44, 42 48, 38 52 Z" fill="${c.l}" ${S}/>` +
-      `<path d="M48 54 C 48 44, 60 38, 69 44 C 77 50, 73 62, 62 63 C 55 63, 52 57, 57 53 C 60 51, 64 53, 63 56" fill="none" ${S}/>` +
-      `<path d="M26 56 C 34 70, 46 77, 60 76 C 74 77, 88 70, 96 58 C 94 80, 78 94, 60 94 C 42 94, 28 80, 26 56 Z" fill="${c.d}" ${S}/>` +
-      line('M31 47 C 37 62, 47 70, 57 72', .7) + line('M91 47 C 85 62, 75 70, 65 72', .7) + shine('M44 25 C 50 21, 58 20, 65 21'),
+    rose: c => STEM(86) + pair(205, 34, 9, 52) + pair(150, 26, 7, 46, LEAF2) +
+      `<path d="M60 92 L46 82 L60 86 L74 82 Z" fill="${LEAF}" ${S}/>` +
+      ring(60, 55, 5, 15, 14, 14, c.p) + C(60, 55, 13, c.l) + C(60, 55, 7.5, c.p) + C(60, 55, 3, c.d),
 
-    tulip: c =>
-      stem('M60 298 C 62 240, 58 170, 60 96') +
-      leaf('M58 292 C 36 250, 28 200, 34 138 C 50 180, 60 230, 64 286 Z', 'M58 284 C 48 240, 40 200, 36 150') +
-      leaf('M62 282 C 80 252, 90 222, 94 180 C 78 210, 66 240, 60 272 Z', 'M63 272 C 74 248, 84 220, 91 190') +
-      `<path d="M34 42 C 34 22, 48 10, 60 6 C 72 10, 86 22, 86 42 C 87 70, 76 92, 60 94 C 44 92, 33 70, 34 42 Z" fill="${c.d}" ${S}/>` +
-      `<path d="M60 94 C 46 82, 44 48, 60 14 C 76 48, 74 82, 60 94 Z" fill="${c.l}" ${S}/>` +
-      `<path d="M60 97 C 40 97, 26 76, 28 30 C 44 40, 58 60, 60 97 Z" fill="${c.p}" ${S}/>` +
-      `<path d="M60 97 C 80 97, 94 76, 92 30 C 76 40, 62 60, 60 97 Z" fill="${c.p}" ${S}/>` +
-      line('M35 46 C 40 64, 48 80, 56 90', .45, 1.1) + line('M85 46 C 80 64, 72 80, 64 90', .45, 1.1) + shine('M33 40 C 34 52, 37 62, 41 70'),
+    tulip: c => STEM(92) + lens(60, 292, 120, 13, -12, LEAF) + lens(60, 292, 120, 13, 12, LEAF2) +
+      lens(60, 94, 72, 15, 0, c.l) + lens(60, 94, 68, 16, -18, c.p) + lens(60, 94, 68, 16, 18, c.p),
 
-    sunflower: c => {
-      let s = stem('M60 298 C 58 236, 63 150, 60 76', '#86A074', 4.6) +
-        leaf('M60 204 C 72 178, 102 172, 114 186 C 108 210, 80 220, 60 204 Z', 'M62 203 C 78 192, 94 186, 110 187') +
-        leaf('M60 152 C 48 128, 18 122, 6 136 C 12 160, 40 168, 60 152 Z', 'M58 151 C 42 140, 26 136, 10 137');
-      for (let i = 0; i < 16; i++) s += `<ellipse cx="60" cy="27" rx="7.6" ry="16.5" transform="rotate(${i * 22.5 + 11.25} 60 58)" fill="${c.d}" stroke="${INK}" stroke-width="1.4"/>`;
-      for (let i = 0; i < 16; i++) s += `<ellipse cx="60" cy="29" rx="7" ry="15" transform="rotate(${i * 22.5} 60 58)" fill="${c.p}" stroke="${INK}" stroke-width="1.4"/>`;
-      s += `<circle cx="60" cy="58" r="19" fill="#7A5236" ${S}/><circle cx="60" cy="58" r="13" fill="#5E3E28"/>`;
-      for (let k = 1; k < 22; k++) { const r = 2.5 * Math.sqrt(k), a = k * 2.39996; s += `<circle cx="${f1(60 + r * Math.cos(a))}" cy="${f1(58 + r * Math.sin(a))}" r="1.15" fill="#D9A55B"/>`; }
-      return s;
-    },
+    sunflower: c => STEM(78) + pair(205, 40, 14, 58) + pair(150, 32, 11, 52, LEAF2) +
+      ring(60, 55, 16, 25, 6, 12.5, c.p) + C(60, 55, 16, '#6E5B4B') + C(60, 55, 9, c.d),
 
-    gerbera: c => {
-      let s = stem('M60 298 C 61 236, 58 150, 60 70', '#8FA77E', 3.6) +
-        line('M58 250 l-3 -2 M62 222 l3 -2 M58 190 l-3 -2 M62 160 l3 -2 M58 128 l-3 -2', .5, 1) +
-        leaf('M60 296 C 46 280, 30 276, 20 282 C 30 294, 46 298, 60 296 Z', 'M58 295 C 46 289, 34 285, 24 283');
-      for (let i = 0; i < 20; i++) s += `<ellipse cx="60" cy="25" rx="4.6" ry="17" transform="rotate(${i * 18 + 9} 60 55)" fill="${c.d}" stroke="${INK}" stroke-width="1.2"/>`;
-      for (let i = 0; i < 20; i++) s += `<ellipse cx="60" cy="29" rx="4.2" ry="14.5" transform="rotate(${i * 18} 60 55)" fill="${c.p}" stroke="${INK}" stroke-width="1.2"/>`;
-      s += `<circle cx="60" cy="55" r="13" fill="${c.c}" ${S}/><circle cx="60" cy="55" r="7.5" fill="#4E3A26" opacity=".85"/>`;
-      for (let i = 0; i < 14; i++) { const a = i * Math.PI / 7; s += `<circle cx="${f1(60 + 10.3 * Math.cos(a))}" cy="${f1(55 + 10.3 * Math.sin(a))}" r="1" fill="#F6E7B0"/>`; }
-      return s;
-    },
+    gerbera: c => STEM(72) + pair(282, 24, 7, 64) +
+      ring(60, 55, 24, 23, 3.4, 12, c.p) + C(60, 55, 11, c.c) + C(60, 55, 5, '#4F4436'),
 
-    ranunculus: c => {
-      let s = stem('M60 298 C 58 240, 62 170, 60 92', '#8FA77E', 3.2) +
-        leaf('M60 196 C 70 184, 74 170, 92 168 C 88 178, 96 182, 88 190 C 80 198, 70 198, 60 196 Z', 'M62 195 C 72 188, 80 180, 88 172') +
-        leaf('M60 150 C 50 138, 46 124, 28 122 C 32 132, 24 136, 32 144 C 40 152, 50 152, 60 150 Z', 'M58 149 C 48 142, 40 134, 32 126') +
-        `<path d="M60 92 C 52 96, 44 96, 38 90 C 46 88, 54 88, 60 92 C 66 88, 74 88, 82 90 C 76 96, 68 96, 60 92 Z" fill="#8FA77E" ${S}/>` +
-        `<circle cx="60" cy="56" r="36" fill="${c.d}" ${S}/>`;
-      [31, 26, 21, 16, 11.5, 7.5].forEach((r, k) =>
-        s += `<ellipse cx="60" cy="${f1(56 - (36 - r) * .38)}" rx="${r}" ry="${f1(r * .88)}" fill="${k % 2 ? c.l : c.p}" ${S1}/>`);
-      return s + `<circle cx="60" cy="43.5" r="3.6" fill="#9CAF88" ${S1}/>` + shine('M36 34 C 42 28, 50 24, 58 23');
-    },
+    ranunculus: c => STEM(88) + pair(196, 30, 9, 50) + pair(150, 22, 7, 46, LEAF2) +
+      [31, 25, 19, 13, 7].map((r, k) => C(60, 56, r, k % 2 ? c.l : c.p)).join('') + C(60, 56, 2.6, LEAF),
 
     hydrangea: c => {
-      let s = stem('M60 298 C 58 240, 62 160, 60 96', '#8FA77E', 4.2) +
-        leaf('M60 132 C 74 106, 108 104, 116 122 C 108 146, 78 152, 60 132 Z', 'M62 131 C 78 120, 96 116, 112 120') +
-        leaf('M60 140 C 46 116, 12 112, 4 128 C 12 152, 42 158, 60 140 Z', 'M58 139 C 42 128, 24 124, 8 126') +
-        `<circle cx="60" cy="58" r="43" fill="${c.d}" ${S}/>`;
-      for (let k = 0; k < 31; k++) {
-        const r = 35 * Math.sqrt((k + .5) / 31), a = k * 2.39996, x = 60 + r * Math.cos(a), y = 58 + r * Math.sin(a) * .95;
-        const fill = k % 3 === 0 ? c.l : c.p;
-        s += `<g transform="translate(${f1(x)} ${f1(y)}) rotate(${(k * 37) % 90})">` +
-          [0, 90, 180, 270].map(d => `<path d="M0 0 C -5.5 -1.5, -5.5 -7.5, 0 -7 C 5.5 -7.5, 5.5 -1.5, 0 0 Z" transform="rotate(${d})" fill="${fill}" stroke="${INK}" stroke-width=".9" stroke-linejoin="round"/>`).join('') +
-          `<circle r="1.3" fill="${INK}" opacity=".55"/></g>`;
+      let s = STEM(96) + pair(132, 44, 15, 62) + C(60, 58, 40, c.d);
+      for (let row = -3; row <= 3; row++) for (let col = -4; col <= 4; col++) {
+        const x = 60 + col * 11 + (row % 2 ? 5.5 : 0), y = 58 + row * 9.6;
+        if (Math.hypot(x - 60, y - 58) <= 33) s += C(x, y, 5.6, (row + col) % 3 ? c.p : c.l) + `<circle cx="${f1(x)}" cy="${f1(y)}" r="1.2" fill="${INK}"/>`;
       }
       return s;
     },
 
-    peony: c => {
-      let s = stem('M60 298 C 57 240, 63 170, 60 98', '#86A074', 3.8) +
-        leaf('M60 200 C 70 186, 84 186, 100 172 C 98 190, 84 206, 60 200 Z', 'M62 199 C 74 192, 86 184, 96 176') +
-        leaf('M60 158 C 50 144, 36 144, 18 132 C 22 150, 36 164, 60 158 Z', 'M58 157 C 46 150, 34 142, 22 136') +
-        `<path d="M60 98 C 50 102, 40 102, 32 96 C 42 92, 52 92, 60 98 C 68 92, 78 92, 88 96 C 80 102, 70 102, 60 98 Z" fill="#8FA77E" ${S}/>`;
-      for (let i = 0; i < 7; i++) { const a = (i / 7) * Math.PI * 2 + .3; s += `<ellipse cx="${f1(60 + 30 * Math.cos(a))}" cy="${f1(60 + 24 * Math.sin(a))}" rx="19" ry="16" transform="rotate(${f1(a * 57.3)} ${f1(60 + 30 * Math.cos(a))} ${f1(60 + 24 * Math.sin(a))})" fill="${c.d}" ${S}/>`; }
-      for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; s += `<ellipse cx="${f1(60 + 15 * Math.cos(a))}" cy="${f1(58 + 12 * Math.sin(a))}" rx="15" ry="13" fill="${c.p}" ${S1}/>`; }
-      s += `<path d="M42 58 C 40 42, 50 34, 56 40 C 58 32, 66 32, 68 40 C 74 34, 82 42, 78 58 C 72 68, 48 68, 42 58 Z" fill="${c.l}" ${S}/>` +
-        line('M50 56 C 52 48, 56 46, 58 50', .6, 1.1) + line('M62 50 C 64 46, 69 46, 70 54', .6, 1.1) + line('M46 62 C 54 66, 66 66, 74 62', .5, 1.1);
-      return s + shine('M28 46 C 32 36, 40 30, 48 28');
-    },
+    peony: c => STEM(98) + pair(205, 34, 10, 54) + pair(155, 26, 8, 48, LEAF2) +
+      ring(60, 58, 8, 23, 14, 13, c.d) + ring(60, 58, 6, 12, 11, 11, c.p, 30) + C(60, 58, 8, c.l),
 
     pinecone: () => {
-      let s = stem('M60 298 C 58 230, 62 150, 60 76', '#8A6A4F', 3.4);
-      const holly = 'M60 120 L66 111 L72 115 L78 105 L85 110 L92 101 L97 108 L106 104 C 102 114, 96 118, 90 120 L92 127 L84 125 L80 132 L74 127 L68 130 Z';
-      s += `<path d="${holly}" fill="#5F7F5A" ${S}/><path d="${holly}" transform="translate(120 6) scale(-1 1)" fill="#6E8C66" ${S}/>` +
-        line('M62 120 C 76 116, 90 112, 102 106', .5, 1) + line('M58 126 C 44 122, 30 118, 18 112', .5, 1) +
-        `<ellipse cx="60" cy="52" rx="19" ry="28" fill="#6E4C31" ${S}/>`;
-      for (let y = 30; y <= 76; y += 7) {
-        const w = 19 * Math.sqrt(Math.max(0, 1 - ((y - 52) / 28) ** 2)) - 3, n = Math.max(2, Math.round((w * 2) / 8.5)), off = (y / 7) % 2 ? 2 : -2;
-        for (let i = 0; i < n; i++) { const x = 60 - w + (2 * w * (i + .5)) / n + off; s += `<path d="M${f1(x - 5)} ${y} C ${f1(x - 5)} ${y + 7}, ${f1(x + 5)} ${y + 7}, ${f1(x + 5)} ${y} Z" fill="#A97C55" ${S1}/>`; }
+      let s = STEM(82) + pair(112, 30, 10, 64, '#6F8A68') + C(54, 106, 4.5, '#B5655F') + C(66, 106, 4.5, '#B5655F') + C(60, 98, 4.5, '#B5655F') +
+        `<ellipse cx="60" cy="52" rx="19" ry="28" fill="#A6896A" ${S}/>`;
+      for (let y = 32, row = 0; y <= 74; y += 7, row++) {
+        const w = 19 * Math.sqrt(Math.max(0, 1 - ((y - 52) / 28) ** 2)) - 4, n = Math.max(1, Math.round(w / 5));
+        for (let i = 0; i < n; i++) { const x = 60 - w + (2 * w * (i + .5)) / n; s += C(x, y, 4, '#8E7356'); }
       }
-      [[56, 112], [64, 108], [61, 118], [69, 116]].forEach(([x, y]) => s += `<circle cx="${x}" cy="${y}" r="5" fill="#B8403E" ${S1}/><circle cx="${x - 1.5}" cy="${y - 1.7}" r="1.3" fill="#fff" opacity=".7"/>`);
       return s;
     },
 
-    chamomile: c =>
-      stem('M60 298 C 60 240, 58 180, 60 132', '#8FA77E', 2.8) + stem('M60 156 C 52 124, 44 94, 40 66', '#8FA77E', 2.4) +
-      stem('M60 146 C 70 114, 78 82, 80 52', '#8FA77E', 2.4) + stem('M60 134 C 60 120, 61 110, 62 102', '#8FA77E', 2.2) +
-      leaf('M60 222 C 68 210, 82 207, 90 212 C 84 222, 72 226, 60 222 Z', 'M62 221 C 70 216, 80 213, 87 212') +
-      leaf('M60 190 C 52 178, 38 175, 30 180 C 36 190, 48 194, 60 190 Z', 'M58 189 C 50 184, 40 181, 33 181') +
-      daisyHead(40, 62, 22, c) + daisyHead(80, 48, 20, c) + daisyHead(62, 100, 16, c),
+    chamomile: c => STEM(150) + line('M60 150 L60 64 M60 150 L36 96 M60 150 L84 96') + pair(215, 24, 7, 58) +
+      daisyHead(60, 60, 21, c) + daisyHead(36, 96, 17, c) + daisyHead(84, 96, 17, c),
 
     babysbreath: c => {
-      const R = rng(11);
-      let s = stem('M60 298 C 60 230, 59 170, 60 132', '#8FA77E', 2.2);
-      const tips = [[24, 62], [32, 36], [50, 20], [72, 22], [92, 36], [98, 62], [42, 78], [62, 50], [80, 78], [54, 100], [74, 104]];
-      tips.forEach(([x, y]) => s += stem(`M60 134 Q ${f1((60 + x) / 2 + (x < 60 ? 6 : -6))} ${f1((134 + y) / 2 + 8)}, ${x} ${y}`, '#8FA77E', 1.1));
-      tips.forEach(([x, y]) => {
-        for (let i = 0; i < 7; i++) {
-          const a = R() * Math.PI * 2, d = 2 + R() * 8;
-          s += `<circle cx="${f1(x + d * Math.cos(a))}" cy="${f1(y + d * Math.sin(a))}" r="${f1(2.4 + R() * 1.2)}" fill="${c.p}" stroke="${INK}" stroke-width=".8"/>`;
-        }
-      });
-      return s;
+      const tips = [[60, 30], [38, 42], [82, 42], [24, 66], [96, 66], [44, 80], [76, 80]];
+      return STEM(140) + tips.map(([x, y]) => line(`M60 140 L${x} ${y}`)).join('') + pair(215, 20, 6, 58, LEAF2) +
+        tips.map(([x, y]) => C(x, y, 3.2, c.p) + C(x - 5, y + 2, 2.6, c.p) + C(x + 5, y + 2, 2.6, c.p) + C(x, y - 5, 2.6, c.p)).join('');
     },
 
     freesia: c => {
-      const floret = (x, y, r, rot) => `<g transform="rotate(${rot} ${x} ${y})">` +
-        `<ellipse cx="${x}" cy="${y + 3}" rx="2.6" ry="4.5" fill="#8FA77E" ${S1}/>` +
-        [-30, 30, 0].map(a => `<ellipse cx="${x}" cy="${f1(y - r)}" rx="${f1(r * .5)}" ry="${r}" transform="rotate(${a} ${x} ${y})" fill="${c.p}" ${S1}/>`).join('') +
-        `<ellipse cx="${x}" cy="${f1(y - r * .4)}" rx="${f1(r * .28)}" ry="${f1(r * .5)}" fill="${c.l}" opacity=".9"/></g>`;
-      return stem('M60 298 C 60 220, 58 150, 62 110 C 66 80, 80 60, 102 50', '#8FA77E', 2.6) +
-        leaf('M60 296 C 48 250, 44 210, 46 168 C 54 210, 60 250, 64 290 Z', 'M59 288 C 52 250, 49 210, 47 178') +
-        `<ellipse cx="103" cy="49" rx="3" ry="6" transform="rotate(62 103 49)" fill="#A9BC8F" ${S1}/>` +
-        `<ellipse cx="94" cy="54" rx="4" ry="7.5" transform="rotate(55 94 54)" fill="#BCCB9F" ${S1}/>` +
-        floret(84, 60, 9.5, 38) + floret(73, 71, 11, 22) + floret(65, 88, 12, 8) + floret(62, 108, 13, -8);
+      const floret = (x, y, r) => E(x - r * .55, y - r * .5, r * .42, r * .8, -32, c.p) + E(x + r * .55, y - r * .5, r * .42, r * .8, 32, c.p) + E(x, y - r * .75, r * .42, r * .85, 0, c.p) + C(x, y - r * .25, r * .28, c.l);
+      return STEM(32) + lens(60, 296, 110, 10, -8, LEAF) + lens(60, 296, 110, 10, 8, LEAF2) +
+        E(60, 36, 3.5, 7, 0, LEAF2) + E(60, 50, 4.5, 8, 0, LEAF) +
+        line('M60 74 L48 70 M60 96 L72 92 M60 118 L48 114 M60 140 L72 136') +
+        floret(48, 72, 11) + floret(72, 94, 12) + floret(48, 116, 13) + floret(72, 138, 13);
     },
 
     lily: c => {
-      const bell = (cx, ty, r) => `<path d="M${f1(cx - r * .85)} ${f1(ty + r * 1.2)} C ${f1(cx - r * .95)} ${ty}, ${f1(cx + r * .95)} ${ty}, ${f1(cx + r * .85)} ${f1(ty + r * 1.2)} L ${f1(cx + r * 1.1)} ${f1(ty + r * 1.6)} L ${f1(cx + r * .45)} ${f1(ty + r * 1.38)} L ${cx} ${f1(ty + r * 1.7)} L ${f1(cx - r * .45)} ${f1(ty + r * 1.38)} L ${f1(cx - r * 1.1)} ${f1(ty + r * 1.6)} Z" fill="${c.p}" ${S1}/>` +
-        shine(`M${f1(cx - r * .45)} ${f1(ty + r * .5)} C ${f1(cx - r * .5)} ${f1(ty + r * .9)}, ${f1(cx - r * .45)} ${f1(ty + r * 1.1)}, ${f1(cx - r * .4)} ${f1(ty + r * 1.2)}`);
-      let s = leaf('M58 296 C 26 250, 24 190, 44 146 C 56 196, 62 246, 62 292 Z', 'M58 288 C 44 244, 40 200, 44 156', '#93AE7E') +
-        stem('M60 298 C 60 220, 58 160, 56 110 C 54 76, 66 46, 92 40', '#8FA77E', 2.4);
-      [[57, 102, 7.5], [56, 84, 7], [59, 66, 6.5], [67, 53, 5.8], [78, 45, 5]].forEach(([x, y, r]) =>
-        s += stem(`M${x} ${y} Q ${x + 6} ${y + 2}, ${x + 7} ${y + 9}`, '#8FA77E', 1.2) + bell(x + 7, y + 8, r));
-      return s + `<circle cx="93" cy="41" r="3" fill="#C9D8B4" ${S1}/>` +
-        leaf('M62 296 C 92 256, 98 206, 86 166 C 72 212, 64 252, 60 290 Z', 'M63 286 C 78 248, 86 208, 86 176', '#A5BA91');
+      const bell = (x, y, r) => `<path d="M${f1(x - r)} ${f1(y + r * 1.4)} L${f1(x - r)} ${f1(y + r * .6)} A ${r} ${r} 0 0 1 ${f1(x + r)} ${f1(y + r * .6)} L${f1(x + r)} ${f1(y + r * 1.4)} Z" fill="${c.p}" ${S}/>` +
+        [-r * .66, 0, r * .66].map(dx => `<circle cx="${f1(x + dx)}" cy="${f1(y + r * 1.4)}" r="${f1(r * .33)}" fill="${c.p}" ${S}/>`).join('');
+      const bells = [[46, 58, 6], [74, 72, 6.5], [46, 88, 7], [74, 104, 7.5], [46, 120, 8]];
+      return STEM(40) + lens(60, 296, 140, 22, -10, LEAF) + lens(60, 296, 140, 22, 10, LEAF2) + C(60, 40, 3, LEAF2) +
+        bells.map(([x, y]) => line(`M60 ${y - 6} L${x} ${y - 2}`)).join('') + bells.map(([x, y, r]) => bell(x, y, r)).join('');
     },
 
     cotton: () => {
       const boll = (cx, cy, r) => {
-        let b = '<path d="';
-        for (let i = 0; i < 5; i++) { const a = Math.PI / 2 + (i * 2 * Math.PI) / 5, a2 = a + Math.PI / 5; b += `${i ? 'L' : 'M'}${f1(cx + r * 1.25 * Math.cos(a))} ${f1(cy + r * 1.25 * Math.sin(a))} L${f1(cx + r * .5 * Math.cos(a2))} ${f1(cy + r * .5 * Math.sin(a2))} `; }
-        b += `Z" fill="#7E5D44" ${S1}/>`;
-        [[-.45, .15], [.45, .15], [0, -.42], [-.3, -.25], [.32, -.22], [0, .35]].forEach(([dx, dy]) => b += `<circle cx="${f1(cx + dx * r)}" cy="${f1(cy + dy * r)}" r="${f1(r * .55)}" fill="#FFFDF8" ${S1}/>`);
-        return b + line(`M${f1(cx - r * .5)} ${f1(cy)} C ${f1(cx - r * .2)} ${f1(cy - r * .2)}, ${f1(cx + r * .2)} ${f1(cy - r * .2)}, ${f1(cx + r * .5)} ${f1(cy)}`, .25, 1);
+        let star = '';
+        for (let i = 0; i < 10; i++) { const a = Math.PI / 2 + (i * Math.PI) / 5, rr = i % 2 ? r * .55 : r * 1.25; star += `${i ? 'L' : 'M'}${f1(cx + rr * Math.cos(a))} ${f1(cy + rr * Math.sin(a))} `; }
+        return `<path d="${star}Z" fill="#9C8670" ${S}/>` + [0, 120, 240].map(a => C(cx + r * .42 * Math.sin(a * Math.PI / 180), cy - r * .42 * Math.cos(a * Math.PI / 180), r * .58, '#FFFFFF')).join('') + C(cx, cy, r * .3, '#FFFFFF');
       };
-      return stem('M60 298 C 60 230, 61 160, 60 70', '#8A6A4F', 3) + stem('M60 152 C 50 132, 42 120, 36 108', '#8A6A4F', 2.2) +
-        stem('M60 140 C 70 122, 78 110, 84 100', '#8A6A4F', 2.2) +
-        leaf('M60 210 C 70 198, 84 196, 92 200 C 86 210, 74 214, 60 210 Z', 'M62 209 C 72 204, 82 201, 89 200', '#9AA88A') +
-        boll(60, 54, 19) + boll(36, 100, 14) + boll(84, 92, 14);
+      return STEM(60) + line('M60 150 L36 108 M60 150 L84 108') + pair(215, 22, 7, 58, LEAF2) + boll(60, 54, 18) + boll(36, 104, 13) + boll(84, 104, 13);
     },
 
+    // 圓葉尤加利：左右對稱的正圓葉片沿莖串聯
     eucalyptus: c => {
-      let s = stem('M60 298 C 57 230, 63 150, 58 30', '#9C8A86', 2.6);
-      [[262, 14.5], [228, 13.5], [196, 12.5], [166, 11.5], [139, 10.5], [115, 9.5], [93, 8.5], [74, 7.5], [57, 6.5], [43, 5.5], [32, 4.5]].forEach(([y, r], i) => {
-        [-1, 1].forEach(dir => {
-          const rr = dir === (i % 2 ? 1 : -1) ? r : r * 0.9, cx = 60 + dir * (rr + 3), cy = y - 3 + dir * (i % 2 ? 1.5 : -1.5);
-          s += `<ellipse cx="${cx}" cy="${cy}" rx="${rr}" ry="${f1(rr * 0.9)}" transform="rotate(${dir * 12} ${cx} ${cy})" fill="${dir === -1 ? c.d : c.p}" ${S}/>` +
-            line(`M${60 + dir * 1.5} ${y} Q ${f1(cx - dir * rr * 0.3)} ${cy - 1}, ${f1(cx + dir * rr * 0.55)} ${f1(cy - rr * 0.2)}`, .45, 1);
-        });
-      });
-      return s + line('M60 40 C 62 34, 64 30, 66 26', 1, 1.6);
+      let s = STEM(26);
+      [[262, 14], [234, 13], [208, 12], [184, 11], [162, 10], [142, 9], [124, 8], [108, 7], [94, 6], [82, 5], [72, 4.2], [64, 3.6]].forEach(([y, r], i) =>
+        s += C(60 - r, y, r, i % 2 ? c.p : c.d) + C(60 + r, y, r, i % 2 ? c.p : c.d));
+      return s + C(60, 54, 3.4, c.p);
     },
 
     olive: () => {
-      let s = stem('M60 298 C 58 230, 63 150, 60 20', '#8C8070', 2);
-      for (let y = 262, i = 0; y > 26; y -= 16, i++) {
-        const dir = i % 2 ? 1 : -1, L = 18 + 10 * Math.min(1, (y - 20) / 120), yy = y + (dir > 0 ? 0 : 5);
-        s += `<path d="M60 ${yy} Q ${f1(60 + dir * L * .4)} ${f1(yy - L * .55)}, ${f1(60 + dir * L)} ${f1(yy - L * .75)} Q ${f1(60 + dir * L * .55)} ${f1(yy - L * .1)}, 60 ${yy} Z" fill="${i % 3 ? '#9EAC8C' : '#BFC6AC'}" ${S1}/>` +
-          line(`M60 ${yy} Q ${f1(60 + dir * L * .5)} ${f1(yy - L * .4)}, ${f1(60 + dir * L * .9)} ${f1(yy - L * .7)}`, .4, .8);
-      }
-      return s + `<ellipse cx="67" cy="186" rx="4.2" ry="5.6" fill="#55653A" ${S1}/><ellipse cx="53" cy="128" rx="4" ry="5.4" fill="#6B7A44" ${S1}/>`;
+      let s = STEM(22);
+      for (let y = 262, i = 0; y > 30; y -= 18, i++) { const L = 14 + 12 * Math.min(1, (y - 30) / 160); s += pair(y, L + 6, 4, 48, i % 2 ? '#A7B394' : '#BFC6AC'); }
+      return s + E(48, 182, 3.6, 5, 0, '#5B6B3E') + E(72, 182, 3.6, 5, 0, '#5B6B3E');
     },
 
     fern: () => {
-      let s = stem('M60 298 C 58 220, 63 140, 58 24', '#7D9471', 2);
-      for (let y = 238; y > 26; y -= 9) {
-        const L = 5 + 21 * Math.min(1, (y - 26) / 170);
-        [-1, 1].forEach(dir => {
-          const yy = y - (dir > 0 ? 4 : 0);
-          s += `<path d="M59 ${yy} Q ${f1(59 + dir * L * .5)} ${f1(yy - L * .6)}, ${f1(59 + dir * L)} ${f1(yy - L * .5)} Q ${f1(59 + dir * L * .55)} ${f1(yy - L * .02)}, 59 ${yy + 1} Z" fill="${dir > 0 ? '#8FAE7E' : '#7FA06F'}" ${S1}/>`;
-        });
-      }
+      let s = STEM(22);
+      for (let y = 240; y > 28; y -= 9) { const L = 5 + 20 * Math.min(1, (y - 28) / 180); s += pair(y, L, L * .2, 66, '#8FAE7E'); }
       return s;
     },
 
-    berries: c =>
-      stem('M60 298 C 60 230, 60 170, 60 112', '#7B6A5A', 2.6) +
-      stem('M60 120 C 52 100, 44 86, 40 72', '#7B6A5A', 1.6) + stem('M60 114 C 66 92, 74 74, 80 60', '#7B6A5A', 1.6) +
-      stem('M60 112 C 60 82, 58 62, 56 42', '#7B6A5A', 1.6) + stem('M60 170 C 70 150, 80 138, 88 128', '#7B6A5A', 1.6) +
-      leaf('M60 220 C 66 200, 80 190, 92 186 C 88 202, 76 216, 60 220 Z', 'M62 218 C 70 206, 80 196, 88 190', '#A9B7A6') +
-      leaf('M60 196 C 52 178, 38 170, 28 168 C 32 184, 44 194, 60 196 Z', 'M58 194 C 50 184, 40 176, 32 171', '#B8C4B4') +
-      cluster(40, 70, c) + cluster(80, 58, c) + cluster(56, 40, c) + cluster(88, 126, c, 4.2),
+    berries: c => STEM(112) + line('M60 112 L36 72 M60 112 L84 72 M60 112 L60 46') + pair(205, 28, 9, 54, '#AEBAA8') +
+      cluster(36, 72, c) + cluster(84, 72, c) + cluster(60, 46, c),
   };
 
   /* ================= 花材庫（主花 6 + 季節限定 2 ／ 配花 5 ／ 葉材與果實 4） ================= */
   const MAT = {
     // 季節限定（主花分頁最前面）
-    peony: { name: '芍藥', en: 'Peony', tab: 'main', slot: 'main', seasonal: '🌸 春夏限定', meaning: '情有所鍾，富貴與浪漫的極致', h: 282, thumb: '6 0 108 110',
+    peony: { name: '芍藥', en: 'Peony', tab: 'main', slot: 'main', seasonal: 'SS 春夏限定', meaning: '情有所鍾，富貴與浪漫的極致', h: 282, thumb: '6 0 108 110',
       colors: [{ n: '胭脂粉', p: '#E79AAA', d: '#D07A8E', l: '#F5C6CF' }, { n: '奶油白', p: '#F7EEDF', d: '#E6D6BE', l: '#FFFBF3' }] },
-    pinecone: { name: '松果與冬青', en: 'Pinecone & Holly', tab: 'main', slot: 'main', seasonal: '🍂 秋冬限定', meaning: '歲末的祝福與溫暖陪伴', h: 268, thumb: '10 18 100 124',
+    pinecone: { name: '松果與冬青', en: 'Pinecone & Holly', tab: 'main', slot: 'main', seasonal: 'AW 秋冬限定', meaning: '歲末的祝福與溫暖陪伴', h: 268, thumb: '10 18 100 124',
       colors: [{ n: '原色', p: '#8A6040' }] },
     // 常駐主花
     rose: { name: '玫瑰', en: 'Rose', tab: 'main', slot: 'main', meaning: '熱戀與毫無保留的偏愛', h: 278, thumb: '12 6 96 104',
@@ -657,28 +474,29 @@
   const RANK = { foliage: 0, filler: 1, base: 2, main: 3 };
 
   const TABS = [
-    { id: 'main', label: '🌸 主花', count: '6+2' }, { id: 'filler', label: '🌼 配花', count: '5' },
-    { id: 'foliage', label: '🌿 葉材與果實', count: '4' }, { id: 'wrap', label: '🎁 包裝與緞帶' }, { id: 'card', label: '💌 小卡與背景' },
+    { id: 'main', label: '主花', count: '6+2' }, { id: 'filler', label: '配花', count: '5' },
+    { id: 'foliage', label: '葉材與果實', count: '4' }, { id: 'wrap', label: '包裝與緞帶' }, { id: 'card', label: '標籤與背景' },
   ];
   const FLOWER_TABS = ['main', 'filler', 'foliage'];
 
   // 智慧落點：對齊收腰支點的扇形槽位（角度 / 縮放）
   const PIVOT = { x: 180, y: 398 };
+  // 對稱倒三角：左右成對的角度；長度 = 基準 / cos(角度)，讓同一排花頭落在同一條水平線上
   const SLOTS = {
-    main: [{ a: 0, s: 1.08 }, { a: -15, s: 1.0 }, { a: 15, s: 1.0 }, { a: -28, s: .95 }, { a: 28, s: .95 },
-           { a: -7, s: .93 }, { a: 7, s: .93 }, { a: -21, s: .9 }, { a: 21, s: .9 }],
-    base: [{ a: 0, s: 1.0 }, { a: -20, s: .97 }, { a: 20, s: .97 }, { a: -10, s: .94 }, { a: 10, s: .94 }],
-    filler: [{ a: -22, s: 1.06 }, { a: 22, s: 1.06 }, { a: -36, s: 1.0 }, { a: 36, s: 1.0 }, { a: -9, s: 1.12 },
-             { a: 9, s: 1.12 }, { a: -30, s: .96 }, { a: 30, s: .96 }, { a: 0, s: 1.16 }],
-    foliage: [{ a: -34, s: 1.04 }, { a: 34, s: 1.04 }, { a: -46, s: .95 }, { a: 46, s: .95 }, { a: -18, s: 1.1 },
-              { a: 18, s: 1.1 }, { a: 0, s: 1.14 }, { a: -54, s: .88 }, { a: 54, s: .88 }],
+    main: [{ a: 0, s: .98 }, { a: -11, s: .98 }, { a: 11, s: .98 }, { a: -22, s: .98 }, { a: 22, s: .98 },
+           { a: -6, s: .86 }, { a: 6, s: .86 }, { a: -17, s: .86 }, { a: 17, s: .86 }],
+    base: [{ a: 0, s: .9 }, { a: -14, s: .9 }, { a: 14, s: .9 }, { a: -7, s: .84 }, { a: 7, s: .84 }],
+    filler: [{ a: -28, s: 1.0 }, { a: 28, s: 1.0 }, { a: 0, s: 1.1 }, { a: -33, s: .92 }, { a: 33, s: .92 },
+             { a: -14, s: 1.04 }, { a: 14, s: 1.04 }],
+    foliage: [{ a: -36, s: 1.0 }, { a: 36, s: 1.0 }, { a: 0, s: 1.12 }, { a: -44, s: .9 }, { a: 44, s: .9 },
+              { a: -24, s: 1.06 }, { a: 24, s: 1.06 }],
   };
 
   /* ================= 狀態 ================= */
   const state = {
     flowers: [], sel: null, mode3d: false, fortune: null, focus: null, activeMat: 'rose', tab: 'main', wrapSub: 'outer', finished: false,
-    wrap: { outer: 'korean', outerColor: 'oat', tissue: 'tissue', tissueColor: 'white', tie: 'long', tieColor: 'gold' },
-    card: { style: 'tag', tones: { seal: 'wine', pick: 'cream', tag: 'cotton', botanical: 'parchment' }, to: '親愛的你', msg: '願你被世界溫柔以待', sign: '想你的人', font: 'hand', x: 222, y: 352 },
+    wrap: { outer: 'geo', outerColor: 'sage', tissue: 'none', tissueColor: 'white', tie: 'long', tieColor: 'cream' },
+    card: { style: 'label', tone: 'white', to: '親愛的你', msg: '願你被世界溫柔以待', sign: '想你的人', x: 196, y: 372 },
     cardSub: 'style', scene: 'paper',
     curColor: Object.fromEntries(Object.keys(MAT).map(k => [k, 0])),
   };
@@ -694,7 +512,7 @@
 
   function flowerSVG(type, ci, vb, style = '') {
     const m = MAT[type], c = m.colors[ci] || m.colors[0];
-    return `<svg viewBox="${vb || '0 0 120 300'}" xmlns="http://www.w3.org/2000/svg"${style ? ` style="${style}"` : ''}><g filter="url(#rough)">${DRAW[type](c)}</g></svg>`;
+    return `<svg viewBox="${vb || '0 0 120 300'}" xmlns="http://www.w3.org/2000/svg"${style ? ` style="${style}"` : ''}>${DRAW[type](c)}</svg>`;
   }
 
   /* ---------- 包裝紙 / 緞帶 / 小卡 SVG ---------- */
@@ -713,6 +531,7 @@
     { id: 'forest', n: '森林墨綠', c: '#3F5B4A' }, { id: 'caramel', n: '焦糖棕', c: '#A86F3E' }, { id: 'rose', n: '乾燥玫瑰粉', c: '#C99293' },
   ];
   const OUTERS = {
+    geo: { name: '極簡幾何圓錐包', short: '幾何圓錐', en: 'Geometric Cone' },
     korean: { name: '韓系多層次歐雅紙', short: '韓系歐雅紙', en: 'Korean Layered' },
     craft: { name: '手感肌理牛皮紙', short: '手感牛皮紙', en: 'Craft Paper' },
     cone: { name: '日系甜筒圓錐包', short: '日系甜筒包', en: 'Minimal Cone' },
@@ -733,9 +552,9 @@
   };
   // 子分類：[標題, 款式表, 色票表, 款式 key, 色票 key, 欄數]
   const WRAP_SUBS = {
-    outer: ['📄 外層主紙', OUTERS, OUTER_COLORS, 'outer', 'outerColor', 4, '4款版型 × 7色'],
-    tissue: ['☁️ 內層襯紙', TISSUES, TISSUE_COLORS, 'tissue', 'tissueColor', 4, '4款材質 × 4色'],
-    tie: ['🎀 緞帶與綁繩', TIES, TIE_COLORS, 'tie', 'tieColor', 5, '5款綁法 × 6色'],
+    outer: ['外層主紙', OUTERS, OUTER_COLORS, 'outer', 'outerColor', 5, '5款版型 × 7色'],
+    tissue: ['內層襯紙', TISSUES, TISSUE_COLORS, 'tissue', 'tissueColor', 4, '4款材質 × 4色'],
+    tie: ['緞帶與綁繩', TIES, TIE_COLORS, 'tie', 'tieColor', 5, '5款綁法 × 6色'],
   };
   const colorOf = (list, id) => list.find(x => x.id === id);
 
@@ -744,12 +563,12 @@
   const isDark = h => { const [r, g, b] = rgb(h); return r * .3 + g * .59 + b * .11 < 100; };
   const paperOf = c => {
     const dark = isDark(c);
-    return { base: c, dark: mix(c, '#2B2420', .13), light: mix(c, '#FFFFFF', dark ? .16 : .4), ink: dark ? '#1E1A19' : INK, fold: dark ? '#FFFFFF' : INK, gold: '#D4B36A' };
+    return { base: c, dark: mix(c, '#2B2420', .1), light: mix(c, '#FFFFFF', dark ? .14 : .3), ink: dark ? '#1A1A1A' : INK, fold: dark ? '#FFFFFF' : INK, gold: '#C9B07A' };
   };
-  const SP = p => `stroke="${p.ink}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"`;
-  const pline = (p, d, o = .3, w = 1.2) => `<path d="${d}" fill="none" stroke="${p.fold}" stroke-width="${w}" stroke-linecap="round" opacity="${o}"/>`;
-  const hl = (d, w = 3, o = .45) => `<path d="${d}" fill="none" stroke="#fff" stroke-opacity="${o}" stroke-width="${w}" stroke-linecap="round"/>`;
-  const svgWrap = (inner, vb = '0 0 360 480', style = '') => `<svg viewBox="${vb}"${style ? ` style="${style}"` : ''}><g filter="url(#rough)">${inner}</g></svg>`;
+  const SP = p => `stroke="${p.ink}" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"`;
+  const pline = (p, d, o = .3) => `<path d="${d}" fill="none" stroke="${p.fold}" stroke-width="1" stroke-linecap="round" opacity="${o}"/>`;
+  const hl = (d, w = 1, o = .7) => `<path d="${d}" fill="none" stroke="#fff" stroke-opacity="${o}" stroke-width="${Math.min(w, 1.5)}" stroke-linecap="round"/>`;
+  const svgWrap = (inner, vb = '0 0 360 480', style = '') => `<svg viewBox="${vb}"${style ? ` style="${style}"` : ''}>${inner}</svg>`;
 
   const SKIRT = 'M164 336 L 198 336 L 232 468 C 206 476, 156 476, 130 468 Z';
   const SKIRT_L = 'M164 336 L 181 336 L 180 474 C 164 474, 146 472, 130 468 Z';
@@ -757,11 +576,19 @@
   const CRAFT_BACK = 'M180 354 C 110 332, 14 262, 12 152 C 18 92, 60 58, 102 62 C 122 30, 160 22, 180 36 C 200 22, 238 30, 258 62 C 300 58, 342 92, 348 152 C 346 262, 250 332, 180 354 Z';
   const CRAFT_L = 'M56 246 C 100 264, 152 254, 216 234 L 198 342 L 164 342 Z';
   const CRAFT_R = 'M306 242 C 262 262, 208 258, 144 238 L 164 342 L 198 342 Z';
-  const texOf = style => style === 'craft' ? ['kraftTex', 'speckle'] : style === 'cello' ? [] : ['grain'];
-  const texFill = (d, style) => texOf(style).map(t => `<path d="${d}" fill="url(#${t})"/>`).join('');
+  const texFill = () => ''; // 極簡風：包裝紙一律純色平塗，不加紙紋
 
   // 每款外層主紙：後背紙（Layer 1）與前包覆摺紙（Layer 3）＋ 前層形狀（給反光用）
+  const GEO_BACK = 'M180 352 L 34 120 A 168 168 0 0 1 326 120 Z';
   const OUTER_ART = {
+    // 極簡幾何圓錐：圓弧頂後背＋左右兩片對稱三角，無摺角
+    geo: {
+      back: p => `<path d="${GEO_BACK}" fill="${p.dark}" ${SP(p)}/>` + pline(p, 'M180 348 L 180 52', .18),
+      front: p => {
+        const L = 'M84 228 L 180 228 L 180 468 Z', R = 'M180 228 L 276 228 L 180 468 Z';
+        return { l: { paths: [L], art: `<path d="${L}" fill="${p.base}" ${SP(p)}/>` }, r: { paths: [R], art: `<path d="${R}" fill="${p.light}" ${SP(p)}/>` } };
+      },
+    },
     korean: {
       back: p => {
         const L = 'M180 356 C 118 334, 26 262, 10 160 L 34 116 L 62 128 L 82 74 L 118 88 L 148 42 L 184 62 Z';
@@ -841,21 +668,9 @@
     },
   };
 
-  // 後背紙主形狀（加內側陰影用）
-  const BACK_SHAPES = {
-    korean: ['M180 356 C 118 334, 26 262, 10 160 L 34 116 L 62 128 L 82 74 L 118 88 L 148 42 L 184 62 Z', 'M180 356 C 242 334, 338 266, 352 168 L 332 120 L 302 130 L 286 70 L 250 82 L 222 30 L 194 54 L 176 70 Z'],
-    craft: [CRAFT_BACK], cone: ['M180 362 L 40 112 C 90 78, 138 68, 180 72 C 222 68, 270 78, 320 112 Z'], cello: [CRAFT_BACK],
-  };
-  function backWrapSVG(w, vb) {
-    const shade = BACK_SHAPES[w.outer].map(d => `<path d="${d}" fill="url(#shadeBack)"${w.outer === 'cello' ? ' opacity=".5"' : ''}/>`).join('');
-    return svgWrap(OUTER_ART[w.outer].back(paperOf(colorOf(OUTER_COLORS, w.outerColor).c)) + shade, vb);
-  }
-  // 前包裝紙左右側翼（side: 'l' | 'r'）；不給 side 時合成一張（給工作台縮圖用）
-  function foldArt(f, side) {
-    const part = f[side];
-    return part.art + part.paths.map(d => `<path d="${d}" fill="url(#shade${side.toUpperCase()})"/>`).join('') +
-      `<g class="glare">${part.paths.map(d => `<path d="${d}" fill="url(#glare)"/>`).join('')}</g>`;
-  }
+  function backWrapSVG(w, vb) { return svgWrap(OUTER_ART[w.outer].back(paperOf(colorOf(OUTER_COLORS, w.outerColor).c)), vb); }
+  // 前包裝紙左右兩片（side: 'l' | 'r'）；不給 side 時合成一張（給工作台縮圖用）
+  const foldArt = (f, side) => f[side].art;
   function frontWrapSVG(w, vb, side) {
     const f = OUTER_ART[w.outer].front(paperOf(colorOf(OUTER_COLORS, w.outerColor).c));
     return svgWrap(side ? foldArt(f, side) : foldArt(f, 'l') + foldArt(f, 'r'), vb);
@@ -863,7 +678,7 @@
 
   // 內層襯紙：依外層版型決定探出的範圍，邊緣依材質產生波浪／撕邊／荷葉邊
   // 比外層後背紙窄（兩側露出主紙），但頂端多探出 2~3 公分
-  const TISSUE_GEOM = { korean: { l: [52, 118], r: [308, 112], top: 12 }, craft: { l: [46, 116], r: [314, 116], top: 6 }, cone: { l: [70, 96], r: [290, 96], top: 44 }, cello: { l: [46, 116], r: [314, 116], top: 8 } };
+  const TISSUE_GEOM = { geo: { l: [60, 116], r: [300, 116], top: 40 }, korean: { l: [52, 118], r: [308, 112], top: 12 }, craft: { l: [46, 116], r: [314, 116], top: 6 }, cone: { l: [70, 96], r: [290, 96], top: 44 }, cello: { l: [46, 116], r: [314, 116], top: 8 } };
   function tissuePath(g, n, amp, jag, grow = 0) {
     const [lx, ly] = [g.l[0] - grow, g.l[1] - grow * .6], [rx, ry] = [g.r[0] + grow, g.r[1] - grow * .6];
     const top = g.top - grow, cy = 2 * top - (ly + ry) / 2;
@@ -959,99 +774,70 @@
     $('#foldR').innerHTML = frontWrapSVG(state.wrap, undefined, 'r');
   }
   function renderRibbon() { $('#layerRibbon').innerHTML = tieSVG(state.wrap); }
-  /* ================= 💌 小卡（Layer 5）與空間背景 ================= */
+  /* ================= 小卡（Layer 5：長方形專業標籤牌）與空間背景 ================= */
+  const CARD_TONES = [{ id: 'white', n: '純白', c: '#FFFFFF' }, { id: 'stone', n: '石灰', c: '#E8E8E2' }, { id: 'sage', n: '鼠尾草', c: '#DCE5D2' }];
   const CARD_STYLES = {
-    seal: { name: '法式火漆封蠟卡', short: '火漆信封卡', en: 'Wax Seal', w: 108, h: 80, rot: -5, def: [204, 366], box: [10, 15, 88, 70], lines: 3,
-      tones: [{ id: 'wine', n: '酒紅火漆', c: '#8E3B46' }, { id: 'gold', n: '香檳金火漆', c: '#C9A24E' }] },
-    pick: { name: '金屬愛心花插夾', short: '愛心花插', en: 'Gold Pick', w: 92, h: 60, wire: 118, rot: 7, def: [232, 92], box: [8, 7, 84, 52], lines: 3,
-      tones: [{ id: 'cream', n: '奶白', c: '#FBF7EE' }, { id: 'sage', n: '鼠尾草', c: '#DCE5D2' }] },
-    tag: { name: '手作毛邊棉紙吊牌', short: '毛邊吊牌', en: 'Deckle Tag', w: 72, h: 100, rot: -8, def: [222, 352], box: [9, 24, 63, 94], lines: 5, hole: [36, 12],
-      tones: [{ id: 'cotton', n: '棉白', c: '#F8F3E8' }, { id: 'blush', n: '淡粉', c: '#F5E1DD' }] },
-    botanical: { name: '復古溫室植物圖鑑標', short: '植物圖鑑標', en: 'Botanical', w: 118, h: 62, rot: -3, def: [194, 382], box: [36, 9, 110, 55], lines: 3,
-      tones: [{ id: 'parchment', n: '羊皮紙', c: '#F0E4CA' }, { id: 'kraft', n: '牛皮', c: '#D9BC94' }] },
+    label: { name: '植物學名標籤', short: '學名標籤', en: 'Specimen Label', w: 124, h: 70, def: [196, 372], box: [8, 19, 116, 64], lines: 3 },
+    stake: { name: '插地標籤牌', short: '插地標籤', en: 'Plant Stake', w: 96, h: 70, stake: 104, def: [224, 90], box: [7, 17, 89, 65], lines: 2 },
+    hang: { name: '吊掛標籤牌', short: '吊掛標籤', en: 'Hang Tag', w: 72, h: 108, def: [222, 352], box: [8, 27, 64, 101], lines: 5, hole: [36, 11] },
     none: { name: '隱藏小卡', short: '隱藏小卡', en: 'None' },
   };
-  const FONTS = { hand: '溫柔手寫風', serif: '文青明朝體', type: '復古打字機' };
   const QUOTES = [
     '買花給自己，是浪漫的開始。', '願你的今天，比這束花還要明媚。', '把春天的溫柔包起來，跨越螢幕送給你。',
     '生活偶爾匆忙，別忘了替自己留一朵花開的時間。', '今天沒有特別的節日，只是想把好看的花分享給你。',
     '慢慢來，花也是一朵一朵開的。', '謝謝你出現，讓平凡的日子開出花來。', '願你像花一樣，不必討好誰也很美。',
     '花會謝，但想念會一直開著。', '你值得每一個被好好對待的日子。',
   ];
+  const CARD_NO = String(Math.floor(Math.random() * 900) + 100);
   let quoteIdx = 0;
-  const toneOf = st => { const c = CARD_STYLES[st]; return c.tones.find(t => t.id === state.card.tones[st]) || c.tones[0]; };
+  const toneOf = () => CARD_TONES.find(t => t.id === state.card.tone) || CARD_TONES[0];
+  const TXT = `font-family="Inter, Helvetica, Arial, sans-serif" fill="${INK}"`;
 
-  function cardSVG(st, tone) {
-    const c = CARD_STYLES[st], W = c.w, H = c.h + (c.wire || 0);
+  function cardSVG(st, toneId) {
+    const c = CARD_STYLES[st], bg = (CARD_TONES.find(t => t.id === toneId) || CARD_TONES[0]).c, W = c.w, H = c.h + (c.stake || 0);
+    const header = (y, x0, x1) => `<path d="M${x0} ${y} L${x1} ${y}" stroke="${INK}" stroke-width="1"/>` +
+      `<text x="${x0}" y="${y - 4}" ${TXT} font-size="5.2" letter-spacing=".6">No. ${CARD_NO}</text>` +
+      `<text x="${x1}" y="${y - 4}" ${TXT} font-size="5.2" letter-spacing=".6" text-anchor="end">${x1 - x0 < 80 ? 'NOTE' : 'BOTANICAL NOTE'}</text>`;
     let g = '';
-    if (st === 'seal') {
-      g = `<path d="M3 4 L105 4 L105 78 L3 78 Z" fill="${tone === 'gold' ? '#FBF6EC' : '#FBF6EC'}" ${S}/>` +
-        `<path d="M7 8 L54 30 L101 8" fill="none" stroke="${INK}" stroke-width="1" stroke-opacity=".3" stroke-dasharray="3 2.5"/>` +
-        line('M3 78 L 34 54 M105 78 L 76 54', .18, 1);
-      const wax = colorOf(CARD_STYLES.seal.tones, tone).c, dk = mix(wax, '#2B2420', .25), lt = mix(wax, '#FFFFFF', .45);
-      let blob = '';
-      for (let i = 0; i <= 12; i++) { const a = (i / 12) * Math.PI * 2, r = 11 + (i % 3 === 0 ? 1.8 : i % 2 ? -.5 : .7); blob += `${i ? 'L' : 'M'}${f1(94 + r * Math.cos(a))} ${f1(70 + r * Math.sin(a))} `; }
-      g += `<path d="${blob}Z" fill="${wax}" ${S}/><circle cx="94" cy="70" r="7" fill="none" stroke="${dk}" stroke-width="1.6"/>` +
-        [0, 72, 144, 216, 288].map(a => `<circle cx="${f1(94 + 3 * Math.cos(a * Math.PI / 180))}" cy="${f1(70 + 3 * Math.sin(a * Math.PI / 180))}" r="1.9" fill="${dk}" opacity=".85"/>`).join('') +
-        `<path d="M87 64 C 89 61, 93 60, 96 60" fill="none" stroke="${lt}" stroke-width="1.6" stroke-linecap="round" opacity=".8"/>`;
-    } else if (st === 'pick') {
-      const bg = colorOf(CARD_STYLES.pick.tones, tone).c;
-      g = `<defs><linearGradient id="wireFade" gradientUnits="userSpaceOnUse" x1="0" y1="62" x2="0" y2="${H}"><stop offset="0" stop-color="#C9A24E"/><stop offset=".75" stop-color="#C9A24E" stop-opacity=".7"/><stop offset="1" stop-color="#C9A24E" stop-opacity="0"/></linearGradient></defs>` +
-        `<path d="M46 66 C 47 100, 45 140, 47 ${H}" fill="none" stroke="url(#wireFade)" stroke-width="2.2" stroke-linecap="round"/>` +
-        `<rect x="3" y="3" width="86" height="54" rx="4" fill="${bg}" ${S}/><rect x="7" y="7" width="78" height="46" rx="2" fill="none" stroke="#C9A24E" stroke-width=".9" opacity=".8"/>` +
-        `<path d="M46 70 C 38 62, 37 54, 42 52 C 45 51, 46 54, 46 55 C 46 54, 47 51, 50 52 C 55 54, 54 62, 46 70 Z" fill="none" stroke="#B8903C" stroke-width="2" stroke-linejoin="round"/>` +
-        `<path d="M43 55 C 43 54, 44 53.5, 45 54" fill="none" stroke="#FFF3C8" stroke-width="1" stroke-linecap="round"/>`;
-    } else if (st === 'tag') {
-      const bg = colorOf(CARD_STYLES.tag.tones, tone).c, R = rng(7);
-      let d = 'M4 4';
-      for (let x = 8; x <= 68; x += 4) d += ` L${x} ${f1(3 + R() * 2.4)}`;
-      for (let y = 8; y <= 96; y += 4) d += ` L${f1(68 + R() * 2.4)} ${y}`;
-      for (let x = 64; x >= 4; x -= 4) d += ` L${x} ${f1(96 + R() * 2.4)}`;
-      for (let y = 92; y >= 8; y -= 4) d += ` L${f1(2 + R() * 2.4)} ${y}`;
-      g = `<path d="${d} Z" fill="${bg}" stroke="${INK}" stroke-width="1.3" stroke-linejoin="round"/><path d="${d} Z" fill="url(#speckle)"/>` +
-        `<circle cx="36" cy="12" r="3.6" fill="#FAF7F2" stroke="${INK}" stroke-width="1.3"/>` +
-        `<path d="M36 12 C 26 -4, 46 -12, 41 -1 C 39 4, 37 8, 36 12" fill="none" stroke="#A9865C" stroke-width="2" stroke-linecap="round"/>` +
-        line('M10 19 L 62 19', .25, .8);
-    } else if (st === 'botanical') {
-      const bg = colorOf(CARD_STYLES.botanical.tones, tone).c;
-      g = `<rect x="2" y="2" width="114" height="58" rx="3" fill="${bg}" ${S}/><rect x="2" y="2" width="114" height="58" rx="3" fill="url(#kraftTex)"/>` +
-        `<rect x="6" y="6" width="106" height="50" fill="none" stroke="${INK}" stroke-width=".9" opacity=".55"/><rect x="9" y="9" width="100" height="44" fill="none" stroke="${INK}" stroke-width=".5" opacity=".45"/>` +
-        line('M32 13 L 32 49', .3, .6) +
-        stem('M20 50 C 19 40, 21 28, 20 16', '#7D9471', 1.2) +
-        leaf('M20 40 C 25 36, 28 36, 29 38 C 26 41, 23 41, 20 40 Z', '', '#9CAF88') + leaf('M20 32 C 15 28, 12 28, 11 30 C 14 33, 17 33, 20 32 Z', '', '#9CAF88') +
-        `<circle cx="20" cy="15" r="3.2" fill="#E5A3A8" ${S1}/><circle cx="20" cy="15" r="1.2" fill="#F2C14E"/>` +
-        `<text x="106" y="52" text-anchor="end" font-family="Georgia, serif" font-size="4.6" font-style="italic" fill="${INK}" opacity=".5">No. 024 · Flora</text>`;
+    if (st === 'label') {
+      g = `<rect x=".5" y=".5" width="${W - 1}" height="${c.h - 1}" fill="${bg}" ${S}/><rect x="3.5" y="3.5" width="${W - 7}" height="${c.h - 7}" fill="none" ${S} opacity=".35"/>` + header(14, 8, W - 8);
+    } else if (st === 'stake') {
+      g = `<path d="M43 ${c.h} L49 ${c.h} L49 ${H - 8} L46 ${H} L43 ${H - 8} Z" fill="#DCDCD5" ${S}/>` +
+        `<rect x=".5" y=".5" width="${W - 1}" height="${c.h - 1}" fill="${bg}" ${S}/>` + header(12, 7, W - 7);
+    } else if (st === 'hang') {
+      g = `<path d="M10 .5 L62 .5 L71.5 10 L71.5 ${c.h - .5} L.5 ${c.h - .5} L.5 10 Z" fill="${bg}" ${S}/>` +
+        `<circle cx="36" cy="11" r="3.5" fill="#F5F5F0" ${S}/>` + header(22, 7, W - 7);
     }
-    return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}"><g filter="url(#rough)">${g}</g></svg>`;
+    return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${g}</svg>`;
   }
 
   function cardInner(c) {
     const st = CARD_STYLES[c.style], [l, t, r, b] = st.box;
-    return cardSVG(c.style, c.tones[c.style]) +
-      `<div class="ct font-${c.font}" style="left:${l}px;top:${t}px;width:${r - l}px;height:${b - t}px;--lines:${st.lines}">` +
-      `${c.to ? `<div class="ct-to">To. ${esc(c.to)}</div>` : ''}` +
+    return cardSVG(c.style, c.tone) +
+      `<div class="ct" style="left:${l}px;top:${t}px;width:${r - l}px;height:${b - t}px;--lines:${st.lines}">` +
+      `${c.to ? `<div class="ct-to">TO　${esc(c.to)}</div>` : ''}` +
       `<div class="ct-msg">${esc(c.msg) || '<span style="opacity:.4">點我寫下想說的話…</span>'}</div>` +
-      `<div class="ct-from">— ${esc(c.sign || '…')}</div></div>`;
+      `<div class="ct-from">FROM　${esc(c.sign || '…')}</div></div>`;
   }
   function renderTag() {
     const c = state.card;
     if (c.style === 'none') { $('#layerCard').innerHTML = ''; return; }
     const st = CARD_STYLES[c.style];
     $('#layerCard').innerHTML =
-      `<svg viewBox="0 0 360 480" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible"><path id="cardString" fill="none" stroke="#A9865C" stroke-width="1.4" stroke-linecap="round" filter="url(#rough)"/></svg>` +
-      `<div class="card-el" id="cardEl" title="拖曳移動・點一下編輯文字" style="width:${st.w}px;height:${st.h + (st.wire || 0)}px">${cardInner(c)}</div>`;
+      `<svg viewBox="0 0 360 480" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible"><path id="cardString" fill="none" stroke="${INK}" stroke-width="1"/></svg>` +
+      `<div class="card-el" id="cardEl" title="拖曳移動・點一下編輯文字" style="width:${st.w}px;height:${st.h + (st.stake || 0)}px">${cardInner(c)}</div>`;
     positionCard();
   }
-  // 吊牌離收腰處夠近時，自動用麻繩連到綁結
+  // 吊掛標籤離收腰處夠近時，自動用細線連到綁結
   function positionCard() {
     const c = state.card, el = $('#cardEl');
     if (!el) return;
     const st = CARD_STYLES[c.style];
-    el.style.left = c.x + 'px'; el.style.top = c.y + 'px'; el.style.transform = `rotate(${st.rot}deg)`;
+    el.style.left = c.x + 'px'; el.style.top = c.y + 'px';
     const str = $('#cardString');
     if (st.hole) {
       const hx = c.x + st.hole[0], hy = c.y + st.hole[1], near = Math.hypot(hx - 182, hy - 344) < 170;
-      str.setAttribute('d', near ? `M182 344 Q ${f1((182 + hx) / 2)} ${f1(Math.max(344, hy) + 26)}, ${f1(hx)} ${f1(hy)}` : '');
+      str.setAttribute('d', near ? `M182 344 L ${f1(hx)} ${f1(hy)}` : '');
     } else str.setAttribute('d', '');
   }
   function setCardStyle(st) {
@@ -1060,43 +846,18 @@
     renderTag();
   }
 
-  // 空間背景（畫布底層）＋ 窗邊光影遮罩（最上層、pointer-events: none）
-  const NOISE = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .29 0 0 0 0 .25 0 0 0 0 .22 0 0 0 .08 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")`;
-  const WOOD = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='200'><g fill='none' stroke='%236B4428' stroke-opacity='.22' stroke-width='1.1'><path d='M12 0 C 16 50, 8 110, 14 200'/><path d='M30 0 C 26 60, 36 120, 29 200'/><path d='M52 0 C 56 40, 47 90, 55 140 C 58 165, 52 185, 54 200'/><path d='M74 0 C 70 70, 80 130, 73 200'/><path d='M96 0 C 101 60, 92 120, 99 200'/></g><ellipse cx='54' cy='140' rx='5' ry='11' fill='none' stroke='%236B4428' stroke-opacity='.25'/></svg>")`;
-  const petalSvg = (x, y, r, c, s = 16) => `<svg viewBox="0 0 16 20" width="${s}" height="${s * 1.25}" style="position:absolute;${x};${y};transform:rotate(${r}deg)"><path d="M8 1 C 14 5, 15 12, 8 19 C 1 12, 2 5, 8 1 Z" fill="${c}" stroke="${INK}" stroke-width=".9" stroke-opacity=".55"/></svg>`;
+  // 空間背景：純色平面，只有少量幾何線條點綴
+  const vlines = (n, color) => `<svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%"><path d="${Array.from({ length: n }, (_, i) => `M${f1((i + 1) * 100 / (n + 1))} 0 V100`).join(' ')}" stroke="${color}" stroke-width="1" vector-effect="non-scaling-stroke"/></svg>`;
   const SCENES = {
-    sun: { emoji: '☀️', name: '午後百葉窗暖陽', short: '百葉窗暖陽',
-      bg: `radial-gradient(ellipse at 82% 8%, rgba(255,238,200,.95), transparent 55%), ${NOISE}, linear-gradient(160deg, #F7E8D2 0%, #F1DCC0 60%, #EAD1B0 100%)`,
-      decor: '',
-      gobo: `<div style="background:linear-gradient(118deg, transparent 14%, rgba(255,226,170,.32) 22%, transparent 31%, transparent 38%, rgba(255,226,170,.26) 46%, transparent 55%, rgba(255,226,170,.2) 63%, transparent 70%);mix-blend-mode:overlay"></div>
-        <svg viewBox="0 0 400 520" preserveAspectRatio="none" style="mix-blend-mode:multiply;filter:blur(5px);opacity:.9"><g fill="rgba(110,72,36,.16)">
-          <path d="M150 -20 L172 -24 L118 540 L96 544 Z"/><path d="M312 -40 L334 -44 L282 540 L260 544 Z"/><path d="M-20 228 L420 160 L424 178 L-16 246 Z"/></g>
-          <g class="leafs" fill="rgba(80,96,52,.2)"><ellipse cx="360" cy="40" rx="34" ry="13" transform="rotate(32 360 40)"/><ellipse cx="322" cy="70" rx="26" ry="10" transform="rotate(-18 322 70)"/>
-          <ellipse cx="380" cy="104" rx="30" ry="11" transform="rotate(58 380 104)"/><ellipse cx="300" cy="22" rx="22" ry="8" transform="rotate(12 300 22)"/><path d="M400 0 C 360 40, 330 70, 290 90" stroke="rgba(80,96,52,.25)" stroke-width="4" fill="none"/></g></svg>` },
-    wood: { emoji: '🪵', name: '花藝師胡桃木桌', short: '胡桃木桌',
-      bg: `repeating-linear-gradient(90deg, rgba(70,40,20,0) 0 118px, rgba(70,40,20,.32) 118px 120px), ${WOOD}, linear-gradient(180deg, #C69B70 0%, #B78B62 100%)`,
-      decor: () => petalSvg('left:9%', 'top:12%', -24, '#F5C6CF', 15) + petalSvg('right:10%', 'top:26%', 38, '#FBF4EA', 13) + petalSvg('right:22%', 'bottom:9%', 70, '#EFA9B0', 16) +
-        `<svg viewBox="0 0 64 64" width="62" height="62" style="position:absolute;left:5%;bottom:5%;transform:rotate(-28deg)"><g filter="url(#rough)" stroke="${INK}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
-          <path d="M30 32 L56 8 L59 11 L33 35 Z" fill="#E2DED6"/><path d="M30 32 L60 24 L60 28 L32 36 Z" fill="#CFC9BE"/>
-          <circle cx="17" cy="44" r="9" fill="none" stroke="${INK}" stroke-width="5.4"/><circle cx="17" cy="44" r="9" fill="none" stroke="#9CAF88" stroke-width="3.4"/>
-          <circle cx="29" cy="52" r="8" fill="none" stroke="${INK}" stroke-width="5.4"/><circle cx="29" cy="52" r="8" fill="none" stroke="#9CAF88" stroke-width="3.4"/>
-          <path d="M24 38 L 31 33 M26 46 L 32 36" fill="none"/><circle cx="31" cy="34" r="1.8" fill="${INK}"/></g></svg>`,
-      gobo: `<div style="background:radial-gradient(ellipse at 50% 34%, rgba(255,214,160,.5), transparent 58%);mix-blend-mode:soft-light"></div>
-        <div style="background:radial-gradient(ellipse at 50% 45%, transparent 52%, rgba(50,26,10,.32) 100%);mix-blend-mode:multiply"></div>` },
-    linen: { emoji: '🧺', name: '韓系亞麻野餐布', short: '亞麻野餐布',
-      bg: `repeating-linear-gradient(0deg, rgba(226,198,150,.5) 0 12px, transparent 12px 24px), repeating-linear-gradient(90deg, rgba(226,198,150,.5) 0 12px, transparent 12px 24px), #FBF5EA`,
-      decor: () => `<div style="position:absolute;inset:16px 14px;border-radius:4px;background:repeating-linear-gradient(0deg, rgba(120,98,70,.07) 0 1px, transparent 1px 3px), repeating-linear-gradient(90deg, rgba(120,98,70,.07) 0 1px, transparent 1px 3px), ${NOISE.replace(/"/g, '&quot;')}, #EFE7D8;box-shadow:0 0 0 1px rgba(168,139,110,.22), 0 8px 18px -10px rgba(74,64,58,.4)"></div>`,
-      gobo: `<div style="background:linear-gradient(135deg, rgba(255,255,255,.55) 0%, transparent 45%);mix-blend-mode:soft-light"></div>` },
-    midnight: { emoji: '🌙', name: '午夜微光暗調花房', short: '午夜花房', dark: true,
-      bg: `radial-gradient(ellipse at 50% 42%, #33503F 0%, #213229 42%, #1A2220 72%, #161A1B 100%)`,
-      decor: () => { const R = rng(19); let h = ''; for (let i = 0; i < 18; i++) h += `<span class="ff" style="left:${f1(4 + R() * 92)}%;top:${f1(4 + R() * 90)}%;--d:${f1(2.4 + R() * 3)}s;--dl:-${f1(R() * 4)}s"></span>`; return h; },
-      gobo: `<div style="background:radial-gradient(ellipse at 50% 40%, rgba(255,236,200,.28), transparent 52%);mix-blend-mode:screen"></div>
-        <div style="background:radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(0,0,0,.35) 100%)"></div>` },
-    paper: { emoji: '📄', name: '經典極簡畫布', short: '極簡畫布',
-      bg: `radial-gradient(ellipse at 30% 24%, rgba(236,221,200,.55), transparent 55%), radial-gradient(ellipse at 74% 72%, rgba(220,229,210,.5), transparent 52%), ${NOISE}, #FAF7F2`,
-      decor: '', gobo: '' },
+    paper: { emoji: '◻︎', name: '純淨暖米白', short: '暖米白', bg: '#F5F5F0', decor: '', gobo: '' },
+    grey: { emoji: '◼︎', name: '高級冷灰', short: '冷灰', bg: '#E0E0E0', decor: '', gobo: '' },
+    sun: { emoji: '◢', name: '午後光帶', short: '午後光帶', bg: '#EFE9DE', decor: '',
+      gobo: `<svg viewBox="0 0 400 520" preserveAspectRatio="none" style="width:100%;height:100%"><g fill="#FFFFFF" opacity=".42"><path d="M118 -20 L176 -20 L36 540 L-22 540 Z"/><path d="M226 -20 L258 -20 L118 540 L86 540 Z"/><path d="M330 -20 L398 -20 L258 540 L190 540 Z"/></g></svg>` },
+    wood: { emoji: '▥', name: '胡桃木桌', short: '胡桃木', bg: '#B59C82', decor: () => vlines(6, 'rgba(70,48,30,.28)'), gobo: '' },
+    midnight: { emoji: '●', name: '午夜墨綠', short: '午夜墨綠', dark: true, bg: '#2E3833',
+      decor: () => { const R = rng(19); let h = ''; for (let i = 0; i < 22; i++) h += `<span class="dotty" style="left:${f1(4 + R() * 92)}%;top:${f1(4 + R() * 90)}%"></span>`; return h; }, gobo: '' },
   };
-  const SCENE_ORDER = ['sun', 'wood', 'linen', 'midnight', 'paper'];
+  const SCENE_ORDER = ['paper', 'grey', 'sun', 'wood', 'midnight'];
   const sceneDecor = sc => typeof sc.decor === 'function' ? sc.decor() : sc.decor;
   function renderScene() {
     const sc = SCENES[state.scene];
@@ -1107,8 +868,8 @@
   }
 
   // 立體書景深：依疊放順序與種類給每朵花一個 Z 高度（嚴格遞增，確保 3D 排序與圖層順序一致）
-  // 花材層維持在 Z 0 ~ 20：在內襯（-20）之前、左右側翼（30）之後，花頭從紙的懷抱中探出
-  const Z_RANGE = { foliage: [0, 3], filler: [3, 7], base: [7, 10], main: [10, 17] }, Z_MAX = 20;
+  // 微景深：花材層只在 Z 0 ~ 6 之間，介於內襯（-6）與前包裝紙（9）之間
+  const Z_RANGE = { foliage: [0, 1], filler: [1, 2], base: [2, 3], main: [3, 5] }, Z_MAX = 6;
   function depthMap() {
     const list = state.flowers, n = list.length, z = {};
     const groups = {};
@@ -1118,7 +879,7 @@
       const slot = MAT[f.type].slot, g = groups[slot], k = g.indexOf(f), [a, b] = Z_RANGE[slot];
       let v = a + (b - a) * (g.length > 1 ? k / (g.length - 1) : .5);
       if (i === n - 1 && RANK[slot] >= RANK.base) v = Z_MAX; // 最前排焦點主花
-      z[f.id] = prev = Math.max(v, prev + 1.2);
+      z[f.id] = prev = Math.max(v, prev + .4);
     });
     // 花很多時嚴格遞增可能超出 20，等比例壓回 0 ~ 20（保持前後順序）
     const vals = Object.values(z), lo = Math.min(...vals), hi = Math.max(...vals);
@@ -1185,16 +946,16 @@
       <div class="text-[10.5px] text-ink/60 leading-tight mt-0.5 truncate">${m.colors.length > 1 ? `${who} · <b class="text-ink/80">${m.colors[ci].n}</b>` : '單一色款，點卡片即可加入'}</div></div>`;
     const dots = m.colors.length > 1 ? `<div class="flex gap-2 shrink-0 pl-2">${m.colors.map((c, i) =>
       `<button data-act="color" data-val="${i}" title="${c.n}" aria-label="${m.name} ${c.n}" class="sw ${i === ci ? 'on' : ''}" style="background-color:${c.p}"></button>`).join('')}</div>` : '';
-    return `<div class="swatch-bar sticky top-0 z-10 -mx-3 px-3 pt-1 pb-2 mb-1 flex items-center justify-between border-b border-dashed border-ink/15">${head}${dots}</div>`;
+    return `<div class="swatch-bar sticky top-0 z-10 -mx-3 px-3 pt-1 pb-2 mb-1 flex items-center justify-between border-b border-[#DADAD3]">${head}${dots}</div>`;
   }
 
   /* ---------- 工作台 ---------- */
   function renderWorkspace() {
     $('#tabs').innerHTML = TABS.map(t =>
-      `<button data-act="tab" data-val="${t.id}" class="shrink-0 rounded-full px-3 py-1.5 text-[13px] transition ${state.tab === t.id ? 'bg-milk text-white shadow-[0_3px_8px_-3px_rgba(168,139,110,.9)]' : 'bg-white/60 text-ink/75 border border-ink/10'}">${t.label}${t.count ? `<span class="ml-1 text-[10px] opacity-70">${t.count}</span>` : ''}</button>`).join('');
+      `<button data-act="tab" data-val="${t.id}" class="shrink-0 rounded-full px-3 py-1.5 text-[12.5px] border transition ${state.tab === t.id ? 'bg-[#333] text-white border-[#333]' : 'bg-white text-[#555] border-[#D5D5CE]'}">${t.label}${t.count ? `<span class="ml-1 text-[10px] opacity-70">${t.count}</span>` : ''}</button>`).join('');
 
     const panel = $('#panel');
-    const cardCls = on => `mat-card rounded-2xl border bg-white/70 p-1.5 flex flex-col items-center text-center cursor-pointer ${on ? 'is-active' : 'border-ink/10'}`;
+    const cardCls = on => `mat-card rounded-xl border bg-white p-1.5 flex flex-col items-center text-center cursor-pointer ${on ? 'is-active' : 'border-[#E0E0DA]'}`;
     const section = t => `<div class="text-[11px] tracking-[.15em] text-ink/55 mt-1 mb-1.5">${t}</div>`;
 
     if (FLOWER_TABS.includes(state.tab)) {
@@ -1202,16 +963,16 @@
       const items = Object.entries(MAT).filter(([, m]) => m.tab === state.tab);
       panel.innerHTML = swatchBarHTML() + `<div class="grid grid-cols-4 gap-2 pt-1.5">` + items.map(([k, m]) => `
         <div data-act="add" data-val="${k}" class="${cardCls(state.activeMat === k)} ${m.seasonal ? 'seasonal' : ''}" role="button" aria-label="加入${m.name}">
-          ${m.seasonal ? `<span class="badge relative z-[1] -mt-0.5 mb-0.5">[ ${m.seasonal} ]</span>` : ''}
+          ${m.seasonal ? `<span class="badge -mt-0.5 mb-0.5">${m.seasonal}</span>` : ''}
           <div class="${m.seasonal ? 'h-[40px]' : 'h-[50px]'} w-full flex items-center justify-center pointer-events-none relative z-[1]">${flowerSVG(k, state.curColor[k], m.thumb, 'height:100%;width:100%')}</div>
-          <div class="text-[12.5px] font-bold mt-0.5 leading-tight relative z-[1]">${m.name}</div>
-          <div class="text-[9.5px] text-ink/60 leading-[1.25] mt-0.5 line-clamp-2 min-h-[24px] relative z-[1]">${m.meaning}</div>
+          <div class="text-[12px] font-medium mt-0.5 leading-tight">${m.name}</div><div class="text-[8px] tracking-[.06em] text-[#999] leading-tight uppercase truncate w-full">${m.en}</div>
+          <div class="text-[9px] text-[#777] leading-[1.25] mt-0.5 line-clamp-2 min-h-[22px]">${m.meaning}</div>
           <div class="flex gap-[3px] mt-1 h-[7px] relative z-[1]">${m.colors.length > 1 ? m.colors.map(c => `<span class="mini-dot" style="background:${c.p}"></span>`).join('') : ''}</div>
         </div>`).join('') + `</div>`;
     } else if (state.tab === 'wrap') {
       const w = state.wrap, [, styles, colors, sKey, cKey, cols] = WRAP_SUBS[state.wrapSub];
       const subBar = `<div class="flex gap-1.5">${Object.entries(WRAP_SUBS).map(([id, [label, , , , , , hint]]) =>
-        `<button data-act="wsub" data-val="${id}" class="flex-1 min-w-0 rounded-xl px-1 py-1 text-[12px] leading-tight border transition ${state.wrapSub === id ? 'bg-white border-sage-dark font-bold shadow-[0_0_0_2px_rgba(125,148,113,.25)]' : 'bg-white/50 border-ink/10 text-ink/70'}">${label}<span class="block text-[9px] font-normal opacity-60 mt-0.5">${hint}</span></button>`).join('')}</div>`;
+        `<button data-act="wsub" data-val="${id}" class="flex-1 min-w-0 rounded-xl px-1 py-1 text-[12px] leading-tight border transition ${state.wrapSub === id ? 'bg-white border-[#555] font-medium' : 'bg-transparent border-[#D5D5CE] text-[#777]'}">${label}<span class="block text-[9px] font-normal opacity-60 mt-0.5">${hint}</span></button>`).join('')}</div>`;
       const noColor = sKey === 'tissue' && w.tissue === 'none';
       const curC = colorOf(colors, w[cKey]);
       const swRow = `<div class="flex items-center justify-between gap-2 mt-1.5">
@@ -1225,76 +986,73 @@
         if (sKey === 'tie') return stack([frontWrapSVG(ww, '100 300 160 150'), tieSVG(ww, '100 300 160 150')]);
         return stack([backWrapSVG(ww, '0 14 360 466'), tissueSVG(ww, '0 14 360 466'), frontWrapSVG(ww, '0 14 360 466')]);
       };
-      panel.innerHTML = `<div class="swatch-bar sticky top-0 z-10 -mx-3 px-3 pt-0.5 pb-2 mb-1.5 border-b border-dashed border-ink/15">${subBar}${swRow}</div>` +
+      panel.innerHTML = `<div class="swatch-bar sticky top-0 z-10 -mx-3 px-3 pt-0.5 pb-2 mb-1.5 border-b border-[#DADAD3]">${subBar}${swRow}</div>` +
         `<div class="grid gap-1.5" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">` + Object.entries(styles).map(([id, st]) => `
           <div data-act="wrapset" data-key="${sKey}" data-val="${id}" class="${cardCls(w[sKey] === id)}" role="button" aria-label="${st.name}">
             <div class="h-[52px] w-full">${id === 'none' ? '<div class="h-full flex items-center justify-center text-[22px] opacity-40">∅</div>' : preview(id)}</div>
-            <div class="text-[11.5px] font-bold mt-1 leading-tight">${st.short}</div>
-            <div class="text-[8.5px] text-ink/45 leading-tight">${st.en}</div>
+            <div class="text-[11px] font-medium mt-1 leading-tight">${st.short}</div>
+            <div class="text-[8px] tracking-[.05em] text-[#999] leading-tight uppercase">${st.en}</div>
           </div>`).join('') + `</div>`;
     } else {
       const c = state.card, sub = state.cardSub;
-      const subs = [['style', '🏷️ 卡片款式與位置', '5款造型'], ['text', '✍️ 文字與字體', '含靈感金句'], ['scene', '☀️ 背景與光影', '5款場景']];
+      const subs = [['style', '標籤款式與位置', '3款標籤'], ['text', '標籤文字', '含靈感金句'], ['scene', '空間背景', '5款平面場景']];
       const subBar = `<div class="flex gap-1.5">${subs.map(([id, label, hint]) =>
-        `<button data-act="csub" data-val="${id}" class="flex-1 min-w-0 rounded-xl px-1 py-1 text-[11.5px] leading-tight border transition ${sub === id ? 'bg-white border-sage-dark font-bold shadow-[0_0_0_2px_rgba(125,148,113,.25)]' : 'bg-white/50 border-ink/10 text-ink/70'}">${label}<span class="block text-[9px] font-normal opacity-60 mt-0.5">${hint}</span></button>`).join('')}</div>`;
+        `<button data-act="csub" data-val="${id}" class="flex-1 min-w-0 rounded-xl px-1 py-1 text-[11.5px] leading-tight border transition ${sub === id ? 'bg-white border-[#555] font-medium' : 'bg-transparent border-[#D5D5CE] text-[#777]'}">${label}<span class="block text-[9px] font-normal opacity-60 mt-0.5">${hint}</span></button>`).join('')}</div>`;
       let head = '', body = '';
       if (sub === 'style') {
         const st = CARD_STYLES[c.style];
         head = `<div class="flex items-center justify-between gap-2 mt-1.5">
-            <div class="min-w-0 text-[11px] leading-tight text-ink/65 truncate"><b class="text-ink">${st.name}</b>${c.style === 'none' ? '' : ` · ${toneOf(c.style).n}`}</div>
-            <div class="flex items-center gap-1.5 shrink-0">${c.style === 'none' ? '' : st.tones.map(t =>
-              `<button data-act="ctone" data-val="${t.id}" title="${t.n}" aria-label="${t.n}" class="sw sm ${c.tones[c.style] === t.id ? 'on' : ''}" style="background-color:${t.c}"></button>`).join('') +
-              `<button data-act="creset" class="ml-1 rounded-full border border-ink/15 bg-white/70 px-2 py-0.5 text-[10.5px]">↺ 歸位</button>`}</div>
+            <div class="min-w-0 text-[11px] leading-tight text-[#777] truncate"><b class="text-ink font-medium">${st.name}</b>${c.style === 'none' ? '' : ` · ${toneOf().n}`}</div>
+            <div class="flex items-center gap-1.5 shrink-0">${c.style === 'none' ? '' : CARD_TONES.map(t =>
+              `<button data-act="ctone" data-val="${t.id}" title="${t.n}" aria-label="${t.n}" class="sw sm ${c.tone === t.id ? 'on' : ''}" style="background-color:${t.c}"></button>`).join('') +
+              `<button data-act="creset" class="ml-1 rounded-full border border-[#CFCFC8] bg-white px-2 py-0.5 text-[10.5px]">歸位</button>`}</div>
           </div>`;
-        body = `<div class="grid grid-cols-5 gap-1.5">` + Object.entries(CARD_STYLES).map(([id, cs]) => `
+        body = `<div class="grid grid-cols-4 gap-1.5">` + Object.entries(CARD_STYLES).map(([id, cs]) => `
             <div data-act="cstyle" data-val="${id}" class="${cardCls(c.style === id)}" role="button" aria-label="${cs.name}">
-              <div class="h-[50px] w-full flex items-center justify-center pointer-events-none">${id === 'none' ? '<span class="text-[22px] opacity-40">∅</span>' :
-                cardSVG(id, c.tones[id]).replace(/width="\d+" height="\d+"/, 'style="max-width:100%;max-height:100%"')}</div>
-              <div class="text-[11px] font-bold mt-1 leading-tight">${cs.short}</div>
-              <div class="text-[8.5px] text-ink/45 leading-tight">${cs.en}</div>
+              <div class="h-[50px] w-full flex items-center justify-center pointer-events-none">${id === 'none' ? '<span class="text-[20px] text-[#AAA]">∅</span>' :
+                cardSVG(id, c.tone).replace(/width="\d+" height="\d+"/, 'style="max-width:100%;max-height:100%"')}</div>
+              <div class="text-[11px] font-medium mt-1 leading-tight">${cs.short}</div>
+              <div class="text-[8px] tracking-[.05em] text-[#999] leading-tight uppercase">${cs.en}</div>
             </div>`).join('') + `</div>
-          <p class="text-[10.5px] text-ink/50 mt-2">💡 在畫布上直接拖曳卡片：放上方花叢當插牌，放到收腰附近就變成吊牌。</p>`;
+          <p class="text-[10.5px] text-[#888] mt-2">在畫布上直接拖曳標籤：放上方當插牌，放到收腰附近會自動連線成吊牌。</p>`;
       } else if (sub === 'text') {
         body = `<div class="flex flex-col gap-1.5 mt-1.5">
             <div class="grid grid-cols-2 gap-1.5">
-              <label class="fld"><span>To:</span><input id="cTo" data-field="to" maxlength="12" placeholder="收件人" value="${esc(c.to)}"></label>
-              <label class="fld"><span>From:</span><input id="cFrom" data-field="sign" maxlength="12" placeholder="署名" value="${esc(c.sign)}"></label>
+              <label class="fld"><span>TO</span><input id="cTo" data-field="to" maxlength="12" placeholder="收件人" value="${esc(c.to)}"></label>
+              <label class="fld"><span>FROM</span><input id="cFrom" data-field="sign" maxlength="12" placeholder="署名" value="${esc(c.sign)}"></label>
             </div>
-            <label class="fld !items-start"><span class="pt-[7px]">Message</span><textarea id="cMsg" data-field="msg" maxlength="36" rows="2" placeholder="寫下想說的話…">${esc(c.msg)}</textarea></label>
-            <div class="flex gap-1.5">${Object.entries(FONTS).map(([id, n]) =>
-              `<button data-act="cfont" data-val="${id}" class="font-${id} flex-1 min-w-0 rounded-xl border px-1 py-1.5 text-[12px] leading-tight transition ${c.font === id ? 'bg-white border-sage-dark shadow-[0_0_0_2px_rgba(125,148,113,.25)]' : 'bg-white/50 border-ink/10'}">${n}<span class="block text-[10px] opacity-60">Aa 花</span></button>`).join('')}
-              <button data-act="quote" class="lucky-btn shrink-0 rounded-xl px-2.5 text-[11.5px] leading-tight">✨ 靈感<br>金句</button>
+            <label class="fld !items-start"><span class="pt-[7px]">MESSAGE</span><textarea id="cMsg" data-field="msg" maxlength="36" rows="2" placeholder="寫下想說的話…">${esc(c.msg)}</textarea></label>
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-[10.5px] text-[#888]">字體：Inter／Noto Sans TC（無襯線）</span>
+              <button data-act="quote" class="lucky-btn shrink-0 rounded-full px-3 py-1.5 text-[11.5px]">✦ 隨機靈感金句</button>
             </div>
           </div>`;
       } else {
         const sc = SCENES[state.scene];
-        head = `<div class="mt-1.5 text-[11px] text-ink/65"><b class="text-ink">${sc.emoji} ${sc.name}</b> · 背景＋窗邊光影，3D 傾斜時光斑會跟著位移</div>`;
+        head = `<div class="mt-1.5 text-[11px] text-[#777]"><b class="text-ink font-medium">${sc.name}</b> · 純色平面背景</div>`;
         body = `<div class="grid grid-cols-5 gap-1.5">` + SCENE_ORDER.map(id => { const s2 = SCENES[id]; return `
             <div data-act="scene" data-val="${id}" class="${cardCls(state.scene === id)}" role="button" aria-label="${s2.name}">
-              <div class="h-[50px] w-full rounded-lg relative overflow-hidden pointer-events-none border border-ink/10" style="background:${s2.bg.replace(/"/g, '&quot;')}">
-                <div class="absolute inset-0 overflow-hidden" style="transform:scale(.5);transform-origin:0 0;width:200%;height:200%">${sceneDecor(s2)}</div>
-                <span class="absolute right-1 bottom-0.5 text-[14px]">${s2.emoji}</span></div>
-              <div class="text-[11px] font-bold mt-1 leading-tight">${s2.short}</div>
+              <div class="h-[46px] w-full rounded-md relative overflow-hidden pointer-events-none border border-[#D5D5CE]" style="background:${s2.bg}">
+                <div class="absolute inset-0 overflow-hidden">${sceneDecor(s2)}</div>
+                <div class="absolute inset-0 overflow-hidden">${s2.gobo}</div></div>
+              <div class="text-[11px] font-medium mt-1 leading-tight">${s2.short}</div>
             </div>`; }).join('') + `</div>`;
       }
-      panel.innerHTML = `<div class="swatch-bar sticky top-0 z-10 -mx-3 px-3 pt-0.5 pb-2 mb-1.5 border-b border-dashed border-ink/15">${subBar}${head}</div>` + body;
+      panel.innerHTML = `<div class="swatch-bar sticky top-0 z-10 -mx-3 px-3 pt-0.5 pb-2 mb-1.5 border-b border-[#DADAD3]">${subBar}${head}</div>` + body;
     }
   }
 
   /* ================= 行為 ================= */
   function slotFor(slot, i) {
     const list = SLOTS[slot], base = list[i % list.length], ring = Math.floor(i / list.length);
-    const rot = base.a + (Math.random() - .5) * 5 + (ring ? (Math.random() < .5 ? -1 : 1) * (4 + ring * 2) : 0);
-    const s = base.s * Math.max(.75, 1 - ring * .06) * (.97 + Math.random() * .06);
-    return {
-      x: PIVOT.x + Math.sin(rot * Math.PI / 180) * 8 + (Math.random() - .5) * 6,
-      y: PIVOT.y + (Math.random() - .5) * 6, rot, scale: s,
-    };
+    const rot = base.a + Math.sign(base.a) * ring * 4;
+    const s = Math.min(1.3, (base.s * Math.max(.78, 1 - ring * .07)) / Math.cos(rot * Math.PI / 180));
+    return { x: PIVOT.x + Math.sin(rot * Math.PI / 180) * 8, y: PIVOT.y, rot, scale: s, flip: rot > 0 };
   }
   function addFlower(type) {
     const m = MAT[type];
     const idx = state.flowers.filter(f => MAT[f.type].slot === m.slot).length;
-    const f = { id: 'f' + uidN++, type, color: state.curColor[type], flip: Math.random() < .5, ...slotFor(m.slot, idx) };
+    const f = { id: 'f' + uidN++, type, color: state.curColor[type], ...slotFor(m.slot, idx) };
     // 依圖層排序插入：葉材在最後方、主花在最前方，新手更容易排出層次
     const at = state.flowers.findIndex(g => rankOf(g) > RANK[m.slot]);
     if (at < 0) state.flowers.push(f); else state.flowers.splice(at, 0, f);
@@ -1306,7 +1064,7 @@
   function reshuffle() {
     if (!state.flowers.length) return toast('花束還是空的喔');
     Object.keys(SLOTS).forEach(slot =>
-      shuffleArr(state.flowers.filter(f => MAT[f.type].slot === slot)).forEach((f, i) => Object.assign(f, slotFor(slot, i), { flip: Math.random() < .5, _r: Math.random() })));
+      shuffleArr(state.flowers.filter(f => MAT[f.type].slot === slot)).forEach((f, i) => Object.assign(f, slotFor(slot, i), { _r: Math.random() })));
     state.flowers.sort((a, b) => rankOf(a) - rankOf(b) || a._r - b._r);
     zMap = depthMap();
     layerFlowers.classList.add('animate');
@@ -1421,9 +1179,8 @@
     }
     else if (act === 'csub') state.cardSub = val;
     else if (act === 'cstyle') setCardStyle(val);
-    else if (act === 'ctone') { state.card.tones[state.card.style] = val; renderTag(); }
+    else if (act === 'ctone') { state.card.tone = val; renderTag(); }
     else if (act === 'creset') { [state.card.x, state.card.y] = CARD_STYLES[state.card.style].def; positionCard(); return; }
-    else if (act === 'cfont') { state.card.font = val; renderTag(); }
     else if (act === 'quote') {
       state.card.msg = QUOTES[quoteIdx++ % QUOTES.length];
       ensureCardVisible(); renderTag();
@@ -1436,7 +1193,7 @@
   /* ---------- 小卡文字（工作台內直接輸入） ---------- */
   function ensureCardVisible() {
     if (state.card.style !== 'none') return;
-    setCardStyle('tag'); toast('已顯示毛邊吊牌小卡');
+    setCardStyle('label'); toast('已顯示學名標籤');
   }
   $('#workspace').addEventListener('input', e => {
     const f = e.target.dataset.field; if (!f) return;
@@ -1491,96 +1248,73 @@
     const total = state.flowers.length;
     const no = String(Math.floor(Math.random() * 900000) + 100000);
     const label = m => m.seasonal ? '限定' : { main: '主花', filler: '配花', foliage: '葉材' }[m.tab];
-    const row = (l, r, sub = '') => `<div class="flex items-baseline gap-2 text-[13px]"><span class="shrink-0">${l}</span><span class="flex-1 border-b border-dotted border-ink/30 translate-y-[-3px]"></span><span class="shrink-0">${r}</span></div>${sub ? `<div class="text-[11px] text-ink/55 mb-1 pl-1">${sub}</div>` : ''}`;
+    const row = (l, r, sub = '') => `<div class="flex justify-between items-baseline gap-3 py-[3px] text-[12.5px]"><span class="min-w-0">${l}</span><span class="shrink-0 text-[#777] text-right">${r}</span></div>${sub ? `<div class="text-[10.5px] text-[#999] -mt-0.5 mb-1">${sub}</div>` : ''}`;
     const order = [...seasonal, ...mains, ...fills, ...leaves];
-    const w = state.wrap;
+    const w = state.wrap, c = state.card;
     const recipe = `${OUTERS[w.outer].short} (${colorOf(OUTER_COLORS, w.outerColor).n}) + ${w.tissue === 'none' ? '無內襯' : `${TISSUES[w.tissue].short} (${colorOf(TISSUE_COLORS, w.tissueColor).n})`} + ${TIES[w.tie].short} (${colorOf(TIE_COLORS, w.tieColor).n})`;
 
     $('#receiptBody').innerHTML = `
-      <div class="polaroid p-3 pb-4 rounded-[4px]">
-        <div id="pv" class="relative overflow-hidden" style="width:250px;height:290px"></div>
-        <div class="flex justify-between items-end mt-3 px-1">
-          <div class="text-[19px] font-bold">For you ♡</div>
-          <div class="text-[11px] text-ink/55">${date}</div>
+      <div class="order w-[310px] rounded-2xl overflow-hidden text-ink">
+        <div class="px-5 pt-5 pb-4 flex justify-between items-start">
+          <div><div class="text-[10px] tracking-[.22em] text-[#888]">DIGITAL ORDER</div><div class="text-[19px] font-semibold mt-1">花束訂製單</div></div>
+          <div class="mono text-right text-[10px] leading-[1.6] text-[#888]">#${no}<br>${date} (${week})</div>
         </div>
-      </div>
-      <div class="text-[11px] text-ink/50 mt-3">✨ 滑動照片，轉轉立體花束</div>
-
-      <div class="receipt w-[300px] mt-9 px-5 py-5 text-ink">
-        <div class="text-center text-[10px] tracking-[.35em] text-ink/55">FLORAL RECEIPT</div>
-        <div class="text-center text-[20px] font-bold mt-0.5">今日花語收據</div>
-        <div class="flex justify-between text-[11px] text-ink/55 mt-2"><span>NO.${no}</span><span>${date}（${week}）</span></div>
-        <div class="border-t border-dashed border-ink/30 my-3"></div>
-        ${order.map(k => row(`${MAT[k].name} × ${counts[k]}${MAT[k].seasonal ? '<span class="stamp">★ SEASONAL</span>' : ''}`, label(MAT[k]), MAT[k].meaning)).join('')}
-        <div class="border-t border-dashed border-ink/30 my-3"></div>
-        ${row('外層主紙', `${OUTERS[w.outer].short} · ${colorOf(OUTER_COLORS, w.outerColor).n}`)}${row('內層襯紙', w.tissue === 'none' ? '無內襯' : `${TISSUES[w.tissue].short} · ${colorOf(TISSUE_COLORS, w.tissueColor).n}`)}${row('緞帶綁繩', `${TIES[w.tie].short} · ${colorOf(TIE_COLORS, w.tieColor).n}`)}${row('空間氛圍', `${SCENES[state.scene].emoji} ${SCENES[state.scene].short}`)}${row('小卡', state.card.style === 'none' ? '未附小卡' : `${CARD_STYLES[state.card.style].short} · ${FONTS[state.card.font]}`)}${row('花材總數', `${total} 枝`)}
-        <div class="border-t border-dashed border-ink/30 my-3"></div>
-        <div class="text-[11px] tracking-[.2em] text-ink/55 mb-1">專屬花語</div>
-        <p class="text-[14px] leading-relaxed">${poem}</p>
-        ${state.card.style !== 'none' && state.card.msg ? `<div class="font-${state.card.font} mt-3 rounded-xl bg-[#F3ECE2] px-3 py-2.5">
-          ${state.card.to ? `<div class="text-[12px] text-ink/60">To. ${esc(state.card.to)}</div>` : ''}
-          <div class="text-[14px] leading-relaxed mt-0.5">✉️ ${esc(state.card.msg)}</div>
-          <div class="text-right text-[12px] text-ink/60 mt-1">— From. ${esc(state.card.sign)}</div></div>` : ''}
-        ${state.fortune ? `<div class="fortune-box mt-4 rounded-xl px-3 py-3 text-center">
-          <div class="text-[11px] tracking-[.14em] font-bold text-milk-deep">【 TODAY'S FORTUNE 今日花籤 】</div>
-          <div class="text-[14px] font-bold mt-1.5">${state.fortune.emoji} ${state.fortune.name}</div>
-          <div class="text-[10px] tracking-[.2em] text-ink/45 mt-0.5">${state.fortune.en.toUpperCase()}</div>
-          <p class="text-[12.5px] leading-relaxed text-ink/80 mt-1.5">${state.fortune.fortune}</p>
-        </div>` : ''}
-        <div class="barcode mt-4"></div>
-        <div class="text-center text-[10px] tracking-[.25em] text-ink/50 mt-1.5">THANK YOU · 謝謝你把心意包起來</div>
-        <div class="mt-3 pt-2 border-t border-dashed border-ink/20 text-[10px] leading-relaxed text-ink/60" style="font-family:ui-monospace,Menlo,monospace">Wrap Recipe: ${recipe}</div>
+        <div class="px-5 pb-4"><div id="pv" class="relative overflow-hidden rounded-xl border border-[#E2E2DC] mx-auto" style="width:270px;height:300px"></div></div>
+        <div class="sec"><h4>ITEMS · 花材 ${total} 枝</h4>
+          ${order.map(k => row(`${MAT[k].name} <span class="text-[#999] text-[11px]">× ${counts[k]}</span>${MAT[k].seasonal ? '<span class="stamp">SEASONAL</span>' : ''}`, label(MAT[k]), MAT[k].meaning)).join('')}
+        </div>
+        <div class="sec"><h4>WRAP · 包裝</h4>
+          ${row('外層主紙', `${OUTERS[w.outer].short} · ${colorOf(OUTER_COLORS, w.outerColor).n}`)}${row('內層襯紙', w.tissue === 'none' ? '無內襯' : `${TISSUES[w.tissue].short} · ${colorOf(TISSUE_COLORS, w.tissueColor).n}`)}${row('緞帶綁繩', `${TIES[w.tie].short} · ${colorOf(TIE_COLORS, w.tieColor).n}`)}${row('空間背景', SCENES[state.scene].name)}
+        </div>
+        ${c.style !== 'none' && c.msg ? `<div class="sec"><h4>NOTE · ${CARD_STYLES[c.style].short}</h4>
+          ${c.to ? `<div class="text-[11px] tracking-[.06em] text-[#888]">TO　${esc(c.to)}</div>` : ''}
+          <div class="text-[14px] leading-relaxed mt-1">${esc(c.msg)}</div>
+          <div class="text-right text-[11px] tracking-[.06em] text-[#888] mt-1">FROM　${esc(c.sign)}</div></div>` : ''}
+        <div class="sec"><h4>MEANING · 專屬花語</h4><p class="text-[12.5px] leading-[1.75] text-[#444]">${poem}</p></div>
+        ${state.fortune ? `<div class="sec"><h4>TODAY'S FORTUNE · 今日花籤</h4>
+          <div class="fortune-box rounded-lg px-3 py-2.5">
+            <div class="text-[13px] font-medium">${state.fortune.name}</div>
+            <div class="text-[9.5px] tracking-[.16em] text-[#999] mt-0.5">${state.fortune.en.toUpperCase()}</div>
+            <p class="text-[12px] leading-relaxed text-[#555] mt-1.5">${state.fortune.fortune}</p>
+          </div></div>` : ''}
+        <div class="sec mono text-[10px] leading-relaxed text-[#888]">WRAP RECIPE: ${recipe}</div>
+        <div class="sec flex justify-between text-[10px] tracking-[.16em] text-[#999]"><span>THANK YOU</span><span>謝謝你把心意包起來</span></div>
       </div>
 
-      <button id="btnBack" class="mt-8 rounded-full border border-ink/30 bg-white/80 px-8 py-2.5 text-[15px] active:scale-95 transition">← 返回修改</button>`;
+      <button id="btnBack" class="mt-6 rounded-full border border-[#555] bg-white px-8 py-2.5 text-[14px] active:scale-95 transition">← 返回修改</button>`;
 
-    // 成果照片：複製花束後以立體書方式展開，可滑動傾斜
+    // 成品照片：以平面圖鑑方式呈現（不傾斜）
     const clone = stage.cloneNode(true), pv = $('#pv');
     clone.querySelectorAll('.sel-layer, .empty-hint').forEach(n => n.remove());
     clone.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
     clone.removeAttribute('id'); clone.classList.remove('xray', 'is3d', 'is3d-out');
-    const base = 'translate(-50%,-50%) scale(.66)';
-    clone.style.cssText = `left:50%;top:47%;transform:${base};pointer-events:none`;
-    const cFlowers = [...clone.querySelectorAll('.flower')];
-    cFlowers.forEach(el => { const f = get(el.dataset.id); el.style.transform = `translateZ(0px) rotate(${f.rot}deg) scale(${f.scale})`; });
-    clone.querySelector('.layer-flowers').classList.add('z-anim');
-    pv.classList.add('pv-3d'); pv.style.touchAction = 'none';
+    clone.querySelectorAll('.flower').forEach(el => { const f = get(el.dataset.id); el.style.transform = `rotate(${f.rot}deg) scale(${f.scale})`; });
+    clone.style.cssText = 'left:50%;top:48%;transform:translate(-50%,-50%) scale(.66);pointer-events:none';
     const pvScene = $('#scene').cloneNode(true), pvGobo = $('#gobo').cloneNode(true);
     pvScene.removeAttribute('id'); pvGobo.removeAttribute('id'); pvGobo.style.transform = '';
     pv.append(pvScene, clone, pvGobo);
-    pvTilt = makeTilt(() => {
-      clone.style.transform = `${base} rotateX(${pvTilt.x.toFixed(2)}deg) rotateY(${pvTilt.y.toFixed(2)}deg)`;
-      pvGobo.style.transform = goboShift(pvTilt);
-    });
-    bindTilt(pv, pvTilt);
-    const zs = depthMap();
-    setTimeout(() => {
-      clone.classList.add('is3d');
-      cFlowers.forEach(el => { const f = get(el.dataset.id); el.style.transform = `translateZ(${zs[f.id].toFixed(1)}px) rotate(${f.rot}deg) scale(${f.scale})`; });
-      if (pvTilt) { pvTilt.on = true; kick(); }
-    }, 450);
     $('#btnBack').onclick = backToEdit;
   }
 
-  /* ================= ✨ 3D 立體書預覽 ================= */
+  /* ================= 微景深預覽 ================= */
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const makeTilt = apply => ({ x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0, on: false, hold: false, touching: false, apply });
   const mainTilt = makeTilt(() => applyStageTilt());
   let pvTilt = null, rafId = 0, outT = 0;
   const t0 = performance.now();
 
-  // 滑鼠：依游標位置傾斜；手指：從按下的角度開始，拖多少轉多少（rotateX ±18°、rotateY ±25°）
+  // 微景深：滑鼠依游標位置、手指依拖曳距離，輕微傾斜（rotateX ±6°、rotateY ±9°）
   function bindTilt(el, t) {
     const move = e => {
       if (!t.on) return;
       if (e.pointerType === 'mouse') {
         const r = el.getBoundingClientRect();
         const nx = clamp(((e.clientX - r.left) / r.width) * 2 - 1, -1, 1), ny = clamp(((e.clientY - r.top) / r.height) * 2 - 1, -1, 1);
-        t.tx = -ny * 18; t.ty = nx * 25;
+        t.tx = -ny * 6; t.ty = nx * 9;
       } else {
         if (!t.touching) return;
-        t.ty = clamp(t.by + (e.clientX - t.sx) * .3, -25, 25);
-        t.tx = clamp(t.bx - (e.clientY - t.sy) * .25, -18, 18);
+        t.ty = clamp(t.by + (e.clientX - t.sx) * .12, -9, 9);
+        t.tx = clamp(t.bx - (e.clientY - t.sy) * .1, -6, 6);
       }
       t.hold = true; kick();
     };
@@ -1604,7 +1338,7 @@
       let tx = 0, ty = 0;
       if (t.on) {
         if (t.hold) { tx = t.tx; ty = t.ty; }
-        else if (!reduceMotion) { tx = 3.5 * Math.sin(time * 1.1); ty = 9 * Math.sin(time * 0.7); }
+        else if (!reduceMotion) { tx = 1.2 * Math.sin(time * 1.1); ty = 2.5 * Math.sin(time * 0.7); }
       }
       t.vx = (t.vx + (tx - t.x) * 0.06) * 0.84;
       t.vy = (t.vy + (ty - t.y) * 0.06) * 0.84;
@@ -1613,19 +1347,9 @@
       if (t.on || moving) active = true; else t.x = t.y = t.vx = t.vy = 0;
       t.apply();
     });
-    updateGlare();
     rafId = active ? requestAnimationFrame(tick) : 0;
   }
   const kick = () => { if (!rafId) rafId = requestAnimationFrame(tick); };
-
-  // 前層包裝紙的動態反光：亮帶位置與強度跟著傾斜角度走
-  const [g1, g2, g3] = ['g1', 'g2', 'g3'].map(id => document.getElementById(id));
-  function updateGlare() {
-    const t = pvTilt && pvTilt.on ? pvTilt : mainTilt;
-    const p = clamp(.5 + t.y / 40 - t.x / 60, .2, .8), a = .14 + Math.min(.34, (Math.abs(t.x) + Math.abs(t.y)) / 55);
-    g1.setAttribute('offset', (p - .17).toFixed(3)); g2.setAttribute('offset', p.toFixed(3)); g3.setAttribute('offset', (p + .17).toFixed(3));
-    g2.setAttribute('stop-opacity', a.toFixed(3));
-  }
 
   function setMode(on) {
     if (state.mode3d === on) return;
@@ -1660,48 +1384,34 @@
   }
   $('#modeSeg').addEventListener('click', e => { const b = e.target.closest('[data-mode]'); if (b) setMode(b.dataset.mode === '3d'); });
 
-  // 飄落花瓣與微光粒子（各自不同的 translateZ 景深）
-  function buildPetals() {
-    const R = rng(42), colors = ['#F5C6CF', '#F3D6D1', '#FBF4EA', '#EFA9B0', '#DCE5D2', '#F6E2A6'];
-    let h = '';
-    for (let i = 0; i < 16; i++) {
-      const spark = i % 4 === 3, z = Math.round(-70 + R() * 170), left = Math.round(R() * 340);
-      const d = (7 + R() * 7).toFixed(1), dl = (-R() * 14).toFixed(1), sw = Math.round(10 + R() * 22), o = (spark ? .9 : .55 + R() * .35).toFixed(2), sz = Math.round(9 + R() * 8);
-      const inner = spark ? '<span class="spark"></span>' :
-        `<svg width="${sz}" height="${Math.round(sz * 1.25)}" viewBox="0 0 16 20"><path d="M8 1 C 14 5, 15 12, 8 19 C 1 12, 2 5, 8 1 Z" fill="${colors[i % colors.length]}" stroke="${INK}" stroke-width=".9" stroke-opacity=".6"/><path d="M8 4 C 8 9, 8 13, 8 16" fill="none" stroke="${INK}" stroke-opacity=".25" stroke-width=".7"/></svg>`;
-      h += `<div class="petal" style="left:${left}px;transform:translateZ(${z}px)"><i style="--d:${d}s;--dl:${dl}s;--sw:${sw}px;--o:${o}">${inner}</i></div>`;
-    }
-    $('#petals').innerHTML = h;
-  }
-
   /* ================= 🔮 今日幸運花束（花藝師主題靈感庫 + 黃金結構插花） ================= */
   // 每個主題：主花 / 配花與果實（花材 → 可用色票名）、葉材、包裝組合 [款式, 色票]、籤詩
   const THEMES = [
-    { id: 'sun', scenes: ['sun', 'linen'], cardStyle: 'tag', cardTone: 'cotton', font: 'hand', emoji: '☀️', name: '晨間暖陽與元氣', en: 'Morning Sunshine',
+    { id: 'sun', scenes: ['sun', 'paper'], cardStyle: 'hang', cardTone: 'white', emoji: '☀️', name: '晨間暖陽與元氣', en: 'Morning Sunshine',
       mains: { sunflower: ['陽光黃'], tulip: ['鵝黃', '鬱金香橘'], gerbera: ['暖陽橘', '奶油白'], rose: ['奶油黃'] },
       fillers: { chamomile: ['純白'], freesia: ['鵝黃', '奶白'], babysbreath: ['白'] },
       foliage: ['eucalyptus', 'olive', 'fern'],
       outer: [['craft', 'kraft'], ['craft', 'oat'], ['korean', 'oat']], tissue: [['news', 'apricot'], ['news', 'beige']], tie: [['jute', 'caramel'], ['jute', 'gold'], ['long', 'caramel']],
       fortune: '把生活調成喜歡的頻道，今天的你自帶溫暖光芒，好事正順著陽光向你走來。', card: '今天的你自帶溫暖光芒，好事正向你走來' },
-    { id: 'romance', scenes: ['linen', 'paper', 'sun'], cardStyle: 'seal', cardTone: 'gold', font: 'hand', emoji: '🩰', name: '溫柔芭蕾與初戀', en: 'Soft Romance',
+    { id: 'romance', scenes: ['paper', 'grey'], cardStyle: 'label', cardTone: 'white', emoji: '🩰', name: '溫柔芭蕾與初戀', en: 'Soft Romance',
       mains: { rose: ['茱萸粉', '香檳白'], tulip: ['蜜桃粉'], ranunculus: ['藕粉'], gerbera: ['珊瑚粉'] },
       fillers: { babysbreath: ['淺粉', '白'], freesia: ['奶白'], lily: ['純白'] },
       foliage: ['eucalyptus', 'fern', 'olive'],
       outer: [['korean', 'pink'], ['korean', 'cream']], tissue: [['tulle', 'pink'], ['tulle', 'white']], tie: [['chiffon', 'rose'], ['chiffon', 'cream']],
       fortune: '允許自己偶爾慢下來，今天適合買杯喜歡的飲料，溫柔地偏愛自己一回。', card: '慢下來，溫柔地偏愛自己一回' },
-    { id: 'forest', scenes: ['sun', 'linen'], cardStyle: 'botanical', cardTone: 'parchment', font: 'serif', emoji: '🌿', name: '森林微風與深呼吸', en: 'Forest Breeze',
+    { id: 'forest', scenes: ['grey', 'sun'], cardStyle: 'label', cardTone: 'sage', emoji: '🌿', name: '森林微風與深呼吸', en: 'Forest Breeze',
       mains: { hydrangea: ['雪球白', '霧霾藍'], tulip: ['純白'], ranunculus: ['奶白'], rose: ['香檳白'], gerbera: ['奶油白'] },
       fillers: { lily: ['純白'], babysbreath: ['白'], chamomile: ['純白'], berries: ['青綠果實'] },
       foliage: ['eucalyptus', 'olive', 'fern'],
       outer: [['korean', 'sage'], ['korean', 'blue'], ['craft', 'sage'], ['cello', 'cream'], ['cello', 'sage']], tissue: [['tissue', 'white'], ['tissue', 'apricot']], tie: [['long', 'forest'], ['long', 'cream']],
       fortune: '那些困擾你的小事都會隨風散去，今天的幸運藏在一次深呼吸與放寬心裡。', card: '小事隨風散去，幸運藏在深呼吸裡' },
-    { id: 'vintage', scenes: ['wood', 'midnight'], cardStyle: 'seal', cardTone: 'wine', font: 'type', emoji: '🍷', name: '復古電影與微醺', en: 'Vintage Muse',
+    { id: 'vintage', scenes: ['wood', 'midnight'], cardStyle: 'label', cardTone: 'stone', emoji: '🍷', name: '復古電影與微醺', en: 'Vintage Muse',
       mains: { rose: ['經典紅'], ranunculus: ['香檳杏'], sunflower: ['復古焦糖橘'], tulip: ['鬱金香橘'] },
       fillers: { berries: ['紅棕果實'], cotton: ['原色'], babysbreath: ['白'] },
       foliage: ['eucalyptus', 'olive', 'fern'],
       outer: [['korean', 'black'], ['cone', 'black'], ['craft', 'kraft'], ['cone', 'kraft']], tissue: [['news', 'beige']], tie: [['long', 'wine'], ['seal', 'wine']],
       fortune: '不必迎合所有人的期待，你獨特的靈魂與神秘感，就是今天最迷人的風景。', card: '你獨特的靈魂，就是今天最迷人的風景' },
-    { id: 'miracle', scenes: ['midnight', 'sun'], cardStyle: 'pick', cardTone: 'cream', font: 'serif', emoji: '✨', name: '奇蹟降臨・季節限定特調', en: 'Seasonal Miracle', seasonal: true,
+    { id: 'miracle', scenes: ['midnight', 'paper'], cardStyle: 'stake', cardTone: 'white', emoji: '✨', name: '奇蹟降臨・季節限定特調', en: 'Seasonal Miracle', seasonal: true,
       mains: { rose: ['香檳白', '茱萸粉'], ranunculus: ['奶白', '藕粉'], tulip: ['純白'] },
       fillers: { babysbreath: ['白'], lily: ['純白'] },
       foliage: ['eucalyptus', 'fern', 'olive'],
@@ -1718,43 +1428,42 @@
 
   function generateLucky(th) {
     state.flowers = []; state.sel = null; state.focus = null; popIds = new Map();
-    const counts = {}, lean = (Math.random() - .5) * 8;
+    const counts = {};
     let order = 0;
-    const place = (type, colorNames) => {
-      const m = MAT[type], i = (counts[m.slot] = (counts[m.slot] ?? -1) + 1);
-      const want = pick(colorNames || [m.colors[0].n]);
-      const ci = Math.max(0, m.colors.findIndex(c => c.n === want));
-      const f = { id: 'f' + uidN++, type, color: ci, flip: Math.random() < .5, ...slotFor(m.slot, i) };
-      // 避免呆板對稱：整束微微偏一邊，每支再加上高低與角度落差
-      f.rot += lean + (Math.random() - .5) * 6;
-      f.scale *= .94 + Math.random() * .12;
-      f.x = PIVOT.x + Math.sin(f.rot * Math.PI / 180) * 8 + (Math.random() - .5) * 6;
-      const at = state.flowers.findIndex(g => rankOf(g) > RANK[m.slot]);
+    // slot 可另外指定（例如尤加利果實當配花），確保左右成對的位置不被打亂
+    const place = (type, ci, slot = MAT[type].slot) => {
+      const i = (counts[slot] = (counts[slot] ?? -1) + 1);
+      const f = { id: 'f' + uidN++, type, color: ci, ...slotFor(slot, i) };
+      const at = state.flowers.findIndex(g => rankOf(g) > RANK[MAT[type].slot]);
       if (at < 0) state.flowers.push(f); else state.flowers.splice(at, 0, f);
       popIds.set(f.id, order++ * 75);
     };
-    // Step 1｜後排打底：葉材 2~3 支，撐開輪廓
-    shuffleArr([...th.foliage]).slice(0, rint(2, 3)).forEach(t => place(t));
-    // Step 2｜視覺核心：主花 2~3 種、共 3~4 朵
-    const nMain = rint(3, 4), mainList = [];
+    const colorFor = (type, names) => { const m = MAT[type], want = pick(names || [m.colors[0].n]); return Math.max(0, m.colors.findIndex(c => c.n === want)); };
+    const placePair = (type, names, slot) => { const ci = colorFor(type, names); place(type, ci, slot); place(type, ci, slot); };
+    // 工整對稱的倒三角：每一層都是「同花材同顏色的左右一對」，可再加一支置中
+    // Step 1｜後排打底：葉材一對（＋ 一半機率置中一支），共 2~3 支
+    const fol = shuffleArr([...th.foliage]);
+    placePair(fol[0], null, 'foliage');
+    if (Math.random() < .5) place(fol[1], 0, 'foliage');
+    // Step 2｜視覺核心：置中一朵＋左右一對，共 3 朵（季節限定特調必含 1~2 朵限定花材）
+    const mk = shuffleArr(Object.keys(th.mains));
+    let center = mk[0], side = mk[1] || mk[0], centerCols = th.mains[center], sideCols = th.mains[side];
     if (th.seasonal) {
       const m = new Date().getMonth() + 1, sp = m >= 3 && m <= 8 ? 'peony' : 'pinecone';
-      const n = rint(1, 2);
-      for (let k = 0; k < n; k++) mainList.push([sp, null]);
+      if (Math.random() < .5) { center = sp; centerCols = null; } else { side = sp; sideCols = null; }
       if (sp === 'pinecone') th = { ...th, fillers: { ...th.fillers, berries: ['紅棕果實'], cotton: ['原色'] } };
     }
-    const species = shuffleArr(Object.keys(th.mains)).slice(0, rint(th.seasonal ? 1 : 2, th.seasonal ? 2 : 3));
-    species.forEach(sp => mainList.length < nMain && mainList.push([sp, th.mains[sp]]));
-    while (mainList.length < nMain) { const sp = pick(species); mainList.push([sp, th.mains[sp]]); }
-    shuffleArr(mainList).forEach(([t, cols]) => place(t, cols));
-    // Step 3｜空氣感點綴：配花與果實 2~3 支
-    const fk = shuffleArr(Object.keys(th.fillers)), nF = rint(2, 3);
-    for (let k = 0; k < nF; k++) { const t = fk[k % fk.length]; place(t, th.fillers[t]); }
+    place(center, colorFor(center, centerCols), 'main');
+    placePair(side, sideCols, 'main');
+    // Step 3｜空氣感點綴：配花一對（＋ 一半機率置中一支），共 2~3 支
+    const fk = shuffleArr(Object.keys(th.fillers));
+    placePair(fk[0], th.fillers[fk[0]], 'filler');
+    if (Math.random() < .5) { const t = fk[1] || fk[0]; place(t, colorFor(t, th.fillers[t]), 'filler'); }
     // 三明治包裝
     const [outer, outerColor] = pick(th.outer), [tissue, tissueColor] = pick(th.tissue), [tie, tieColor] = pick(th.tie);
     state.wrap = { outer, outerColor, tissue, tissueColor, tie, tieColor };
-    // 小卡自動填上主題短句，並換上最適合的卡片、字體與光影背景
-    state.card.msg = th.card; state.card.font = th.font; state.card.tones[th.cardStyle] = th.cardTone;
+    // 標籤自動填上主題短句，並換上最適合的標籤與背景
+    state.card.msg = th.card; state.card.tone = th.cardTone;
     state.card.style = th.cardStyle; [state.card.x, state.card.y] = CARD_STYLES[th.cardStyle].def;
     state.scene = pick(th.scenes);
     state.fortune = th;
@@ -1763,13 +1472,12 @@
   function magicBurst() {
     const box = document.createElement('div');
     box.className = 'magic';
-    const colors = ['#F5C6CF', '#F6E2A6', '#FBF4EA', '#DCE5D2', '#E7D3EC', '#EFA9B0'];
+    const colors = ['#E8C5C8', '#F1E3B8', '#FFFFFF', '#C5D1C5', '#C2CFD8', '#E6D7C3'];
     let h = '<div class="glow"></div>';
     for (let i = 0; i < 22; i++) {
       const a = (i / 22) * Math.PI * 2 + Math.random() * .3, dist = 90 + Math.random() * 110, spark = i % 3 === 0;
       const style = `--dx:${Math.round(Math.cos(a) * dist)}px;--dy:${Math.round(Math.sin(a) * dist)}px;--r:${rint(-200, 200)}deg;--dl:${(Math.random() * .12).toFixed(2)}s`;
-      h += `<span class="bp" style="${style}">${spark ? '<span class="spark" style="display:block"></span>' :
-        `<svg width="12" height="15" viewBox="0 0 16 20"><path d="M8 1 C 14 5, 15 12, 8 19 C 1 12, 2 5, 8 1 Z" fill="${colors[i % colors.length]}" stroke="${INK}" stroke-width=".9" stroke-opacity=".55"/></svg>`}</span>`;
+      h += `<span class="bp" style="${style}"><svg width="${spark ? 6 : 11}" height="${spark ? 6 : 11}" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5.5" fill="${spark ? '#FFFFFF' : colors[i % colors.length]}" stroke="${INK}" stroke-width="1"/></svg></span>`;
     }
     box.innerHTML = h;
     canvasWrap.appendChild(box);
@@ -1777,7 +1485,7 @@
   }
 
   function showFortune(th) {
-    $('#fortuneTitle').textContent = `${th.emoji} ${th.name}`;
+    $('#fortuneTitle').textContent = `${th.name} · ${th.en}`;
     $('#fortuneText').textContent = th.fortune;
     $('#fortune').classList.remove('hide');
   }
@@ -1798,13 +1506,12 @@
     renderWraps(); renderRibbon(); renderTag(); renderScene();
     state.tab = 'main'; state.activeMat = state.flowers[state.flowers.length - 1].type;
     renderFlowers(); renderWorkspace();
-    setMode(true);
     setTimeout(() => { showFortune(th); luckyBusy = false; $('#btnLucky').disabled = false; }, 650);
   }
   $('#btnLucky').onclick = drawLucky;
 
   /* ================= 初始化 ================= */
-  renderScene(); renderWraps(); renderRibbon(); renderTag(); renderFlowers(); renderWorkspace(); buildPetals(); fit();
+  renderScene(); renderWraps(); renderRibbon(); renderTag(); renderFlowers(); renderWorkspace(); fit();
   bindTilt(canvasWrap, mainTilt); syncModeUI();
   if (document.fonts) document.fonts.ready.then(syncModeUI);
 })();
