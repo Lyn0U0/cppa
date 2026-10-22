@@ -59,6 +59,51 @@
   .layer-ribbon { z-index: 4; } .layer-card { z-index: 5; pointer-events: none; } .sel-layer { z-index: 6; pointer-events: none; }
   .stage.xray .layer-front { opacity: .4; }
 
+  /* ---------- 2.5D 立體書（只在 3D 預覽／收據中啟用 preserve-3d，編輯模式維持平面） ---------- */
+  .canvas-wrap, .pv-3d { perspective: 1000px; }
+  .layer { transition: transform .5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity .25s ease; }
+  .z-anim .flower { transition: transform .5s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  .stage.is3d, .stage.is3d-out, .stage.is3d .layer-flowers, .stage.is3d-out .layer-flowers { transform-style: preserve-3d; }
+  .stage.is3d .layer-back   { transform: translateZ(-40px); }
+  .stage.is3d .layer-front  { transform: translateZ(50px); }
+  .stage.is3d .layer-ribbon { transform: translateZ(65px); }
+  .stage.is3d .layer-card   { transform: translateZ(80px); }
+  .stage.is3d .layer > svg, .stage.is3d .flower svg, .stage.is3d .tag svg { filter: drop-shadow(0 8px 9px rgba(74, 64, 58, .2)); }
+  .stage.is3d .layer-back > svg { filter: drop-shadow(0 14px 18px rgba(74, 64, 58, .28)); }
+  .glare { opacity: 0; transition: opacity .5s; }
+  .stage.is3d .glare { opacity: 1; }
+
+  /* 飄落花瓣與微光 */
+  .petals { position: absolute; inset: 0; pointer-events: none; display: none; transform-style: preserve-3d; }
+  .stage.is3d .petals { display: block; }
+  .petal { position: absolute; top: -34px; }
+  .petal > i { display: block; animation: fall var(--d) linear var(--dl) infinite; }
+  @keyframes fall {
+    0%   { transform: translate(0, -10px) rotate(0deg); opacity: 0; }
+    8%   { opacity: var(--o); }
+    25%  { transform: translate(var(--sw), 120px) rotate(95deg); }
+    50%  { transform: translate(0, 250px) rotate(180deg); }
+    75%  { transform: translate(calc(var(--sw) * -1), 380px) rotate(275deg); }
+    92%  { opacity: var(--o); }
+    100% { transform: translate(0, 520px) rotate(360deg); opacity: 0; }
+  }
+  .spark { width: 6px; height: 6px; border-radius: 999px; background: radial-gradient(circle, #FFFBEA 0 30%, rgba(246,215,140,.9) 45%, transparent 72%); box-shadow: 0 0 8px 2px rgba(246,222,160,.75); }
+
+  /* 編輯 / 3D 切換膠囊 */
+  .mode-ui .seg { display: flex; padding: 3px; border-radius: 999px; background: rgba(255,255,255,.75); border: 1px solid rgba(74,64,58,.14);
+    box-shadow: 0 6px 16px -8px rgba(74,64,58,.45); backdrop-filter: blur(6px); position: relative; }
+  .mode-ui .seg button { position: relative; z-index: 1; padding: 5px 10px; border-radius: 999px; font-size: 12px; line-height: 1.2; color: rgba(74,64,58,.7); transition: color .25s; white-space: nowrap; }
+  .mode-ui .seg button.on { color: #fff; }
+  .mode-ui .seg .thumb { position: absolute; top: 3px; bottom: 3px; border-radius: 999px; background: #7D9471; box-shadow: 0 3px 8px -3px rgba(125,148,113,.9);
+    transition: left .35s cubic-bezier(.3,1.3,.5,1), width .35s cubic-bezier(.3,1.3,.5,1); }
+  .mode-ui .seg.is3d .thumb { background: linear-gradient(120deg, #C8A98B, #D9B98A 60%, #E7CBA0); }
+  .gyro-btn { transition: opacity .25s, transform .25s; }
+  .gyro-btn.hide { opacity: 0; transform: translateY(-6px); pointer-events: none; }
+  .gyro-btn.on { background: #7D9471; color: #fff; border-color: transparent; }
+  .tilt-hint { transition: opacity .4s; }
+  .tilt-hint.hide { opacity: 0; }
+  @media (prefers-reduced-motion: reduce) { .petal > i { animation: none; opacity: 0; } }
+
   .flower { position: absolute; transform-origin: 50% 100%; pointer-events: none; will-change: transform; }
   .flower svg { width: 100%; height: 100%; display: block; overflow: visible; }
   .flower svg * { pointer-events: visiblePainted; cursor: grab; }
@@ -144,6 +189,14 @@
     <pattern id="grain" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(20)">
       <path d="M0 3.5 H7" stroke="#4A403A" stroke-opacity=".07" stroke-width="1" />
     </pattern>
+    <!-- 前層包裝紙的動態反光（由 JS 依傾斜角度更新） -->
+    <linearGradient id="glare" gradientUnits="userSpaceOnUse" x1="40" y1="220" x2="320" y2="470">
+      <stop offset="0" stop-color="#fff" stop-opacity="0" />
+      <stop id="g1" offset=".32" stop-color="#fff" stop-opacity="0" />
+      <stop id="g2" offset=".5" stop-color="#fff" stop-opacity=".3" />
+      <stop id="g3" offset=".68" stop-color="#fff" stop-opacity="0" />
+      <stop offset="1" stop-color="#fff" stop-opacity="0" />
+    </linearGradient>
     <pattern id="fiber" width="22" height="22" patternUnits="userSpaceOnUse">
       <path d="M2 5 q4 -3 8 0 M12 16 q3 2 7 -1 M4 18 q2 -2 3 0" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1" />
     </pattern>
@@ -168,6 +221,7 @@
   <!-- 2. 中央畫布 57% -->
   <main id="canvasWrap" class="canvas-wrap h-[57%] shrink-0 relative overflow-hidden">
     <div id="stage" class="stage">
+      <div class="petals" id="petals"></div>
       <div class="layer layer-back" id="layerBack"></div>
       <div class="layer layer-flowers" id="layerFlowers"></div>
       <div class="layer layer-front" id="layerFront"></div>
@@ -183,6 +237,19 @@
       <div class="empty-hint absolute left-0 right-0 top-[118px] text-center text-[15px] text-ink/55 pointer-events-none z-[7] leading-relaxed" id="emptyHint">
         點一下下方花材<br/>花朵會自動排成扇形花束 🌷
       </div>
+    </div>
+
+    <!-- 編輯 / 3D 預覽切換 -->
+    <div class="mode-ui absolute top-2 right-3 z-30 flex flex-col items-end gap-1.5">
+      <div class="seg" id="modeSeg" role="tablist" aria-label="檢視模式">
+        <span class="thumb" id="modeThumb"></span>
+        <button data-mode="edit" class="on" role="tab">✏️ 編輯</button>
+        <button data-mode="3d" role="tab">✨ 3D 預覽</button>
+      </div>
+      <button id="gyroBtn" class="gyro-btn hide rounded-full border border-ink/15 bg-white/75 px-2.5 py-1 text-[11px] shadow-sm">📱 搖晃手機轉視角</button>
+    </div>
+    <div id="tiltHint" class="tilt-hint hide absolute left-1/2 -translate-x-1/2 bottom-3 z-30 rounded-full bg-white/80 border border-ink/10 px-3 py-1.5 text-[11.5px] text-ink/70 pointer-events-none whitespace-nowrap">
+      滑動手指或移動滑鼠，轉轉看立體花束
     </div>
 
     <!-- 懸浮微調工具列 -->
@@ -547,7 +614,7 @@
 
   /* ================= 狀態 ================= */
   const state = {
-    flowers: [], sel: null, focus: null, activeMat: 'rose', tab: 'main', paper: 'milk', ribbon: 'sage', finished: false,
+    flowers: [], sel: null, mode3d: false, focus: null, activeMat: 'rose', tab: 'main', paper: 'milk', ribbon: 'sage', finished: false,
     card: { style: 'cream', msg: '願你被世界溫柔以待', sign: '想你的人', show: true },
     curColor: Object.fromEntries(Object.keys(MAT).map(k => [k, 0])),
   };
@@ -591,6 +658,7 @@
       <path d="M144 238 C 152 230, 160 226, 172 223 C 172 236, 174 246, 178 252 Z" fill="${p.light}" ${S}/>
       ${line('M232 254 C 212 290, 198 318, 188 340', .3, 1.2)}
       <path d="M296 248 C 262 264, 220 262, 186 254" fill="none" stroke="#fff" stroke-opacity=".4" stroke-width="3" stroke-linecap="round"/>
+      <g class="glare"><path d="M164 336 L 198 336 L 232 468 C 206 476, 156 476, 130 468 Z" fill="url(#glare)"/><path d="${L}" fill="url(#glare)"/><path d="${R}" fill="url(#glare)"/></g>
     </g></svg>`;
   }
   function bowSVG(r, vb = '0 0 360 480') {
@@ -637,11 +705,29 @@
       </div>`;
   }
 
+  // 立體書景深：依疊放順序與種類給每朵花一個 Z 高度（嚴格遞增，確保 3D 排序與圖層順序一致）
+  const Z_RANGE = { foliage: [-20, -12], filler: [-12, -5], base: [4, 10], main: [10, 25] };
+  function depthMap() {
+    const list = state.flowers, n = list.length, z = {};
+    const groups = {};
+    list.forEach(f => (groups[MAT[f.type].slot] = groups[MAT[f.type].slot] || []).push(f));
+    let prev = -Infinity;
+    list.forEach((f, i) => {
+      const slot = MAT[f.type].slot, g = groups[slot], k = g.indexOf(f), [a, b] = Z_RANGE[slot];
+      let v = a + (b - a) * (g.length > 1 ? k / (g.length - 1) : .5);
+      if (i === n - 1 && RANK[slot] >= RANK.base) v = 35; // 最前排焦點主花
+      v = Math.min(45, Math.max(v, prev + 1.2));
+      z[f.id] = prev = v;
+    });
+    return z;
+  }
+  let zMap = {};
   function flowerStyle(f, i) {
-    const m = MAT[f.type];
-    return `left:${f.x - m.w / 2}px;top:${f.y - m.h}px;width:${m.w}px;height:${m.h}px;z-index:${i + 1};transform:rotate(${f.rot}deg) scale(${f.scale})`;
+    const m = MAT[f.type], z = state.mode3d ? (zMap[f.id] ?? 0) : 0;
+    return `left:${f.x - m.w / 2}px;top:${f.y - m.h}px;width:${m.w}px;height:${m.h}px;z-index:${i + 1};transform:translateZ(${z.toFixed(1)}px) rotate(${f.rot}deg) scale(${f.scale})`;
   }
   function renderFlowers() {
+    zMap = depthMap();
     layerFlowers.innerHTML = state.flowers.map((f, i) =>
       `<div class="flower${f.id === state.sel ? ' is-sel' : ''}" data-id="${f.id}" style="${flowerStyle(f, i)}">
         <div class="flip${f.flip ? ' on' : ''}"><div class="${f.id === lastAdded ? 'pop' : ''}" style="width:100%;height:100%">${flowerSVG(f.type, f.color)}</div></div>
@@ -777,6 +863,7 @@
     Object.keys(SLOTS).forEach(slot =>
       shuffleArr(state.flowers.filter(f => MAT[f.type].slot === slot)).forEach((f, i) => Object.assign(f, slotFor(slot, i), { flip: Math.random() < .5, _r: Math.random() })));
     state.flowers.sort((a, b) => rankOf(a) - rankOf(b) || a._r - b._r);
+    zMap = depthMap();
     layerFlowers.classList.add('animate');
     state.flowers.forEach(applyFlower);
     updateSel();
@@ -793,14 +880,18 @@
   /* ---------- 畫布縮放與座標 ---------- */
   function fit() {
     scale = Math.min(canvasWrap.clientWidth / 360, canvasWrap.clientHeight / 480);
-    stage.style.transform = `translate(-50%, -50%) scale(${scale})`;
+    applyStageTilt();
+  }
+  function applyStageTilt() {
+    const t = mainTilt;
+    stage.style.transform = `translate(-50%, -50%) scale(${scale})` + (t.on || t.x || t.y ? ` rotateX(${t.x.toFixed(2)}deg) rotateY(${t.y.toFixed(2)}deg)` : '');
   }
   new ResizeObserver(fit).observe(canvasWrap);
   const toStage = e => { const r = stage.getBoundingClientRect(); return { x: (e.clientX - r.left) / scale, y: (e.clientY - r.top) / scale }; };
 
   /* ---------- 拖曳 / 旋轉縮放 ---------- */
   canvasWrap.addEventListener('pointerdown', e => {
-    if (state.finished || e.target.closest('#toolbar')) return;
+    if (state.finished || state.mode3d || e.target.closest('#toolbar, .mode-ui')) return;
     const handle = e.target.closest('#handle');
     const fl = e.target.closest('.flower');
     if (handle && state.sel) {
@@ -905,6 +996,8 @@
   }
   function backToEdit() {
     $('#receiptModal').classList.add('hide');
+    if (pvTilt) pvTilt.on = false;
+    pvTilt = null;
     state.finished = false; app.classList.remove('finished');
   }
   function buildReceipt() {
@@ -938,6 +1031,7 @@
           <div class="text-[11px] text-ink/55">${date}</div>
         </div>
       </div>
+      <div class="text-[11px] text-ink/50 mt-3">✨ 滑動照片，轉轉立體花束</div>
 
       <div class="receipt w-[300px] mt-9 px-5 py-5 text-ink">
         <div class="text-center text-[10px] tracking-[.35em] text-ink/55">FLORAL RECEIPT</div>
@@ -957,17 +1051,159 @@
 
       <button id="btnBack" class="mt-8 rounded-full border border-ink/30 bg-white/80 px-8 py-2.5 text-[15px] active:scale-95 transition">← 返回修改</button>`;
 
-    const clone = stage.cloneNode(true);
+    // 成果照片：複製花束後以立體書方式展開，可滑動傾斜
+    const clone = stage.cloneNode(true), pv = $('#pv');
     clone.querySelectorAll('.sel-layer, .empty-hint').forEach(n => n.remove());
     clone.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
-    clone.removeAttribute('id'); clone.classList.remove('xray');
-    clone.style.cssText = 'left:50%;top:47%;transform:translate(-50%,-50%) scale(.66);pointer-events:none';
-    $('#pv').appendChild(clone);
+    clone.removeAttribute('id'); clone.classList.remove('xray', 'is3d', 'is3d-out');
+    const base = 'translate(-50%,-50%) scale(.66)';
+    clone.style.cssText = `left:50%;top:47%;transform:${base};pointer-events:none`;
+    const cFlowers = [...clone.querySelectorAll('.flower')];
+    cFlowers.forEach(el => { const f = get(el.dataset.id); el.style.transform = `translateZ(0px) rotate(${f.rot}deg) scale(${f.scale})`; });
+    clone.querySelector('.layer-flowers').classList.add('z-anim');
+    pv.classList.add('pv-3d'); pv.style.touchAction = 'none';
+    pv.appendChild(clone);
+    pvTilt = makeTilt(() => { clone.style.transform = `${base} rotateX(${pvTilt.x.toFixed(2)}deg) rotateY(${pvTilt.y.toFixed(2)}deg)`; });
+    bindTilt(pv, pvTilt);
+    const zs = depthMap();
+    setTimeout(() => {
+      clone.classList.add('is3d');
+      cFlowers.forEach(el => { const f = get(el.dataset.id); el.style.transform = `translateZ(${zs[f.id].toFixed(1)}px) rotate(${f.rot}deg) scale(${f.scale})`; });
+      if (pvTilt) { pvTilt.on = true; kick(); }
+    }, 450);
     $('#btnBack').onclick = backToEdit;
   }
 
+  /* ================= ✨ 3D 立體書預覽 ================= */
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const hasGyro = 'DeviceOrientationEvent' in window && matchMedia('(pointer: coarse)').matches;
+  const makeTilt = apply => ({ x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0, on: false, hold: false, touching: false, apply });
+  const mainTilt = makeTilt(() => applyStageTilt());
+  let pvTilt = null, gyro = null, rafId = 0, outT = 0;
+  const t0 = performance.now();
+
+  // 手指滑動 / 滑鼠移動 → rotateX ±18°、rotateY ±25°
+  function bindTilt(el, t) {
+    const move = e => {
+      if (!t.on || (e.pointerType !== 'mouse' && !t.touching)) return;
+      const r = el.getBoundingClientRect();
+      const nx = clamp(((e.clientX - r.left) / r.width) * 2 - 1, -1, 1), ny = clamp(((e.clientY - r.top) / r.height) * 2 - 1, -1, 1);
+      t.tx = -ny * 18; t.ty = nx * 25; t.hold = true; kick();
+    };
+    const release = () => { t.touching = false; t.hold = false; };
+    el.addEventListener('pointerdown', e => { if (t.on) { t.touching = true; move(e); } });
+    el.addEventListener('pointermove', move);
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => el.addEventListener(ev, release));
+  }
+
+  // 彈簧回正 + 呼吸般的待機搖擺
+  function tick(now) {
+    const time = (now - t0) / 1000;
+    let active = false;
+    [mainTilt, pvTilt].forEach(t => {
+      if (!t) return;
+      let tx = 0, ty = 0;
+      if (t.on) {
+        if (t.hold) { tx = t.tx; ty = t.ty; }
+        else if (gyro && gyro.has) { tx = gyro.x; ty = gyro.y; }
+        else if (!reduceMotion) { tx = 3.5 * Math.sin(time * 1.1); ty = 9 * Math.sin(time * 0.7); }
+      }
+      t.vx = (t.vx + (tx - t.x) * 0.06) * 0.84;
+      t.vy = (t.vy + (ty - t.y) * 0.06) * 0.84;
+      t.x += t.vx; t.y += t.vy;
+      const moving = Math.abs(t.x) + Math.abs(t.y) + Math.abs(t.vx) + Math.abs(t.vy) > 0.02;
+      if (t.on || moving) active = true; else t.x = t.y = t.vx = t.vy = 0;
+      t.apply();
+    });
+    updateGlare();
+    rafId = active ? requestAnimationFrame(tick) : 0;
+  }
+  const kick = () => { if (!rafId) rafId = requestAnimationFrame(tick); };
+
+  // 前層包裝紙的動態反光：亮帶位置與強度跟著傾斜角度走
+  const [g1, g2, g3] = ['g1', 'g2', 'g3'].map(id => document.getElementById(id));
+  function updateGlare() {
+    const t = pvTilt && pvTilt.on ? pvTilt : mainTilt;
+    const p = clamp(.5 + t.y / 40 - t.x / 60, .2, .8), a = .14 + Math.min(.34, (Math.abs(t.x) + Math.abs(t.y)) / 55);
+    g1.setAttribute('offset', (p - .17).toFixed(3)); g2.setAttribute('offset', p.toFixed(3)); g3.setAttribute('offset', (p + .17).toFixed(3));
+    g2.setAttribute('stop-opacity', a.toFixed(3));
+  }
+
+  function setMode(on) {
+    if (state.mode3d === on) return;
+    if (on) select(null);
+    state.mode3d = on;
+    clearTimeout(outT);
+    stage.classList.toggle('is3d', on);
+    stage.classList.toggle('is3d-out', !on);
+    if (!on) outT = setTimeout(() => stage.classList.remove('is3d-out'), 650);
+    // DOM 順序對齊圖層順序，再於下一幀套上 Z 高度，讓花朵平滑「立起來」
+    state.flowers.forEach(f => { const el = layerFlowers.querySelector(`[data-id="${f.id}"]`); if (el) layerFlowers.appendChild(el); });
+    zMap = depthMap();
+    requestAnimationFrame(() => {
+      layerFlowers.classList.add('z-anim');
+      state.flowers.forEach(applyFlower);
+      setTimeout(() => layerFlowers.classList.remove('z-anim'), 600);
+    });
+    mainTilt.on = on; mainTilt.hold = false;
+    if (!on && gyro) toggleGyro();
+    kick(); syncModeUI();
+    const hint = $('#tiltHint');
+    hint.classList.toggle('hide', !on);
+    if (on) setTimeout(() => hint.classList.add('hide'), 2800);
+  }
+  function syncModeUI() {
+    const seg = $('#modeSeg'), thumb = $('#modeThumb');
+    seg.classList.toggle('is3d', state.mode3d);
+    seg.querySelectorAll('[data-mode]').forEach(b => {
+      const on = (b.dataset.mode === '3d') === state.mode3d;
+      b.classList.toggle('on', on); b.setAttribute('aria-selected', on);
+      if (on) { thumb.style.left = b.offsetLeft + 'px'; thumb.style.width = b.offsetWidth + 'px'; }
+    });
+    $('#gyroBtn').classList.toggle('hide', !(state.mode3d && hasGyro));
+  }
+  $('#modeSeg').addEventListener('click', e => { const b = e.target.closest('[data-mode]'); if (b) setMode(b.dataset.mode === '3d'); });
+
+  // 手機陀螺儀（iOS 需使用者點擊授權）
+  function onOrient(e) {
+    if (!gyro || e.beta == null) return;
+    if (gyro.b0 == null) gyro.b0 = e.beta;
+    gyro.has = true;
+    gyro.x = clamp((e.beta - gyro.b0) * 0.7, -18, 18);
+    gyro.y = clamp((e.gamma || 0) * 0.9, -25, 25);
+    kick();
+  }
+  async function toggleGyro() {
+    const btn = $('#gyroBtn');
+    if (gyro) { window.removeEventListener('deviceorientation', onOrient); gyro = null; btn.classList.remove('on'); return; }
+    try {
+      if (typeof DeviceOrientationEvent.requestPermission === 'function' && (await DeviceOrientationEvent.requestPermission()) !== 'granted') throw new Error('denied');
+      gyro = { has: false };
+      window.addEventListener('deviceorientation', onOrient);
+      btn.classList.add('on'); toast('搖晃手機試試看 📱');
+      setTimeout(() => { if (gyro && !gyro.has) toast('這個瀏覽器沒有提供陀螺儀資料'); }, 1500);
+    } catch { toast('無法使用陀螺儀，請允許動作與方向感測'); }
+  }
+  $('#gyroBtn').onclick = toggleGyro;
+
+  // 飄落花瓣與微光粒子（各自不同的 translateZ 景深）
+  function buildPetals() {
+    const R = rng(42), colors = ['#F5C6CF', '#F3D6D1', '#FBF4EA', '#EFA9B0', '#DCE5D2', '#F6E2A6'];
+    let h = '';
+    for (let i = 0; i < 16; i++) {
+      const spark = i % 4 === 3, z = Math.round(-70 + R() * 170), left = Math.round(R() * 340);
+      const d = (7 + R() * 7).toFixed(1), dl = (-R() * 14).toFixed(1), sw = Math.round(10 + R() * 22), o = (spark ? .9 : .55 + R() * .35).toFixed(2), sz = Math.round(9 + R() * 8);
+      const inner = spark ? '<span class="spark"></span>' :
+        `<svg width="${sz}" height="${Math.round(sz * 1.25)}" viewBox="0 0 16 20"><path d="M8 1 C 14 5, 15 12, 8 19 C 1 12, 2 5, 8 1 Z" fill="${colors[i % colors.length]}" stroke="${INK}" stroke-width=".9" stroke-opacity=".6"/><path d="M8 4 C 8 9, 8 13, 8 16" fill="none" stroke="${INK}" stroke-opacity=".25" stroke-width=".7"/></svg>`;
+      h += `<div class="petal" style="left:${left}px;transform:translateZ(${z}px)"><i style="--d:${d}s;--dl:${dl}s;--sw:${sw}px;--o:${o}">${inner}</i></div>`;
+    }
+    $('#petals').innerHTML = h;
+  }
+
   /* ================= 初始化 ================= */
-  renderWraps(); renderRibbon(); renderTag(); renderFlowers(); renderWorkspace(); fit();
+  renderWraps(); renderRibbon(); renderTag(); renderFlowers(); renderWorkspace(); buildPetals(); fit();
+  bindTilt(canvasWrap, mainTilt); syncModeUI();
+  if (document.fonts) document.fonts.ready.then(syncModeUI);
 })();
 </script>
 </body>
