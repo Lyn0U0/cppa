@@ -90,6 +90,28 @@
   .mat-card:active { transform: scale(.95); }
   .dot { width: 16px; height: 16px; border-radius: 999px; border: 1.5px solid rgba(74,64,58,.55); transition: transform .15s; }
   .dot.on { box-shadow: 0 0 0 2px #FAF7F2, 0 0 0 3.5px #7D9471; transform: scale(1.1); }
+  .mini-dot { width: 7px; height: 7px; border-radius: 999px; border: 1px solid rgba(74,64,58,.45); }
+  .mat-card.is-active { border-color: #7D9471; box-shadow: 0 0 0 2px rgba(125,148,113,.3); }
+
+  /* 色票列 */
+  .swatch-bar { background: #F3ECE2; }
+  .sw { width: 24px; height: 24px; border-radius: 999px; border: 1.5px solid rgba(74,64,58,.6); flex-shrink: 0;
+    background-image: radial-gradient(circle at 35% 30%, rgba(255,255,255,.7) 0 18%, transparent 40%); transition: transform .15s; }
+  .sw.on { box-shadow: 0 0 0 2.5px #F3ECE2, 0 0 0 4.5px #7D9471; transform: scale(1.08); }
+  .sw:active { transform: scale(.9); }
+
+  /* 季節限定卡片 */
+  .seasonal { position: relative; overflow: hidden; border: 1.5px solid #D6B583 !important;
+    background: linear-gradient(160deg, #FFF9EF 0%, #F9EADB 55%, #FFF5E6 100%) !important; }
+  .seasonal::after { content: ""; position: absolute; inset: -30% -60%; pointer-events: none;
+    background: linear-gradient(110deg, transparent 42%, rgba(255,255,255,.85) 50%, transparent 58%);
+    animation: sheen 3.8s ease-in-out infinite; }
+  @keyframes sheen { 0%, 55% { transform: translateX(-45%); } 100% { transform: translateX(45%); } }
+  .badge { font-size: 8.5px; line-height: 1; padding: 3px 4px; border-radius: 999px; white-space: nowrap;
+    background: #FFFDF8; border: 1px solid #D6B583; color: #9A6F3F; letter-spacing: .02em; }
+  .stamp { display: inline-block; font-size: 8.5px; letter-spacing: .12em; font-family: ui-monospace, Menlo, monospace; font-weight: 700;
+    color: #B4535E; border: 1.5px solid #B4535E; border-radius: 4px; padding: 0 4px; line-height: 1.5; transform: rotate(-4deg); opacity: .88; vertical-align: 1px; margin-left: 4px; }
+  @media (prefers-reduced-motion: reduce) { .seasonal::after { animation: none; opacity: 0; } .pop { animation: none; } }
 
   .toolbar { transition: opacity .2s, transform .25s cubic-bezier(.3,1.4,.5,1); }
   .toolbar.hide { opacity: 0; transform: translate(-50%, 16px) scale(.95); pointer-events: none; }
@@ -217,9 +239,10 @@
 
 <script>
 (() => {
-  /* ================= 素材定義 ================= */
+  /* ================= 繪圖工具 ================= */
   const INK = '#4A403A';
   const S = `stroke="${INK}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"`;
+  const S1 = `stroke="${INK}" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"`;
   const stem = (d, c = '#86A074', w = 3.4) =>
     `<path d="${d}" fill="none" stroke="${INK}" stroke-width="${w + 2.2}" stroke-linecap="round"/>` +
     `<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`;
@@ -227,16 +250,19 @@
     `<path d="${d}" fill="${fill}" ${S}/>` +
     (vein ? `<path d="${vein}" fill="none" stroke="${INK}" stroke-width="1.1" stroke-linecap="round" opacity=".6"/>` : '');
   const line = (d, o = 1, w = 1.5) => `<path d="${d}" fill="none" stroke="${INK}" stroke-width="${w}" stroke-linecap="round" opacity="${o}"/>`;
+  const shine = d => `<path d="${d}" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="2.4" stroke-linecap="round"/>`;
+  const rng = seed => () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
+  const f1 = n => n.toFixed(1);
 
   const daisyHead = (cx, cy, r, c) => {
     let s = '';
-    for (let i = 0; i < 12; i++) {
-      s += `<ellipse cx="${cx}" cy="${cy - r * 0.55}" rx="${r * 0.21}" ry="${r * 0.5}" transform="rotate(${i * 30 + 8} ${cx} ${cy})" fill="${c.p}" stroke="${INK}" stroke-width="1.2"/>`;
-    }
-    return s + `<circle cx="${cx}" cy="${cy}" r="${r * 0.3}" fill="${c.c}" ${S}/>` +
-      `<circle cx="${cx - r * 0.1}" cy="${cy - r * 0.1}" r="${r * 0.08}" fill="#fff" opacity=".7"/>`;
+    for (let i = 0; i < 12; i++) s += `<ellipse cx="${cx}" cy="${cy - r * 0.55}" rx="${r * 0.21}" ry="${r * 0.5}" transform="rotate(${i * 30 + 8} ${cx} ${cy})" fill="${c.p}" stroke="${INK}" stroke-width="1.2"/>`;
+    return s + `<circle cx="${cx}" cy="${cy}" r="${r * 0.3}" fill="${c.c}" ${S}/><circle cx="${cx - r * 0.1}" cy="${cy - r * 0.1}" r="${r * 0.08}" fill="#fff" opacity=".7"/>`;
   };
+  const cluster = (cx, cy, c, r = 4.6) => [[0, 0], [-7, 4], [7, 4], [-4, -6], [5, -6], [0, 9]].map(([dx, dy]) =>
+    `<circle cx="${cx + dx}" cy="${cy + dy}" r="${r}" fill="${c.p}" ${S1}/><circle cx="${cx + dx - 1.4}" cy="${cy + dy - 1.6}" r="1.1" fill="#fff" opacity=".6"/><circle cx="${cx + dx}" cy="${cy + dy + r * .45}" r=".9" fill="${c.d}"/>`).join('');
 
+  /* ================= 手繪花材 SVG（viewBox 0 0 120 300，花莖底部 = 旋轉支點） ================= */
   const DRAW = {
     rose: c =>
       stem('M60 298 C 57 240, 63 170, 60 92') +
@@ -248,8 +274,7 @@
       `<path d="M38 52 C 39 35, 53 28, 65 30 C 79 32, 87 44, 84 57 C 80 50, 72 44, 62 44 C 50 44, 42 48, 38 52 Z" fill="${c.l}" ${S}/>` +
       `<path d="M48 54 C 48 44, 60 38, 69 44 C 77 50, 73 62, 62 63 C 55 63, 52 57, 57 53 C 60 51, 64 53, 63 56" fill="none" ${S}/>` +
       `<path d="M26 56 C 34 70, 46 77, 60 76 C 74 77, 88 70, 96 58 C 94 80, 78 94, 60 94 C 42 94, 28 80, 26 56 Z" fill="${c.d}" ${S}/>` +
-      line('M31 47 C 37 62, 47 70, 57 72', .7) + line('M91 47 C 85 62, 75 70, 65 72', .7) +
-      `<path d="M44 25 C 50 21, 58 20, 65 21" fill="none" stroke="#fff" stroke-opacity=".65" stroke-width="2.6" stroke-linecap="round"/>`,
+      line('M31 47 C 37 62, 47 70, 57 72', .7) + line('M91 47 C 85 62, 75 70, 65 72', .7) + shine('M44 25 C 50 21, 58 20, 65 21'),
 
     tulip: c =>
       stem('M60 298 C 62 240, 58 170, 60 96') +
@@ -259,8 +284,7 @@
       `<path d="M60 94 C 46 82, 44 48, 60 14 C 76 48, 74 82, 60 94 Z" fill="${c.l}" ${S}/>` +
       `<path d="M60 97 C 40 97, 26 76, 28 30 C 44 40, 58 60, 60 97 Z" fill="${c.p}" ${S}/>` +
       `<path d="M60 97 C 80 97, 94 76, 92 30 C 76 40, 62 60, 60 97 Z" fill="${c.p}" ${S}/>` +
-      line('M35 46 C 40 64, 48 80, 56 90', .45, 1.1) + line('M85 46 C 80 64, 72 80, 64 90', .45, 1.1) +
-      `<path d="M33 40 C 34 52, 37 62, 41 70" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="2.4" stroke-linecap="round"/>`,
+      line('M35 46 C 40 64, 48 80, 56 90', .45, 1.1) + line('M85 46 C 80 64, 72 80, 64 90', .45, 1.1) + shine('M33 40 C 34 52, 37 62, 41 70'),
 
     sunflower: c => {
       let s = stem('M60 298 C 58 236, 63 150, 60 76', '#86A074', 4.6) +
@@ -269,53 +293,223 @@
       for (let i = 0; i < 16; i++) s += `<ellipse cx="60" cy="27" rx="7.6" ry="16.5" transform="rotate(${i * 22.5 + 11.25} 60 58)" fill="${c.d}" stroke="${INK}" stroke-width="1.4"/>`;
       for (let i = 0; i < 16; i++) s += `<ellipse cx="60" cy="29" rx="7" ry="15" transform="rotate(${i * 22.5} 60 58)" fill="${c.p}" stroke="${INK}" stroke-width="1.4"/>`;
       s += `<circle cx="60" cy="58" r="19" fill="#7A5236" ${S}/><circle cx="60" cy="58" r="13" fill="#5E3E28"/>`;
-      for (let k = 1; k < 22; k++) {
-        const r = 2.5 * Math.sqrt(k), a = k * 2.39996;
-        s += `<circle cx="${(60 + r * Math.cos(a)).toFixed(1)}" cy="${(58 + r * Math.sin(a)).toFixed(1)}" r="1.15" fill="#D9A55B"/>`;
+      for (let k = 1; k < 22; k++) { const r = 2.5 * Math.sqrt(k), a = k * 2.39996; s += `<circle cx="${f1(60 + r * Math.cos(a))}" cy="${f1(58 + r * Math.sin(a))}" r="1.15" fill="#D9A55B"/>`; }
+      return s;
+    },
+
+    gerbera: c => {
+      let s = stem('M60 298 C 61 236, 58 150, 60 70', '#8FA77E', 3.6) +
+        line('M58 250 l-3 -2 M62 222 l3 -2 M58 190 l-3 -2 M62 160 l3 -2 M58 128 l-3 -2', .5, 1) +
+        leaf('M60 296 C 46 280, 30 276, 20 282 C 30 294, 46 298, 60 296 Z', 'M58 295 C 46 289, 34 285, 24 283');
+      for (let i = 0; i < 20; i++) s += `<ellipse cx="60" cy="25" rx="4.6" ry="17" transform="rotate(${i * 18 + 9} 60 55)" fill="${c.d}" stroke="${INK}" stroke-width="1.2"/>`;
+      for (let i = 0; i < 20; i++) s += `<ellipse cx="60" cy="29" rx="4.2" ry="14.5" transform="rotate(${i * 18} 60 55)" fill="${c.p}" stroke="${INK}" stroke-width="1.2"/>`;
+      s += `<circle cx="60" cy="55" r="13" fill="${c.c}" ${S}/><circle cx="60" cy="55" r="7.5" fill="#4E3A26" opacity=".85"/>`;
+      for (let i = 0; i < 14; i++) { const a = i * Math.PI / 7; s += `<circle cx="${f1(60 + 10.3 * Math.cos(a))}" cy="${f1(55 + 10.3 * Math.sin(a))}" r="1" fill="#F6E7B0"/>`; }
+      return s;
+    },
+
+    ranunculus: c => {
+      let s = stem('M60 298 C 58 240, 62 170, 60 92', '#8FA77E', 3.2) +
+        leaf('M60 196 C 70 184, 74 170, 92 168 C 88 178, 96 182, 88 190 C 80 198, 70 198, 60 196 Z', 'M62 195 C 72 188, 80 180, 88 172') +
+        leaf('M60 150 C 50 138, 46 124, 28 122 C 32 132, 24 136, 32 144 C 40 152, 50 152, 60 150 Z', 'M58 149 C 48 142, 40 134, 32 126') +
+        `<path d="M60 92 C 52 96, 44 96, 38 90 C 46 88, 54 88, 60 92 C 66 88, 74 88, 82 90 C 76 96, 68 96, 60 92 Z" fill="#8FA77E" ${S}/>` +
+        `<circle cx="60" cy="56" r="36" fill="${c.d}" ${S}/>`;
+      [31, 26, 21, 16, 11.5, 7.5].forEach((r, k) =>
+        s += `<ellipse cx="60" cy="${f1(56 - (36 - r) * .38)}" rx="${r}" ry="${f1(r * .88)}" fill="${k % 2 ? c.l : c.p}" ${S1}/>`);
+      return s + `<circle cx="60" cy="43.5" r="3.6" fill="#9CAF88" ${S1}/>` + shine('M36 34 C 42 28, 50 24, 58 23');
+    },
+
+    hydrangea: c => {
+      let s = stem('M60 298 C 58 240, 62 160, 60 96', '#8FA77E', 4.2) +
+        leaf('M60 132 C 74 106, 108 104, 116 122 C 108 146, 78 152, 60 132 Z', 'M62 131 C 78 120, 96 116, 112 120') +
+        leaf('M60 140 C 46 116, 12 112, 4 128 C 12 152, 42 158, 60 140 Z', 'M58 139 C 42 128, 24 124, 8 126') +
+        `<circle cx="60" cy="58" r="43" fill="${c.d}" ${S}/>`;
+      for (let k = 0; k < 31; k++) {
+        const r = 35 * Math.sqrt((k + .5) / 31), a = k * 2.39996, x = 60 + r * Math.cos(a), y = 58 + r * Math.sin(a) * .95;
+        const fill = k % 3 === 0 ? c.l : c.p;
+        s += `<g transform="translate(${f1(x)} ${f1(y)}) rotate(${(k * 37) % 90})">` +
+          [0, 90, 180, 270].map(d => `<path d="M0 0 C -5.5 -1.5, -5.5 -7.5, 0 -7 C 5.5 -7.5, 5.5 -1.5, 0 0 Z" transform="rotate(${d})" fill="${fill}" stroke="${INK}" stroke-width=".9" stroke-linejoin="round"/>`).join('') +
+          `<circle r="1.3" fill="${INK}" opacity=".55"/></g>`;
       }
       return s;
     },
 
-    daisy: c =>
-      stem('M60 298 C 60 240, 58 180, 60 132', '#8FA77E', 2.8) +
-      stem('M60 156 C 52 124, 44 94, 40 66', '#8FA77E', 2.4) +
-      stem('M60 146 C 70 114, 78 82, 80 52', '#8FA77E', 2.4) +
-      stem('M60 134 C 60 120, 61 110, 62 102', '#8FA77E', 2.2) +
+    peony: c => {
+      let s = stem('M60 298 C 57 240, 63 170, 60 98', '#86A074', 3.8) +
+        leaf('M60 200 C 70 186, 84 186, 100 172 C 98 190, 84 206, 60 200 Z', 'M62 199 C 74 192, 86 184, 96 176') +
+        leaf('M60 158 C 50 144, 36 144, 18 132 C 22 150, 36 164, 60 158 Z', 'M58 157 C 46 150, 34 142, 22 136') +
+        `<path d="M60 98 C 50 102, 40 102, 32 96 C 42 92, 52 92, 60 98 C 68 92, 78 92, 88 96 C 80 102, 70 102, 60 98 Z" fill="#8FA77E" ${S}/>`;
+      for (let i = 0; i < 7; i++) { const a = (i / 7) * Math.PI * 2 + .3; s += `<ellipse cx="${f1(60 + 30 * Math.cos(a))}" cy="${f1(60 + 24 * Math.sin(a))}" rx="19" ry="16" transform="rotate(${f1(a * 57.3)} ${f1(60 + 30 * Math.cos(a))} ${f1(60 + 24 * Math.sin(a))})" fill="${c.d}" ${S}/>`; }
+      for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; s += `<ellipse cx="${f1(60 + 15 * Math.cos(a))}" cy="${f1(58 + 12 * Math.sin(a))}" rx="15" ry="13" fill="${c.p}" ${S1}/>`; }
+      s += `<path d="M42 58 C 40 42, 50 34, 56 40 C 58 32, 66 32, 68 40 C 74 34, 82 42, 78 58 C 72 68, 48 68, 42 58 Z" fill="${c.l}" ${S}/>` +
+        line('M50 56 C 52 48, 56 46, 58 50', .6, 1.1) + line('M62 50 C 64 46, 69 46, 70 54', .6, 1.1) + line('M46 62 C 54 66, 66 66, 74 62', .5, 1.1);
+      return s + shine('M28 46 C 32 36, 40 30, 48 28');
+    },
+
+    pinecone: () => {
+      let s = stem('M60 298 C 58 230, 62 150, 60 76', '#8A6A4F', 3.4);
+      const holly = 'M60 120 L66 111 L72 115 L78 105 L85 110 L92 101 L97 108 L106 104 C 102 114, 96 118, 90 120 L92 127 L84 125 L80 132 L74 127 L68 130 Z';
+      s += `<path d="${holly}" fill="#5F7F5A" ${S}/><path d="${holly}" transform="translate(120 6) scale(-1 1)" fill="#6E8C66" ${S}/>` +
+        line('M62 120 C 76 116, 90 112, 102 106', .5, 1) + line('M58 126 C 44 122, 30 118, 18 112', .5, 1) +
+        `<ellipse cx="60" cy="52" rx="19" ry="28" fill="#6E4C31" ${S}/>`;
+      for (let y = 30; y <= 76; y += 7) {
+        const w = 19 * Math.sqrt(Math.max(0, 1 - ((y - 52) / 28) ** 2)) - 3, n = Math.max(2, Math.round((w * 2) / 8.5)), off = (y / 7) % 2 ? 2 : -2;
+        for (let i = 0; i < n; i++) { const x = 60 - w + (2 * w * (i + .5)) / n + off; s += `<path d="M${f1(x - 5)} ${y} C ${f1(x - 5)} ${y + 7}, ${f1(x + 5)} ${y + 7}, ${f1(x + 5)} ${y} Z" fill="#A97C55" ${S1}/>`; }
+      }
+      [[56, 112], [64, 108], [61, 118], [69, 116]].forEach(([x, y]) => s += `<circle cx="${x}" cy="${y}" r="5" fill="#B8403E" ${S1}/><circle cx="${x - 1.5}" cy="${y - 1.7}" r="1.3" fill="#fff" opacity=".7"/>`);
+      return s;
+    },
+
+    chamomile: c =>
+      stem('M60 298 C 60 240, 58 180, 60 132', '#8FA77E', 2.8) + stem('M60 156 C 52 124, 44 94, 40 66', '#8FA77E', 2.4) +
+      stem('M60 146 C 70 114, 78 82, 80 52', '#8FA77E', 2.4) + stem('M60 134 C 60 120, 61 110, 62 102', '#8FA77E', 2.2) +
       leaf('M60 222 C 68 210, 82 207, 90 212 C 84 222, 72 226, 60 222 Z', 'M62 221 C 70 216, 80 213, 87 212') +
       leaf('M60 190 C 52 178, 38 175, 30 180 C 36 190, 48 194, 60 190 Z', 'M58 189 C 50 184, 40 181, 33 181') +
       daisyHead(40, 62, 22, c) + daisyHead(80, 48, 20, c) + daisyHead(62, 100, 16, c),
 
+    babysbreath: c => {
+      const R = rng(11);
+      let s = stem('M60 298 C 60 230, 59 170, 60 132', '#8FA77E', 2.2);
+      const tips = [[24, 62], [32, 36], [50, 20], [72, 22], [92, 36], [98, 62], [42, 78], [62, 50], [80, 78], [54, 100], [74, 104]];
+      tips.forEach(([x, y]) => s += stem(`M60 134 Q ${f1((60 + x) / 2 + (x < 60 ? 6 : -6))} ${f1((134 + y) / 2 + 8)}, ${x} ${y}`, '#8FA77E', 1.1));
+      tips.forEach(([x, y]) => {
+        for (let i = 0; i < 7; i++) {
+          const a = R() * Math.PI * 2, d = 2 + R() * 8;
+          s += `<circle cx="${f1(x + d * Math.cos(a))}" cy="${f1(y + d * Math.sin(a))}" r="${f1(2.4 + R() * 1.2)}" fill="${c.p}" stroke="${INK}" stroke-width=".8"/>`;
+        }
+      });
+      return s;
+    },
+
+    freesia: c => {
+      const floret = (x, y, r, rot) => `<g transform="rotate(${rot} ${x} ${y})">` +
+        `<ellipse cx="${x}" cy="${y + 3}" rx="2.6" ry="4.5" fill="#8FA77E" ${S1}/>` +
+        [-30, 30, 0].map(a => `<ellipse cx="${x}" cy="${f1(y - r)}" rx="${f1(r * .5)}" ry="${r}" transform="rotate(${a} ${x} ${y})" fill="${c.p}" ${S1}/>`).join('') +
+        `<ellipse cx="${x}" cy="${f1(y - r * .4)}" rx="${f1(r * .28)}" ry="${f1(r * .5)}" fill="${c.l}" opacity=".9"/></g>`;
+      return stem('M60 298 C 60 220, 58 150, 62 110 C 66 80, 80 60, 102 50', '#8FA77E', 2.6) +
+        leaf('M60 296 C 48 250, 44 210, 46 168 C 54 210, 60 250, 64 290 Z', 'M59 288 C 52 250, 49 210, 47 178') +
+        `<ellipse cx="103" cy="49" rx="3" ry="6" transform="rotate(62 103 49)" fill="#A9BC8F" ${S1}/>` +
+        `<ellipse cx="94" cy="54" rx="4" ry="7.5" transform="rotate(55 94 54)" fill="#BCCB9F" ${S1}/>` +
+        floret(84, 60, 9.5, 38) + floret(73, 71, 11, 22) + floret(65, 88, 12, 8) + floret(62, 108, 13, -8);
+    },
+
+    lily: c => {
+      const bell = (cx, ty, r) => `<path d="M${f1(cx - r * .85)} ${f1(ty + r * 1.2)} C ${f1(cx - r * .95)} ${ty}, ${f1(cx + r * .95)} ${ty}, ${f1(cx + r * .85)} ${f1(ty + r * 1.2)} L ${f1(cx + r * 1.1)} ${f1(ty + r * 1.6)} L ${f1(cx + r * .45)} ${f1(ty + r * 1.38)} L ${cx} ${f1(ty + r * 1.7)} L ${f1(cx - r * .45)} ${f1(ty + r * 1.38)} L ${f1(cx - r * 1.1)} ${f1(ty + r * 1.6)} Z" fill="${c.p}" ${S1}/>` +
+        shine(`M${f1(cx - r * .45)} ${f1(ty + r * .5)} C ${f1(cx - r * .5)} ${f1(ty + r * .9)}, ${f1(cx - r * .45)} ${f1(ty + r * 1.1)}, ${f1(cx - r * .4)} ${f1(ty + r * 1.2)}`);
+      let s = leaf('M58 296 C 26 250, 24 190, 44 146 C 56 196, 62 246, 62 292 Z', 'M58 288 C 44 244, 40 200, 44 156', '#93AE7E') +
+        stem('M60 298 C 60 220, 58 160, 56 110 C 54 76, 66 46, 92 40', '#8FA77E', 2.4);
+      [[57, 102, 7.5], [56, 84, 7], [59, 66, 6.5], [67, 53, 5.8], [78, 45, 5]].forEach(([x, y, r]) =>
+        s += stem(`M${x} ${y} Q ${x + 6} ${y + 2}, ${x + 7} ${y + 9}`, '#8FA77E', 1.2) + bell(x + 7, y + 8, r));
+      return s + `<circle cx="93" cy="41" r="3" fill="#C9D8B4" ${S1}/>` +
+        leaf('M62 296 C 92 256, 98 206, 86 166 C 72 212, 64 252, 60 290 Z', 'M63 286 C 78 248, 86 208, 86 176', '#A5BA91');
+    },
+
+    cotton: () => {
+      const boll = (cx, cy, r) => {
+        let b = '<path d="';
+        for (let i = 0; i < 5; i++) { const a = Math.PI / 2 + (i * 2 * Math.PI) / 5, a2 = a + Math.PI / 5; b += `${i ? 'L' : 'M'}${f1(cx + r * 1.25 * Math.cos(a))} ${f1(cy + r * 1.25 * Math.sin(a))} L${f1(cx + r * .5 * Math.cos(a2))} ${f1(cy + r * .5 * Math.sin(a2))} `; }
+        b += `Z" fill="#7E5D44" ${S1}/>`;
+        [[-.45, .15], [.45, .15], [0, -.42], [-.3, -.25], [.32, -.22], [0, .35]].forEach(([dx, dy]) => b += `<circle cx="${f1(cx + dx * r)}" cy="${f1(cy + dy * r)}" r="${f1(r * .55)}" fill="#FFFDF8" ${S1}/>`);
+        return b + line(`M${f1(cx - r * .5)} ${f1(cy)} C ${f1(cx - r * .2)} ${f1(cy - r * .2)}, ${f1(cx + r * .2)} ${f1(cy - r * .2)}, ${f1(cx + r * .5)} ${f1(cy)}`, .25, 1);
+      };
+      return stem('M60 298 C 60 230, 61 160, 60 70', '#8A6A4F', 3) + stem('M60 152 C 50 132, 42 120, 36 108', '#8A6A4F', 2.2) +
+        stem('M60 140 C 70 122, 78 110, 84 100', '#8A6A4F', 2.2) +
+        leaf('M60 210 C 70 198, 84 196, 92 200 C 86 210, 74 214, 60 210 Z', 'M62 209 C 72 204, 82 201, 89 200', '#9AA88A') +
+        boll(60, 54, 19) + boll(36, 100, 14) + boll(84, 92, 14);
+    },
+
     eucalyptus: c => {
       let s = stem('M60 298 C 57 230, 63 150, 58 30', '#9C8A86', 2.6);
-      const nodes = [[262, 14.5], [228, 13.5], [196, 12.5], [166, 11.5], [139, 10.5], [115, 9.5], [93, 8.5], [74, 7.5], [57, 6.5], [43, 5.5], [32, 4.5]];
-      nodes.forEach(([y, r], i) => {
+      [[262, 14.5], [228, 13.5], [196, 12.5], [166, 11.5], [139, 10.5], [115, 9.5], [93, 8.5], [74, 7.5], [57, 6.5], [43, 5.5], [32, 4.5]].forEach(([y, r], i) => {
         [-1, 1].forEach(dir => {
-          const rr = dir === (i % 2 ? 1 : -1) ? r : r * 0.9;
-          const cx = 60 + dir * (rr + 3), cy = y - 3 + dir * (i % 2 ? 1.5 : -1.5);
-          const fill = dir === -1 ? c.d : c.p;
-          s += `<ellipse cx="${cx}" cy="${cy}" rx="${rr}" ry="${rr * 0.9}" transform="rotate(${dir * 12} ${cx} ${cy})" fill="${fill}" ${S}/>` +
-            line(`M${60 + dir * 1.5} ${y} Q ${cx - dir * rr * 0.3} ${cy - 1}, ${cx + dir * rr * 0.55} ${cy - rr * 0.2}`, .45, 1);
+          const rr = dir === (i % 2 ? 1 : -1) ? r : r * 0.9, cx = 60 + dir * (rr + 3), cy = y - 3 + dir * (i % 2 ? 1.5 : -1.5);
+          s += `<ellipse cx="${cx}" cy="${cy}" rx="${rr}" ry="${f1(rr * 0.9)}" transform="rotate(${dir * 12} ${cx} ${cy})" fill="${dir === -1 ? c.d : c.p}" ${S}/>` +
+            line(`M${60 + dir * 1.5} ${y} Q ${f1(cx - dir * rr * 0.3)} ${cy - 1}, ${f1(cx + dir * rr * 0.55)} ${f1(cy - rr * 0.2)}`, .45, 1);
         });
       });
       return s + line('M60 40 C 62 34, 64 30, 66 26', 1, 1.6);
     },
+
+    olive: () => {
+      let s = stem('M60 298 C 58 230, 63 150, 60 20', '#8C8070', 2);
+      for (let y = 262, i = 0; y > 26; y -= 16, i++) {
+        const dir = i % 2 ? 1 : -1, L = 18 + 10 * Math.min(1, (y - 20) / 120), yy = y + (dir > 0 ? 0 : 5);
+        s += `<path d="M60 ${yy} Q ${f1(60 + dir * L * .4)} ${f1(yy - L * .55)}, ${f1(60 + dir * L)} ${f1(yy - L * .75)} Q ${f1(60 + dir * L * .55)} ${f1(yy - L * .1)}, 60 ${yy} Z" fill="${i % 3 ? '#9EAC8C' : '#BFC6AC'}" ${S1}/>` +
+          line(`M60 ${yy} Q ${f1(60 + dir * L * .5)} ${f1(yy - L * .4)}, ${f1(60 + dir * L * .9)} ${f1(yy - L * .7)}`, .4, .8);
+      }
+      return s + `<ellipse cx="67" cy="186" rx="4.2" ry="5.6" fill="#55653A" ${S1}/><ellipse cx="53" cy="128" rx="4" ry="5.4" fill="#6B7A44" ${S1}/>`;
+    },
+
+    fern: () => {
+      let s = stem('M60 298 C 58 220, 63 140, 58 24', '#7D9471', 2);
+      for (let y = 238; y > 26; y -= 9) {
+        const L = 5 + 21 * Math.min(1, (y - 26) / 170);
+        [-1, 1].forEach(dir => {
+          const yy = y - (dir > 0 ? 4 : 0);
+          s += `<path d="M59 ${yy} Q ${f1(59 + dir * L * .5)} ${f1(yy - L * .6)}, ${f1(59 + dir * L)} ${f1(yy - L * .5)} Q ${f1(59 + dir * L * .55)} ${f1(yy - L * .02)}, 59 ${yy + 1} Z" fill="${dir > 0 ? '#8FAE7E' : '#7FA06F'}" ${S1}/>`;
+        });
+      }
+      return s;
+    },
+
+    berries: c =>
+      stem('M60 298 C 60 230, 60 170, 60 112', '#7B6A5A', 2.6) +
+      stem('M60 120 C 52 100, 44 86, 40 72', '#7B6A5A', 1.6) + stem('M60 114 C 66 92, 74 74, 80 60', '#7B6A5A', 1.6) +
+      stem('M60 112 C 60 82, 58 62, 56 42', '#7B6A5A', 1.6) + stem('M60 170 C 70 150, 80 138, 88 128', '#7B6A5A', 1.6) +
+      leaf('M60 220 C 66 200, 80 190, 92 186 C 88 202, 76 216, 60 220 Z', 'M62 218 C 70 206, 80 196, 88 190', '#A9B7A6') +
+      leaf('M60 196 C 52 178, 38 170, 28 168 C 32 184, 44 194, 60 196 Z', 'M58 194 C 50 184, 40 176, 32 171', '#B8C4B4') +
+      cluster(40, 70, c) + cluster(80, 58, c) + cluster(56, 40, c) + cluster(88, 126, c, 4.2),
   };
 
+  /* ================= 花材庫（主花 6 + 季節限定 2 ／ 配花 5 ／ 葉材與果實 4） ================= */
   const MAT = {
-    rose: { name: '玫瑰', cat: 'main', meaning: '熱戀與偏愛', h: 278, thumb: '12 6 96 104',
-      colors: [{ n: '絲絨紅', p: '#D9666F', d: '#B84A55', l: '#EE9A9C' }, { n: '蜜桃粉', p: '#F3B1A9', d: '#E08F88', l: '#FAD3CC' },
-               { n: '香檳', p: '#EFD3B0', d: '#D9B58C', l: '#F8E9D4' }, { n: '奶油白', p: '#F7F0E4', d: '#E3D6C2', l: '#FFFFFF' }] },
-    tulip: { name: '鬱金香', cat: 'main', meaning: '溫柔的告白', h: 282, thumb: '20 0 80 104',
-      colors: [{ n: '櫻花粉', p: '#F2A3B3', d: '#D98096', l: '#F9C9D3' }, { n: '鵝黃', p: '#F6D77E', d: '#E3B95A', l: '#FBE8B0' },
-               { n: '薰衣紫', p: '#C3AEDB', d: '#A28CC0', l: '#DDD0EC' }, { n: '霧白', p: '#F5EFE8', d: '#DED3C6', l: '#FFFFFF' }] },
-    sunflower: { name: '向日葵', cat: 'main', meaning: '入目無他人，四下皆是你', h: 290, thumb: '6 6 108 108',
-      colors: [{ n: '金黃', p: '#F4C24B', d: '#DE9F2C' }, { n: '暖橘', p: '#F0A04B', d: '#D9802F' }, { n: '奶油黃', p: '#F7DE97', d: '#E6C56E' }] },
-    daisy: { name: '小雛菊', cat: 'filler', meaning: '藏在心底的愛', h: 262, thumb: '10 22 100 100',
-      colors: [{ n: '純白', p: '#FFFFFF', c: '#F2C14E' }, { n: '淡黃', p: '#FBEFB7', c: '#E9A93B' }, { n: '淡粉', p: '#F8D5D8', c: '#F2C14E' }] },
-    eucalyptus: { name: '圓葉尤加利', cat: 'filler', meaning: '回憶與守護', h: 300, thumb: '0 20 120 250',
-      colors: [{ n: '灰綠', p: '#B3C4B5', d: '#93A898' }, { n: '鼠尾草', p: '#A9BB96', d: '#8AA078' }, { n: '霧藍', p: '#AFC1C8', d: '#8FA4AD' }] },
+    // 季節限定（主花分頁最前面）
+    peony: { name: '芍藥', en: 'Peony', tab: 'main', slot: 'main', seasonal: '🌸 春夏限定', meaning: '情有所鍾，富貴與浪漫的極致', h: 282, thumb: '6 0 108 110',
+      colors: [{ n: '胭脂粉', p: '#E79AAA', d: '#D07A8E', l: '#F5C6CF' }, { n: '奶油白', p: '#F7EEDF', d: '#E6D6BE', l: '#FFFBF3' }] },
+    pinecone: { name: '松果與冬青', en: 'Pinecone & Holly', tab: 'main', slot: 'main', seasonal: '🍂 秋冬限定', meaning: '歲末的祝福與溫暖陪伴', h: 268, thumb: '10 18 100 124',
+      colors: [{ n: '原色', p: '#8A6040' }] },
+    // 常駐主花
+    rose: { name: '玫瑰', en: 'Rose', tab: 'main', slot: 'main', meaning: '熱戀與毫無保留的偏愛', h: 278, thumb: '12 6 96 104',
+      colors: [{ n: '經典紅', p: '#D9666F', d: '#B84A55', l: '#EE9A9C' }, { n: '香檳白', p: '#F3E6D2', d: '#E0CDB2', l: '#FBF4EA' },
+               { n: '茱萸粉', p: '#EFA9B0', d: '#D98791', l: '#F8CDD1' }, { n: '奶油黃', p: '#F6E2A6', d: '#E6C87C', l: '#FBF0CF' }] },
+    tulip: { name: '鬱金香', en: 'Tulip', tab: 'main', slot: 'main', meaning: '溫柔的告白與永恆祝福', h: 282, thumb: '20 0 80 104',
+      colors: [{ n: '鵝黃', p: '#F6D77E', d: '#E3B95A', l: '#FBE8B0' }, { n: '蜜桃粉', p: '#F6B39E', d: '#E5937D', l: '#FBD3C5' },
+               { n: '純白', p: '#F7F2EA', d: '#DFD5C7', l: '#FFFFFF' }, { n: '鬱金香橘', p: '#F29A5A', d: '#DE7A3C', l: '#F8BE8F' }] },
+    sunflower: { name: '向日葵', en: 'Sunflower', tab: 'main', slot: 'main', meaning: '入目無他人，四下皆是你', h: 290, thumb: '6 6 108 108',
+      colors: [{ n: '陽光黃', p: '#F4C24B', d: '#DE9F2C' }, { n: '復古焦糖橘', p: '#D98A3D', d: '#BC6E28' }] },
+    gerbera: { name: '非洲菊', en: 'Gerbera', tab: 'main', slot: 'main', meaning: '不怕艱難，追求喜歡的人生', h: 284, thumb: '6 2 108 108',
+      colors: [{ n: '珊瑚粉', p: '#F28C7E', d: '#DE6F62', c: '#7A6232' }, { n: '奶油白', p: '#F8EEDC', d: '#E6D5BA', c: '#8AA05A' },
+               { n: '暖陽橘', p: '#F5A34C', d: '#E0832F', c: '#5E3E28' }] },
+    ranunculus: { name: '陸蓮', en: 'Ranunculus', tab: 'main', slot: 'main', meaning: '不變的溫柔與迷人魅力', h: 272, thumb: '14 10 92 100',
+      colors: [{ n: '藕粉', p: '#E5B9B3', d: '#CF9C96', l: '#F3D6D1' }, { n: '奶白', p: '#F6EFE2', d: '#E2D5C0', l: '#FFFDF7' },
+               { n: '香檳杏', p: '#F1CDA6', d: '#DDAF83', l: '#F8E3CB' }] },
+    hydrangea: { name: '繡球花', en: 'Hydrangea', tab: 'main', slot: 'base', meaning: '希望與美滿的團聚', h: 252, thumb: '2 4 116 140',
+      colors: [{ n: '霧霾藍', p: '#AFC3DA', d: '#8EA6C2', l: '#CBD9E8' }, { n: '紫陽花紫', p: '#C2AED8', d: '#A28EC0', l: '#DAD0EA' },
+               { n: '雪球白', p: '#F4F2E8', d: '#DCDDC9', l: '#FFFFFF' }] },
+    // 配花
+    chamomile: { name: '洋甘菊', en: 'Chamomile', tab: 'filler', slot: 'filler', meaning: '藏在心底的愛與活力', h: 262, thumb: '10 22 100 100',
+      colors: [{ n: '純白', p: '#FFFFFF', c: '#F2C14E' }] },
+    babysbreath: { name: '滿天星', en: "Baby's Breath", tab: 'filler', slot: 'filler', meaning: '甘願做配角的純粹守候', h: 272, thumb: '10 6 100 110',
+      colors: [{ n: '白', p: '#FFFFFF' }, { n: '淺粉', p: '#F7D2DA' }] },
+    freesia: { name: '小蒼蘭', en: 'Freesia', tab: 'filler', slot: 'filler', meaning: '純潔、舒心與無邪的快樂', h: 286, thumb: '34 30 84 96',
+      colors: [{ n: '奶白', p: '#FAF3E3', l: '#F2D98A' }, { n: '鵝黃', p: '#F7DE7E', l: '#EBAE45' }, { n: '淡紫', p: '#D7C6E6', l: '#F2D98A' }] },
+    lily: { name: '鈴蘭', en: 'Lily of the Valley', tab: 'filler', slot: 'filler', meaning: '幸福歸來，願你被溫柔以待', h: 266, thumb: '30 30 76 100',
+      colors: [{ n: '純白', p: '#FFFEF8' }] },
+    cotton: { name: '棉花', en: 'Cotton', tab: 'filler', slot: 'filler', meaning: '珍惜眼前的幸福與溫暖擁抱', h: 274, thumb: '12 26 96 96',
+      colors: [{ n: '原色', p: '#FFFDF8' }] },
+    // 葉材與果實
+    eucalyptus: { name: '圓葉尤加利', en: 'Silver Dollar', tab: 'foliage', slot: 'foliage', meaning: '回憶與溫柔的守護', h: 300, thumb: '6 20 108 140',
+      colors: [{ n: '莫蘭迪灰綠', p: '#B3C4B5', d: '#93A898' }] },
+    olive: { name: '橄欖葉', en: 'Olive Branch', tab: 'foliage', slot: 'foliage', meaning: '和平、希望與歲月靜好', h: 316, thumb: '10 14 100 130',
+      colors: [{ n: '銀綠', p: '#9EAC8C' }] },
+    fern: { name: '蕨葉', en: 'Fern', tab: 'foliage', slot: 'foliage', meaning: '永恆的青春與呼吸感', h: 304, thumb: '10 20 100 130',
+      colors: [{ n: '翠綠', p: '#8FAE7E' }] },
+    berries: { name: '尤加利果實', en: 'Berries', tab: 'foliage', slot: 'foliage', meaning: '豐盛的收穫與小確幸', h: 270, thumb: '20 22 84 116',
+      colors: [{ n: '紅棕果實', p: '#9B4A3C', d: '#6E2E24' }, { n: '青綠果實', p: '#9DB38A', d: '#6E8460' }] },
   };
   Object.values(MAT).forEach(m => (m.w = (120 * m.h) / 300));
+  // 圖層排序：葉材墊最底 → 配花 → 繡球打底 → 主花最前
+  const RANK = { foliage: 0, filler: 1, base: 2, main: 3 };
 
   const PAPERS = [
     { id: 'kraft', name: '經典牛皮紙', base: '#CFAA86', dark: '#B48F6B', light: '#E0C3A2', tex: 'grain' },
@@ -334,24 +528,28 @@
     { id: 'sage', name: '鼠尾草', bg: '#D3DEC7' }, { id: 'pink', name: '櫻粉', bg: '#F5DAD6' },
   ];
   const TABS = [
-    { id: 'main', label: '1. 主花' }, { id: 'filler', label: '2. 配花與葉' }, { id: 'wrap', label: '3. 包裝紙' },
-    { id: 'ribbon', label: '4. 緞帶' }, { id: 'card', label: '5. 小卡' },
+    { id: 'main', label: '🌸 主花', count: '6+2' }, { id: 'filler', label: '🌼 配花', count: '5' },
+    { id: 'foliage', label: '🌿 葉材與果實', count: '4' }, { id: 'wrap', label: '🎁 包裝與緞帶' }, { id: 'card', label: '💌 小卡' },
   ];
+  const FLOWER_TABS = ['main', 'filler', 'foliage'];
 
   // 智慧落點：對齊收腰支點的扇形槽位（角度 / 縮放）
   const PIVOT = { x: 180, y: 398 };
   const SLOTS = {
     main: [{ a: 0, s: 1.08 }, { a: -15, s: 1.0 }, { a: 15, s: 1.0 }, { a: -28, s: .95 }, { a: 28, s: .95 },
            { a: -7, s: .93 }, { a: 7, s: .93 }, { a: -21, s: .9 }, { a: 21, s: .9 }],
+    base: [{ a: 0, s: 1.0 }, { a: -20, s: .97 }, { a: 20, s: .97 }, { a: -10, s: .94 }, { a: 10, s: .94 }],
     filler: [{ a: -22, s: 1.06 }, { a: 22, s: 1.06 }, { a: -36, s: 1.0 }, { a: 36, s: 1.0 }, { a: -9, s: 1.12 },
              { a: 9, s: 1.12 }, { a: -30, s: .96 }, { a: 30, s: .96 }, { a: 0, s: 1.16 }],
+    foliage: [{ a: -34, s: 1.04 }, { a: 34, s: 1.04 }, { a: -46, s: .95 }, { a: 46, s: .95 }, { a: -18, s: 1.1 },
+              { a: 18, s: 1.1 }, { a: 0, s: 1.14 }, { a: -54, s: .88 }, { a: 54, s: .88 }],
   };
 
   /* ================= 狀態 ================= */
   const state = {
-    flowers: [], sel: null, tab: 'main', paper: 'milk', ribbon: 'sage', finished: false,
+    flowers: [], sel: null, focus: null, activeMat: 'rose', tab: 'main', paper: 'milk', ribbon: 'sage', finished: false,
     card: { style: 'cream', msg: '願你被世界溫柔以待', sign: '想你的人', show: true },
-    curColor: { rose: 0, tulip: 0, sunflower: 0, daisy: 0, eucalyptus: 0 },
+    curColor: Object.fromEntries(Object.keys(MAT).map(k => [k, 0])),
   };
   let uidN = 1, lastAdded = null, scale = 1, drag = null;
 
@@ -360,11 +558,12 @@
   const layerFlowers = $('#layerFlowers'), selBox = $('#selBox'), toolbar = $('#toolbar');
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const get = id => state.flowers.find(f => f.id === id);
+  const rankOf = f => RANK[MAT[f.type].slot];
   const shuffleArr = a => { for (let i = a.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
-  function flowerSVG(type, ci, vb) {
+  function flowerSVG(type, ci, vb, style = '') {
     const m = MAT[type], c = m.colors[ci] || m.colors[0];
-    return `<svg viewBox="${vb || '0 0 120 300'}" xmlns="http://www.w3.org/2000/svg"><g filter="url(#rough)">${DRAW[type](c)}</g></svg>`;
+    return `<svg viewBox="${vb || '0 0 120 300'}" xmlns="http://www.w3.org/2000/svg"${style ? ` style="${style}"` : ''}><g filter="url(#rough)">${DRAW[type](c)}</g></svg>`;
   }
 
   /* ---------- 包裝紙 / 緞帶 / 小卡 SVG ---------- */
@@ -467,54 +666,79 @@
     toolbar.classList.remove('hide');
   }
   function select(id) {
+    const had = state.sel;
     state.sel = id;
     layerFlowers.querySelectorAll('.flower').forEach(el => el.classList.toggle('is-sel', el.dataset.id === id));
     updateSel();
+    if (id) {
+      // 點畫布上的花：工作台跳到該分類並顯示它的色票
+      const m = MAT[get(id).type];
+      state.activeMat = get(id).type;
+      if (FLOWER_TABS.includes(state.tab)) state.tab = m.tab;
+      renderWorkspace();
+    } else if (had) renderWorkspace();
+  }
+
+  /* ---------- 色票列 ---------- */
+  // 色票作用對象：畫布上選取的花 > 剛放進花束的那朵 > 下一朵要加入的花
+  function swatchTarget() {
+    const k = state.activeMat, s = get(state.sel), f = get(state.focus);
+    if (s && s.type === k) return s;
+    if (f && f.type === k) return f;
+    return null;
+  }
+  function swatchBarHTML() {
+    const k = state.activeMat, m = MAT[k], t = swatchTarget();
+    const ci = t ? t.color : state.curColor[k];
+    const who = t ? (t.id === state.sel ? '套用到：畫布上選取的這朵' : '套用到：剛放進花束的這朵') : '設定下一朵加入的顏色';
+    const head = `<div class="min-w-0"><div class="text-[13px] font-bold leading-tight truncate">${m.name}<span class="ml-1 text-[10px] font-normal text-ink/50">${m.en}</span></div>
+      <div class="text-[10.5px] text-ink/60 leading-tight mt-0.5 truncate">${m.colors.length > 1 ? `${who} · <b class="text-ink/80">${m.colors[ci].n}</b>` : '單一色款，點卡片即可加入'}</div></div>`;
+    const dots = m.colors.length > 1 ? `<div class="flex gap-2 shrink-0 pl-2">${m.colors.map((c, i) =>
+      `<button data-act="color" data-val="${i}" title="${c.n}" aria-label="${m.name} ${c.n}" class="sw ${i === ci ? 'on' : ''}" style="background-color:${c.p}"></button>`).join('')}</div>` : '';
+    return `<div class="swatch-bar sticky top-0 z-10 -mx-3 px-3 pt-1 pb-2 mb-1 flex items-center justify-between border-b border-dashed border-ink/15">${head}${dots}</div>`;
   }
 
   /* ---------- 工作台 ---------- */
   function renderWorkspace() {
     $('#tabs').innerHTML = TABS.map(t =>
-      `<button data-act="tab" data-val="${t.id}" class="shrink-0 rounded-full px-3.5 py-1.5 text-[13px] transition ${state.tab === t.id ? 'bg-milk text-white shadow-[0_3px_8px_-3px_rgba(168,139,110,.9)]' : 'bg-white/60 text-ink/75 border border-ink/10'}">${t.label}</button>`).join('');
+      `<button data-act="tab" data-val="${t.id}" class="shrink-0 rounded-full px-3 py-1.5 text-[13px] transition ${state.tab === t.id ? 'bg-milk text-white shadow-[0_3px_8px_-3px_rgba(168,139,110,.9)]' : 'bg-white/60 text-ink/75 border border-ink/10'}">${t.label}${t.count ? `<span class="ml-1 text-[10px] opacity-70">${t.count}</span>` : ''}</button>`).join('');
 
     const panel = $('#panel');
-    const tip = t => `<p class="text-[11px] text-ink/55 mb-2 mt-0.5">${t}</p>`;
-    const cardCls = on => `mat-card rounded-2xl border bg-white/70 p-2 flex flex-col items-center text-center cursor-pointer ${on ? 'border-sage-dark shadow-[0_0_0_2px_rgba(125,148,113,.35)]' : 'border-ink/10'}`;
+    const cardCls = on => `mat-card rounded-2xl border bg-white/70 p-1.5 flex flex-col items-center text-center cursor-pointer ${on ? 'is-active' : 'border-ink/10'}`;
+    const section = t => `<div class="text-[11px] tracking-[.15em] text-ink/55 mt-1 mb-1.5">${t}</div>`;
 
-    if (state.tab === 'main' || state.tab === 'filler') {
-      const items = Object.entries(MAT).filter(([, m]) => m.cat === state.tab);
-      panel.innerHTML = tip('點一下加入花束 · 圓點切換花色（選取中的同款花也會跟著換色）') +
-        `<div class="grid grid-cols-3 gap-2.5">` + items.map(([k, m]) => `
-          <div data-act="add" data-val="${k}" class="${cardCls(false)}" role="button">
-            <div class="h-[64px] w-full flex items-center justify-center pointer-events-none">${flowerSVG(k, state.curColor[k], m.thumb).replace('<svg', '<svg style="height:100%;width:100%"')}</div>
-            <div class="text-[14px] font-bold mt-1">${m.name}</div>
-            <div class="text-[10px] text-ink/60 leading-tight min-h-[26px] mt-0.5">${m.meaning}</div>
-            <div class="flex gap-1.5 mt-1.5">${m.colors.map((c, i) =>
-              `<button data-act="color" data-type="${k}" data-val="${i}" title="${c.n}" class="dot ${state.curColor[k] === i ? 'on' : ''}" style="background:${c.p}"></button>`).join('')}</div>
-          </div>`).join('') + `</div>`;
+    if (FLOWER_TABS.includes(state.tab)) {
+      if (MAT[state.activeMat].tab !== state.tab) state.activeMat = Object.keys(MAT).find(k => MAT[k].tab === state.tab);
+      const items = Object.entries(MAT).filter(([, m]) => m.tab === state.tab);
+      panel.innerHTML = swatchBarHTML() + `<div class="grid grid-cols-4 gap-2 pt-1.5">` + items.map(([k, m]) => `
+        <div data-act="add" data-val="${k}" class="${cardCls(state.activeMat === k)} ${m.seasonal ? 'seasonal' : ''}" role="button" aria-label="加入${m.name}">
+          ${m.seasonal ? `<span class="badge relative z-[1] -mt-0.5 mb-0.5">[ ${m.seasonal} ]</span>` : ''}
+          <div class="${m.seasonal ? 'h-[40px]' : 'h-[50px]'} w-full flex items-center justify-center pointer-events-none relative z-[1]">${flowerSVG(k, state.curColor[k], m.thumb, 'height:100%;width:100%')}</div>
+          <div class="text-[12.5px] font-bold mt-0.5 leading-tight relative z-[1]">${m.name}</div>
+          <div class="text-[9.5px] text-ink/60 leading-[1.25] mt-0.5 line-clamp-2 min-h-[24px] relative z-[1]">${m.meaning}</div>
+          <div class="flex gap-[3px] mt-1 h-[7px] relative z-[1]">${m.colors.length > 1 ? m.colors.map(c => `<span class="mini-dot" style="background:${c.p}"></span>`).join('') : ''}</div>
+        </div>`).join('') + `</div>`;
     } else if (state.tab === 'wrap') {
-      panel.innerHTML = tip('包裝紙分前後兩層，花會被包在紙裡面') +
-        `<div class="grid grid-cols-3 gap-2.5">` + PAPERS.map(p => `
+      panel.innerHTML = section('包裝紙 · 前後兩層，花會被包在紙裡') +
+        `<div class="grid grid-cols-3 gap-2">` + PAPERS.map(p => `
           <div data-act="paper" data-val="${p.id}" class="${cardCls(state.paper === p.id)}" role="button">
-            <div class="h-[78px] w-full relative pointer-events-none">
+            <div class="h-[62px] w-full relative pointer-events-none">
               <div class="absolute inset-0">${backWrapSVG(p).replace('viewBox="0 0 360 480"', 'viewBox="0 20 360 460" style="width:100%;height:100%"')}</div>
               <div class="absolute inset-0">${frontWrapSVG(p).replace('viewBox="0 0 360 480"', 'viewBox="0 20 360 460" style="width:100%;height:100%"')}</div>
             </div>
-            <div class="text-[12.5px] font-bold mt-1.5">${p.name}</div>
-            <div class="flex gap-1 mt-1"><span class="dot" style="background:${p.base}"></span><span class="dot" style="background:${p.dark}"></span></div>
-          </div>`).join('') + `</div>`;
-    } else if (state.tab === 'ribbon') {
-      panel.innerHTML = tip('緞帶會綁在花束收腰處') +
-        `<div class="grid grid-cols-3 gap-2.5">` + RIBBONS.map(r => `
+            <div class="text-[12px] font-bold mt-1">${p.name}</div>
+          </div>`).join('') + `</div>` +
+        section('<div class="mt-2">緞帶 · 綁在花束收腰處</div>') +
+        `<div class="grid grid-cols-5 gap-1.5">` + RIBBONS.map(r => `
           <div data-act="ribbon" data-val="${r.id}" class="${cardCls(state.ribbon === r.id)}" role="button">
-            <div class="h-[56px] w-full pointer-events-none">${bowSVG(r, '114 300 134 134').replace('<svg', '<svg style="width:100%;height:100%"')}</div>
-            <div class="text-[13px] font-bold mt-1">${r.name}</div>
+            <div class="h-[36px] w-full pointer-events-none">${bowSVG(r, '114 300 134 134').replace('<svg', '<svg style="width:100%;height:100%"')}</div>
+            <div class="text-[11px] mt-0.5 whitespace-nowrap">${r.name}</div>
           </div>`).join('') + `</div>`;
     } else {
       const c = state.card;
-      panel.innerHTML = tip('小卡吊牌：直接點畫布上的卡片也可以編輯') +
+      panel.innerHTML = section('小卡吊牌 · 直接點畫布上的卡片也可以編輯') +
         `<div class="grid grid-cols-4 gap-2 mb-3">` + CARDS.map(k => `
-          <div data-act="cardstyle" data-val="${k.id}" class="${cardCls(c.style === k.id)} !p-1.5" role="button">
+          <div data-act="cardstyle" data-val="${k.id}" class="${cardCls(c.style === k.id)}" role="button">
             <div class="h-[40px] w-full pointer-events-none">${tagShape(k.bg).replace('<svg', '<svg style="width:100%;height:100%"')}</div>
             <div class="text-[12px] mt-1">${k.name}</div>
           </div>`).join('') + `</div>
@@ -527,8 +751,8 @@
   }
 
   /* ================= 行為 ================= */
-  function slotFor(cat, i) {
-    const list = SLOTS[cat], base = list[i % list.length], ring = Math.floor(i / list.length);
+  function slotFor(slot, i) {
+    const list = SLOTS[slot], base = list[i % list.length], ring = Math.floor(i / list.length);
     const rot = base.a + (Math.random() - .5) * 5 + (ring ? (Math.random() < .5 ? -1 : 1) * (4 + ring * 2) : 0);
     const s = base.s * Math.max(.75, 1 - ring * .06) * (.97 + Math.random() * .06);
     return {
@@ -538,21 +762,21 @@
   }
   function addFlower(type) {
     const m = MAT[type];
-    const idx = state.flowers.filter(f => MAT[f.type].cat === m.cat).length;
-    const f = { id: 'f' + uidN++, type, color: state.curColor[type], flip: Math.random() < .5, ...slotFor(m.cat, idx) };
-    // 配花/葉自動墊在主花後方，新手更容易排出層次
-    if (m.cat === 'main') state.flowers.push(f); else state.flowers.unshift(f);
-    lastAdded = f.id;
-    renderFlowers();
-    toast(`${m.name}・${m.meaning}`);
+    const idx = state.flowers.filter(f => MAT[f.type].slot === m.slot).length;
+    const f = { id: 'f' + uidN++, type, color: state.curColor[type], flip: Math.random() < .5, ...slotFor(m.slot, idx) };
+    // 依圖層排序插入：葉材在最後方、主花在最前方，新手更容易排出層次
+    const at = state.flowers.findIndex(g => rankOf(g) > RANK[m.slot]);
+    if (at < 0) state.flowers.push(f); else state.flowers.splice(at, 0, f);
+    lastAdded = f.id; state.focus = f.id; state.activeMat = type;
+    state.sel = null;
+    renderFlowers(); renderWorkspace();
+    toast(`${m.seasonal ? '★ ' : ''}${m.name}・${m.meaning}`);
   }
   function reshuffle() {
     if (!state.flowers.length) return toast('花束還是空的喔');
-    const mains = shuffleArr(state.flowers.filter(f => MAT[f.type].cat === 'main'));
-    const fills = shuffleArr(state.flowers.filter(f => MAT[f.type].cat === 'filler'));
-    mains.forEach((f, i) => Object.assign(f, slotFor('main', i), { flip: Math.random() < .5 }));
-    fills.forEach((f, i) => Object.assign(f, slotFor('filler', i), { flip: Math.random() < .5 }));
-    state.flowers = [...fills, ...mains];
+    Object.keys(SLOTS).forEach(slot =>
+      shuffleArr(state.flowers.filter(f => MAT[f.type].slot === slot)).forEach((f, i) => Object.assign(f, slotFor(slot, i), { flip: Math.random() < .5, _r: Math.random() })));
+    state.flowers.sort((a, b) => rankOf(a) - rankOf(b) || a._r - b._r);
     layerFlowers.classList.add('animate');
     state.flowers.forEach(applyFlower);
     updateSel();
@@ -586,11 +810,11 @@
       e.preventDefault();
     } else if (fl) {
       const f = get(fl.dataset.id), p = toStage(e);
-      select(f.id);
+      if (state.sel !== f.id) select(f.id);
       drag = { mode: 'move', f, pid: e.pointerId, px: p.x, py: p.y, x0: f.x, y0: f.y, moved: false };
       e.preventDefault();
     } else if (!e.target.closest('#tag')) {
-      select(null);
+      if (state.sel) select(null);
     }
   });
   window.addEventListener('pointermove', e => {
@@ -624,7 +848,7 @@
         const c = { ...f, id: 'f' + uidN++, x: f.x + 16, rot: f.rot + 8 };
         arr.splice(i + 1, 0, c); lastAdded = c.id; state.sel = c.id; renderFlowers(); return;
       }
-      case 'del': arr.splice(i, 1); state.sel = null; renderFlowers(); return;
+      case 'del': arr.splice(i, 1); state.sel = null; renderFlowers(); renderWorkspace(); return;
     }
     arr.forEach(applyFlower);
   });
@@ -632,13 +856,13 @@
   /* ---------- 工作台事件 ---------- */
   $('#workspace').addEventListener('click', e => {
     const t = e.target.closest('[data-act]'); if (!t) return;
-    const { act, val, type } = t.dataset;
+    const { act, val } = t.dataset;
     if (act === 'tab') state.tab = val;
     else if (act === 'add') return addFlower(val);
     else if (act === 'color') {
-      state.curColor[type] = +val;
-      const f = get(state.sel);
-      if (f && f.type === type) { f.color = +val; renderFlowers(); }
+      const k = state.activeMat, tgt = swatchTarget();
+      state.curColor[k] = +val;
+      if (tgt) { tgt.color = +val; renderFlowers(); }
     } else if (act === 'paper') { state.paper = val; renderWraps(); }
     else if (act === 'ribbon') { state.ribbon = val; renderRibbon(); }
     else if (act === 'cardstyle') { state.card.style = val; state.card.show = true; renderTag(); }
@@ -666,7 +890,7 @@
   /* ---------- 頂部列 ---------- */
   $('#btnClear').onclick = () => {
     if (!state.flowers.length) return toast('花束已經是空的');
-    state.flowers = []; state.sel = null; renderFlowers(); toast('已清空，重新開始吧');
+    state.flowers = []; state.sel = null; state.focus = null; renderFlowers(); renderWorkspace(); toast('已清空，重新開始吧');
   };
   $('#btnShuffle').onclick = reshuffle;
   $('#btnDone').onclick = finish;
@@ -691,14 +915,20 @@
     state.flowers.forEach(f => (counts[f.type] = (counts[f.type] || 0) + 1));
     const used = Object.keys(MAT).filter(k => counts[k]);
     const q = k => `「${MAT[k].meaning}」`;
-    const mains = used.filter(k => MAT[k].cat === 'main'), fills = used.filter(k => MAT[k].cat === 'filler');
-    let poem = '這束花裡';
-    if (mains.length) poem += `，藏著${mains.map(q).join('、')}`;
-    if (fills.length) poem += `${mains.length ? '，再添上' : '，有'}${fills.map(q).join('與')}悄悄陪著`;
-    poem += '。願收下它的你，今天也被溫柔地偏愛著。';
+    const by = fn => used.filter(k => fn(MAT[k]));
+    const mains = by(m => m.tab === 'main' && !m.seasonal), fills = by(m => m.tab === 'filler'), leaves = by(m => m.tab === 'foliage'), seasonal = by(m => m.seasonal);
+    const parts = [];
+    if (mains.length) parts.push(`藏著${mains.map(q).join('、')}`);
+    if (fills.length) parts.push(`再添上${fills.map(q).join('與')}悄悄陪著`);
+    if (leaves.length) parts.push(`以${leaves.map(q).join('、')}溫柔襯底`);
+    let poem = parts.length ? `這束花裡，${parts.join('；')}。` : '';
+    if (seasonal.length) poem += `還有季節限定的${seasonal.map(k => MAT[k].name).join('與')}，替此刻記下${seasonal.map(q).join('、')}。`;
+    poem += '願收下它的你，今天也被溫柔地偏愛著。';
     const total = state.flowers.length;
     const no = String(Math.floor(Math.random() * 900000) + 100000);
+    const label = m => m.seasonal ? '限定' : { main: '主花', filler: '配花', foliage: '葉材' }[m.tab];
     const row = (l, r, sub = '') => `<div class="flex items-baseline gap-2 text-[13px]"><span class="shrink-0">${l}</span><span class="flex-1 border-b border-dotted border-ink/30 translate-y-[-3px]"></span><span class="shrink-0">${r}</span></div>${sub ? `<div class="text-[11px] text-ink/55 mb-1 pl-1">${sub}</div>` : ''}`;
+    const order = [...seasonal, ...mains, ...fills, ...leaves];
 
     $('#receiptBody').innerHTML = `
       <div class="polaroid p-3 pb-4 rounded-[4px]">
@@ -714,7 +944,7 @@
         <div class="text-center text-[20px] font-bold mt-0.5">今日花語收據</div>
         <div class="flex justify-between text-[11px] text-ink/55 mt-2"><span>NO.${no}</span><span>${date}（${week}）</span></div>
         <div class="border-t border-dashed border-ink/30 my-3"></div>
-        ${used.map(k => row(`${MAT[k].name} × ${counts[k]}`, MAT[k].cat === 'main' ? '主花' : '配花', MAT[k].meaning)).join('')}
+        ${order.map(k => row(`${MAT[k].name} × ${counts[k]}${MAT[k].seasonal ? '<span class="stamp">★ SEASONAL</span>' : ''}`, label(MAT[k]), MAT[k].meaning)).join('')}
         <div class="border-t border-dashed border-ink/30 my-3"></div>
         ${row('包裝紙', paper().name)}${row('緞帶', ribbon().name)}${row('花材總數', `${total} 枝`)}
         <div class="border-t border-dashed border-ink/30 my-3"></div>
