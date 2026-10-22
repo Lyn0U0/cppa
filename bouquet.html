@@ -6,7 +6,7 @@
 <title>花語包花室</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Caveat:wght@500;700&family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Noto+Serif+TC:wght@500&family=Special+Elite&family=Noto+Sans+TC:wght@400&display=swap" rel="stylesheet" />
 <script src="https://cdn.tailwindcss.com/3.4.16"></script>
 <script>
   tailwind.config = {
@@ -69,7 +69,7 @@
   .stage.is3d .layer-front  { transform: translateZ(50px); }
   .stage.is3d .layer-ribbon { transform: translateZ(65px); }
   .stage.is3d .layer-card   { transform: translateZ(80px); }
-  .stage.is3d .layer > svg, .stage.is3d .flower svg, .stage.is3d .tag svg { filter: drop-shadow(0 8px 9px rgba(74, 64, 58, .2)); }
+  .stage.is3d .layer > svg, .stage.is3d .flower svg, .stage.is3d .card-el svg { filter: drop-shadow(0 8px 9px rgba(74, 64, 58, .2)); }
   .stage.is3d .layer-back > svg { filter: drop-shadow(0 14px 18px rgba(74, 64, 58, .28)); }
   .glare { opacity: 0; transition: opacity .5s; }
   .stage.is3d .glare { opacity: 1; }
@@ -144,10 +144,33 @@
     background: #fff; border: 1.5px solid #7D9471; box-shadow: 0 3px 8px rgba(74,64,58,.2);
     display: flex; align-items: center; justify-content: center; pointer-events: auto; touch-action: none; cursor: grab; }
 
-  .tag { position: absolute; left: 214px; top: 372px; width: 102px; height: 66px; transform-origin: 14px 33px;
-    transform: rotate(-7deg); pointer-events: auto; cursor: pointer; transition: transform .25s; }
-  .tag:hover { transform: rotate(-3deg); }
-  .tag svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  /* ---------- 小卡（可拖曳） ---------- */
+  .card-el { position: absolute; pointer-events: auto; cursor: grab; touch-action: none; transform-origin: 50% 0; }
+  .card-el.dragging { cursor: grabbing; }
+  .card-el > svg { position: absolute; left: 0; top: 0; overflow: visible; }
+  .ct { position: absolute; display: flex; flex-direction: column; justify-content: space-between; color: #4A403A; overflow: hidden; pointer-events: none; }
+  .ct-to, .ct-from { font-size: calc(var(--fs) * 7.6px); line-height: 1.2; opacity: .72; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ct-from { text-align: right; }
+  .ct-msg { font-size: calc(var(--fs) * 9.2px); line-height: 1.32; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: var(--lines, 3); overflow: hidden; }
+  .font-hand { --fs: 1.06; font-family: "Caveat", "LXGW WenKai TC", cursive; }
+  .font-serif { --fs: 1; font-family: "Cormorant Garamond", "Noto Serif TC", "Songti TC", serif; }
+  .font-type { --fs: .94; font-family: "Special Elite", "Noto Sans TC", "Courier New", monospace; letter-spacing: .02em; }
+  .fld { display: flex; align-items: center; gap: 6px; border-radius: 14px; border: 1px solid rgba(74,64,58,.15); background: rgba(255,255,255,.75); padding: 0 10px; }
+  .fld > span { font-size: 11px; color: rgba(74,64,58,.55); white-space: nowrap; }
+  .fld input, .fld textarea { flex: 1; min-width: 0; background: transparent; outline: none; font-size: 13.5px; padding: 6px 0; resize: none; }
+  .fld:focus-within { border-color: #7D9471; box-shadow: 0 0 0 2px rgba(125,148,113,.2); }
+
+  /* ---------- 空間背景與窗邊光影 ---------- */
+  .scene { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; transition: background .5s; }
+  .gobo { position: absolute; inset: -36px; z-index: 20; pointer-events: none; }
+  .gobo > * { position: absolute; inset: 0; }
+  .gobo .leafs { transform-origin: 92% 0; animation: sway 7s ease-in-out infinite alternate; }
+  @keyframes sway { from { transform: rotate(-2.5deg); } to { transform: rotate(2.5deg) translateX(6px); } }
+  .ff { position: absolute; width: 4px; height: 4px; border-radius: 999px; background: #FFE9A8; box-shadow: 0 0 8px 3px rgba(255, 220, 130, .55);
+    animation: ff var(--d) ease-in-out var(--dl) infinite alternate; }
+  @keyframes ff { from { opacity: .12; transform: translate(0, 0); } to { opacity: 1; transform: translate(7px, -12px); } }
+  .scene-dark .empty-hint { color: rgba(255, 248, 235, .7); }
+  @media (prefers-reduced-motion: reduce) { .gobo .leafs, .ff { animation: none; } }
 
   /* ---------- 工作台 ---------- */
   .workspace { transition: transform .45s cubic-bezier(.4,0,.2,1), opacity .35s; }
@@ -261,6 +284,7 @@
 
   <!-- 2. 中央畫布 57% -->
   <main id="canvasWrap" class="canvas-wrap h-[57%] shrink-0 relative overflow-hidden">
+    <div id="scene" class="scene"></div>
     <div id="stage" class="stage">
       <div class="petals" id="petals"></div>
       <div class="layer layer-back" id="layerBack"></div>
@@ -281,6 +305,8 @@
       </div>
     </div>
 
+    <div id="gobo" class="gobo" aria-hidden="true"></div>
+
     <!-- 🔮 今日幸運花束 -->
     <button id="btnLucky" class="lucky-btn absolute top-2 left-3 z-30 rounded-full px-3 py-[7px] text-[12px] leading-tight transition">🔮 抽今日幸運花</button>
     <div id="fortune" class="fortune hide absolute left-3 right-3 top-[48px] z-[35] rounded-2xl bg-white/70 backdrop-blur-md border border-white/80 shadow-[0_10px_24px_-12px_rgba(74,64,58,.5)] px-3 py-2" role="status" aria-live="polite">
@@ -289,7 +315,7 @@
           <div class="text-[9.5px] tracking-[.18em] text-milk-deep leading-tight">✨ 今日花籤 · TODAY'S FORTUNE</div>
           <div id="fortuneTitle" class="text-[13px] font-bold leading-tight mt-0.5 truncate"></div>
         </div>
-        <button id="fortuneToCard" class="shrink-0 rounded-full bg-milk text-white px-2.5 py-1 text-[11px] active:scale-95 transition">💌 寫入小卡</button>
+        <button id="fortuneToCard" class="shrink-0 rounded-full bg-milk text-white px-2.5 py-1 text-[11px] active:scale-95 transition">✏️ 改小卡</button>
         <button id="fortuneClose" class="shrink-0 w-6 h-6 rounded-full text-ink/50 text-[16px] leading-none" aria-label="關閉花籤">×</button>
       </div>
       <p id="fortuneText" class="text-[11.5px] leading-[1.55] text-ink/80 mt-1"></p>
@@ -337,22 +363,6 @@
 
   <!-- 提示 -->
   <div id="toast" class="toast hide absolute left-1/2 -translate-x-1/2 top-[calc(8%+50px)] z-[60] rounded-full bg-ink/85 text-white text-[13px] px-4 py-2 pointer-events-none whitespace-nowrap"></div>
-
-  <!-- 小卡編輯 -->
-  <div id="cardModal" class="modal hide absolute inset-0 z-[80] flex items-end bg-ink/30 backdrop-blur-[2px]">
-    <div class="sheet w-full rounded-t-[28px] paper-tex p-5 pb-7">
-      <div class="text-lg font-bold mb-1">✉️ 寫一張小卡</div>
-      <p class="text-xs text-ink/60 mb-3">文字會出現在花束的吊牌上。</p>
-      <label class="text-xs text-ink/70">想說的話</label>
-      <textarea id="inMsg" maxlength="30" rows="2" class="mt-1 mb-3 w-full resize-none rounded-2xl border border-ink/20 bg-white/80 px-3 py-2 text-[15px] outline-none focus:border-sage-dark"></textarea>
-      <label class="text-xs text-ink/70">署名</label>
-      <input id="inSign" maxlength="12" class="mt-1 mb-5 w-full rounded-2xl border border-ink/20 bg-white/80 px-3 py-2 text-[15px] outline-none focus:border-sage-dark" />
-      <div class="flex gap-3">
-        <button id="cardCancel" class="flex-1 rounded-full border border-ink/25 py-2.5">取消</button>
-        <button id="cardSave" class="flex-1 rounded-full bg-sage-dark text-white py-2.5 font-bold">寫好了</button>
-      </div>
-    </div>
-  </div>
 
   <!-- 完成：拍立得 / 今日花語收據 -->
   <div id="receiptModal" class="modal hide absolute inset-0 z-[90] bg-[#EFE7DC]/85 backdrop-blur-sm overflow-y-auto no-scrollbar">
@@ -634,13 +644,9 @@
   // 圖層排序：葉材墊最底 → 配花 → 繡球打底 → 主花最前
   const RANK = { foliage: 0, filler: 1, base: 2, main: 3 };
 
-  const CARDS = [
-    { id: 'cream', name: '米白', bg: '#FBF6EC' }, { id: 'kraft', name: '牛皮', bg: '#D9BC94' },
-    { id: 'sage', name: '鼠尾草', bg: '#D3DEC7' }, { id: 'pink', name: '櫻粉', bg: '#F5DAD6' },
-  ];
   const TABS = [
     { id: 'main', label: '🌸 主花', count: '6+2' }, { id: 'filler', label: '🌼 配花', count: '5' },
-    { id: 'foliage', label: '🌿 葉材與果實', count: '4' }, { id: 'wrap', label: '🎁 包裝與緞帶' }, { id: 'card', label: '💌 小卡' },
+    { id: 'foliage', label: '🌿 葉材與果實', count: '4' }, { id: 'wrap', label: '🎁 包裝與緞帶' }, { id: 'card', label: '💌 小卡與背景' },
   ];
   const FLOWER_TABS = ['main', 'filler', 'foliage'];
 
@@ -660,7 +666,8 @@
   const state = {
     flowers: [], sel: null, mode3d: false, fortune: null, focus: null, activeMat: 'rose', tab: 'main', wrapSub: 'outer', finished: false,
     wrap: { outer: 'korean', outerColor: 'oat', tissue: 'tissue', tissueColor: 'white', tie: 'long', tieColor: 'gold' },
-    card: { style: 'cream', msg: '願你被世界溫柔以待', sign: '想你的人', show: true },
+    card: { style: 'tag', tones: { seal: 'wine', pick: 'cream', tag: 'cotton', botanical: 'parchment' }, to: '親愛的你', msg: '願你被世界溫柔以待', sign: '想你的人', font: 'hand', x: 222, y: 352 },
+    cardSub: 'style', scene: 'paper',
     curColor: Object.fromEntries(Object.keys(MAT).map(k => [k, 0])),
   };
   let uidN = 1, lastAdded = null, scale = 1, drag = null;
@@ -907,13 +914,6 @@
     }
     return svgWrap(s, vb);
   }
-  function tagShape(bg) {
-    return `<svg viewBox="0 0 102 66"><g filter="url(#rough)">
-      <path d="M16 3 L97 3 Q100 3 100 6 L100 60 Q100 63 97 63 L16 63 L3 33 Z" fill="${bg}" ${S}/>
-      <path d="M19 8 L94 8 L94 58 L19 58 L9 33 Z" fill="none" stroke="${INK}" stroke-width=".9" stroke-dasharray="3 3" opacity=".35"/>
-      <circle cx="14" cy="33" r="3.2" fill="#FAF7F2" stroke="${INK}" stroke-width="1.4"/></g></svg>`;
-  }
-
   /* ================= 渲染 ================= */
   const esc = s => String(s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 
@@ -923,19 +923,151 @@
     $('#layerFront').innerHTML = frontWrapSVG(state.wrap);
   }
   function renderRibbon() { $('#layerRibbon').innerHTML = tieSVG(state.wrap); }
+  /* ================= 💌 小卡（Layer 5）與空間背景 ================= */
+  const CARD_STYLES = {
+    seal: { name: '法式火漆封蠟卡', short: '火漆信封卡', en: 'Wax Seal', w: 108, h: 80, rot: -5, def: [204, 366], box: [10, 15, 88, 70], lines: 3,
+      tones: [{ id: 'wine', n: '酒紅火漆', c: '#8E3B46' }, { id: 'gold', n: '香檳金火漆', c: '#C9A24E' }] },
+    pick: { name: '金屬愛心花插夾', short: '愛心花插', en: 'Gold Pick', w: 92, h: 60, wire: 118, rot: 7, def: [232, 92], box: [8, 7, 84, 52], lines: 3,
+      tones: [{ id: 'cream', n: '奶白', c: '#FBF7EE' }, { id: 'sage', n: '鼠尾草', c: '#DCE5D2' }] },
+    tag: { name: '手作毛邊棉紙吊牌', short: '毛邊吊牌', en: 'Deckle Tag', w: 72, h: 100, rot: -8, def: [222, 352], box: [9, 24, 63, 94], lines: 5, hole: [36, 12],
+      tones: [{ id: 'cotton', n: '棉白', c: '#F8F3E8' }, { id: 'blush', n: '淡粉', c: '#F5E1DD' }] },
+    botanical: { name: '復古溫室植物圖鑑標', short: '植物圖鑑標', en: 'Botanical', w: 118, h: 62, rot: -3, def: [194, 382], box: [36, 9, 110, 55], lines: 3,
+      tones: [{ id: 'parchment', n: '羊皮紙', c: '#F0E4CA' }, { id: 'kraft', n: '牛皮', c: '#D9BC94' }] },
+    none: { name: '隱藏小卡', short: '隱藏小卡', en: 'None' },
+  };
+  const FONTS = { hand: '溫柔手寫風', serif: '文青明朝體', type: '復古打字機' };
+  const QUOTES = [
+    '買花給自己，是浪漫的開始。', '願你的今天，比這束花還要明媚。', '把春天的溫柔包起來，跨越螢幕送給你。',
+    '生活偶爾匆忙，別忘了替自己留一朵花開的時間。', '今天沒有特別的節日，只是想把好看的花分享給你。',
+    '慢慢來，花也是一朵一朵開的。', '謝謝你出現，讓平凡的日子開出花來。', '願你像花一樣，不必討好誰也很美。',
+    '花會謝，但想念會一直開著。', '你值得每一個被好好對待的日子。',
+  ];
+  let quoteIdx = 0;
+  const toneOf = st => { const c = CARD_STYLES[st]; return c.tones.find(t => t.id === state.card.tones[st]) || c.tones[0]; };
+
+  function cardSVG(st, tone) {
+    const c = CARD_STYLES[st], W = c.w, H = c.h + (c.wire || 0);
+    let g = '';
+    if (st === 'seal') {
+      g = `<path d="M3 4 L105 4 L105 78 L3 78 Z" fill="${tone === 'gold' ? '#FBF6EC' : '#FBF6EC'}" ${S}/>` +
+        `<path d="M7 8 L54 30 L101 8" fill="none" stroke="${INK}" stroke-width="1" stroke-opacity=".3" stroke-dasharray="3 2.5"/>` +
+        line('M3 78 L 34 54 M105 78 L 76 54', .18, 1);
+      const wax = colorOf(CARD_STYLES.seal.tones, tone).c, dk = mix(wax, '#2B2420', .25), lt = mix(wax, '#FFFFFF', .45);
+      let blob = '';
+      for (let i = 0; i <= 12; i++) { const a = (i / 12) * Math.PI * 2, r = 11 + (i % 3 === 0 ? 1.8 : i % 2 ? -.5 : .7); blob += `${i ? 'L' : 'M'}${f1(94 + r * Math.cos(a))} ${f1(70 + r * Math.sin(a))} `; }
+      g += `<path d="${blob}Z" fill="${wax}" ${S}/><circle cx="94" cy="70" r="7" fill="none" stroke="${dk}" stroke-width="1.6"/>` +
+        [0, 72, 144, 216, 288].map(a => `<circle cx="${f1(94 + 3 * Math.cos(a * Math.PI / 180))}" cy="${f1(70 + 3 * Math.sin(a * Math.PI / 180))}" r="1.9" fill="${dk}" opacity=".85"/>`).join('') +
+        `<path d="M87 64 C 89 61, 93 60, 96 60" fill="none" stroke="${lt}" stroke-width="1.6" stroke-linecap="round" opacity=".8"/>`;
+    } else if (st === 'pick') {
+      const bg = colorOf(CARD_STYLES.pick.tones, tone).c;
+      g = `<defs><linearGradient id="wireFade" gradientUnits="userSpaceOnUse" x1="0" y1="62" x2="0" y2="${H}"><stop offset="0" stop-color="#C9A24E"/><stop offset=".75" stop-color="#C9A24E" stop-opacity=".7"/><stop offset="1" stop-color="#C9A24E" stop-opacity="0"/></linearGradient></defs>` +
+        `<path d="M46 66 C 47 100, 45 140, 47 ${H}" fill="none" stroke="url(#wireFade)" stroke-width="2.2" stroke-linecap="round"/>` +
+        `<rect x="3" y="3" width="86" height="54" rx="4" fill="${bg}" ${S}/><rect x="7" y="7" width="78" height="46" rx="2" fill="none" stroke="#C9A24E" stroke-width=".9" opacity=".8"/>` +
+        `<path d="M46 70 C 38 62, 37 54, 42 52 C 45 51, 46 54, 46 55 C 46 54, 47 51, 50 52 C 55 54, 54 62, 46 70 Z" fill="none" stroke="#B8903C" stroke-width="2" stroke-linejoin="round"/>` +
+        `<path d="M43 55 C 43 54, 44 53.5, 45 54" fill="none" stroke="#FFF3C8" stroke-width="1" stroke-linecap="round"/>`;
+    } else if (st === 'tag') {
+      const bg = colorOf(CARD_STYLES.tag.tones, tone).c, R = rng(7);
+      let d = 'M4 4';
+      for (let x = 8; x <= 68; x += 4) d += ` L${x} ${f1(3 + R() * 2.4)}`;
+      for (let y = 8; y <= 96; y += 4) d += ` L${f1(68 + R() * 2.4)} ${y}`;
+      for (let x = 64; x >= 4; x -= 4) d += ` L${x} ${f1(96 + R() * 2.4)}`;
+      for (let y = 92; y >= 8; y -= 4) d += ` L${f1(2 + R() * 2.4)} ${y}`;
+      g = `<path d="${d} Z" fill="${bg}" stroke="${INK}" stroke-width="1.3" stroke-linejoin="round"/><path d="${d} Z" fill="url(#speckle)"/>` +
+        `<circle cx="36" cy="12" r="3.6" fill="#FAF7F2" stroke="${INK}" stroke-width="1.3"/>` +
+        `<path d="M36 12 C 26 -4, 46 -12, 41 -1 C 39 4, 37 8, 36 12" fill="none" stroke="#A9865C" stroke-width="2" stroke-linecap="round"/>` +
+        line('M10 19 L 62 19', .25, .8);
+    } else if (st === 'botanical') {
+      const bg = colorOf(CARD_STYLES.botanical.tones, tone).c;
+      g = `<rect x="2" y="2" width="114" height="58" rx="3" fill="${bg}" ${S}/><rect x="2" y="2" width="114" height="58" rx="3" fill="url(#kraftTex)"/>` +
+        `<rect x="6" y="6" width="106" height="50" fill="none" stroke="${INK}" stroke-width=".9" opacity=".55"/><rect x="9" y="9" width="100" height="44" fill="none" stroke="${INK}" stroke-width=".5" opacity=".45"/>` +
+        line('M32 13 L 32 49', .3, .6) +
+        stem('M20 50 C 19 40, 21 28, 20 16', '#7D9471', 1.2) +
+        leaf('M20 40 C 25 36, 28 36, 29 38 C 26 41, 23 41, 20 40 Z', '', '#9CAF88') + leaf('M20 32 C 15 28, 12 28, 11 30 C 14 33, 17 33, 20 32 Z', '', '#9CAF88') +
+        `<circle cx="20" cy="15" r="3.2" fill="#E5A3A8" ${S1}/><circle cx="20" cy="15" r="1.2" fill="#F2C14E"/>` +
+        `<text x="106" y="52" text-anchor="end" font-family="Georgia, serif" font-size="4.6" font-style="italic" fill="${INK}" opacity=".5">No. 024 · Flora</text>`;
+    }
+    return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}"><g filter="url(#rough)">${g}</g></svg>`;
+  }
+
+  function cardInner(c) {
+    const st = CARD_STYLES[c.style], [l, t, r, b] = st.box;
+    return cardSVG(c.style, c.tones[c.style]) +
+      `<div class="ct font-${c.font}" style="left:${l}px;top:${t}px;width:${r - l}px;height:${b - t}px;--lines:${st.lines}">` +
+      `${c.to ? `<div class="ct-to">To. ${esc(c.to)}</div>` : ''}` +
+      `<div class="ct-msg">${esc(c.msg) || '<span style="opacity:.4">點我寫下想說的話…</span>'}</div>` +
+      `<div class="ct-from">— ${esc(c.sign || '…')}</div></div>`;
+  }
   function renderTag() {
-    const c = state.card, bg = CARDS.find(x => x.id === c.style).bg;
-    $('#layerCard').innerHTML = !c.show ? '' : `
-      <svg viewBox="0 0 360 480" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible">
-        <path d="M182 344 C 194 362, 208 384, 228 405" fill="none" stroke="${INK}" stroke-width="1.3" stroke-linecap="round" filter="url(#rough)"/>
-      </svg>
-      <div class="tag" id="tag" title="點我編輯小卡">
-        ${tagShape(bg)}
-        <div class="absolute left-[24px] right-[7px] top-[9px] bottom-[7px] flex flex-col justify-between">
-          <div class="text-[9.5px] leading-[1.3] text-ink" style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">${esc(c.msg) || '<span class="opacity-40">點我寫下想說的話…</span>'}</div>
-          <div class="text-[8px] text-right text-ink/70">— ${esc(c.sign || '…')}</div>
-        </div>
-      </div>`;
+    const c = state.card;
+    if (c.style === 'none') { $('#layerCard').innerHTML = ''; return; }
+    const st = CARD_STYLES[c.style];
+    $('#layerCard').innerHTML =
+      `<svg viewBox="0 0 360 480" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible"><path id="cardString" fill="none" stroke="#A9865C" stroke-width="1.4" stroke-linecap="round" filter="url(#rough)"/></svg>` +
+      `<div class="card-el" id="cardEl" title="拖曳移動・點一下編輯文字" style="width:${st.w}px;height:${st.h + (st.wire || 0)}px">${cardInner(c)}</div>`;
+    positionCard();
+  }
+  // 吊牌離收腰處夠近時，自動用麻繩連到綁結
+  function positionCard() {
+    const c = state.card, el = $('#cardEl');
+    if (!el) return;
+    const st = CARD_STYLES[c.style];
+    el.style.left = c.x + 'px'; el.style.top = c.y + 'px'; el.style.transform = `rotate(${st.rot}deg)`;
+    const str = $('#cardString');
+    if (st.hole) {
+      const hx = c.x + st.hole[0], hy = c.y + st.hole[1], near = Math.hypot(hx - 182, hy - 344) < 170;
+      str.setAttribute('d', near ? `M182 344 Q ${f1((182 + hx) / 2)} ${f1(Math.max(344, hy) + 26)}, ${f1(hx)} ${f1(hy)}` : '');
+    } else str.setAttribute('d', '');
+  }
+  function setCardStyle(st) {
+    state.card.style = st;
+    if (st !== 'none') [state.card.x, state.card.y] = CARD_STYLES[st].def;
+    renderTag();
+  }
+
+  // 空間背景（畫布底層）＋ 窗邊光影遮罩（最上層、pointer-events: none）
+  const NOISE = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .29 0 0 0 0 .25 0 0 0 0 .22 0 0 0 .08 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")`;
+  const WOOD = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='200'><g fill='none' stroke='%236B4428' stroke-opacity='.22' stroke-width='1.1'><path d='M12 0 C 16 50, 8 110, 14 200'/><path d='M30 0 C 26 60, 36 120, 29 200'/><path d='M52 0 C 56 40, 47 90, 55 140 C 58 165, 52 185, 54 200'/><path d='M74 0 C 70 70, 80 130, 73 200'/><path d='M96 0 C 101 60, 92 120, 99 200'/></g><ellipse cx='54' cy='140' rx='5' ry='11' fill='none' stroke='%236B4428' stroke-opacity='.25'/></svg>")`;
+  const petalSvg = (x, y, r, c, s = 16) => `<svg viewBox="0 0 16 20" width="${s}" height="${s * 1.25}" style="position:absolute;${x};${y};transform:rotate(${r}deg)"><path d="M8 1 C 14 5, 15 12, 8 19 C 1 12, 2 5, 8 1 Z" fill="${c}" stroke="${INK}" stroke-width=".9" stroke-opacity=".55"/></svg>`;
+  const SCENES = {
+    sun: { emoji: '☀️', name: '午後百葉窗暖陽', short: '百葉窗暖陽',
+      bg: `radial-gradient(ellipse at 82% 8%, rgba(255,238,200,.95), transparent 55%), ${NOISE}, linear-gradient(160deg, #F7E8D2 0%, #F1DCC0 60%, #EAD1B0 100%)`,
+      decor: '',
+      gobo: `<div style="background:linear-gradient(118deg, transparent 14%, rgba(255,226,170,.32) 22%, transparent 31%, transparent 38%, rgba(255,226,170,.26) 46%, transparent 55%, rgba(255,226,170,.2) 63%, transparent 70%);mix-blend-mode:overlay"></div>
+        <svg viewBox="0 0 400 520" preserveAspectRatio="none" style="mix-blend-mode:multiply;filter:blur(5px);opacity:.9"><g fill="rgba(110,72,36,.16)">
+          <path d="M150 -20 L172 -24 L118 540 L96 544 Z"/><path d="M312 -40 L334 -44 L282 540 L260 544 Z"/><path d="M-20 228 L420 160 L424 178 L-16 246 Z"/></g>
+          <g class="leafs" fill="rgba(80,96,52,.2)"><ellipse cx="360" cy="40" rx="34" ry="13" transform="rotate(32 360 40)"/><ellipse cx="322" cy="70" rx="26" ry="10" transform="rotate(-18 322 70)"/>
+          <ellipse cx="380" cy="104" rx="30" ry="11" transform="rotate(58 380 104)"/><ellipse cx="300" cy="22" rx="22" ry="8" transform="rotate(12 300 22)"/><path d="M400 0 C 360 40, 330 70, 290 90" stroke="rgba(80,96,52,.25)" stroke-width="4" fill="none"/></g></svg>` },
+    wood: { emoji: '🪵', name: '花藝師胡桃木桌', short: '胡桃木桌',
+      bg: `repeating-linear-gradient(90deg, rgba(70,40,20,0) 0 118px, rgba(70,40,20,.32) 118px 120px), ${WOOD}, linear-gradient(180deg, #C69B70 0%, #B78B62 100%)`,
+      decor: () => petalSvg('left:9%', 'top:12%', -24, '#F5C6CF', 15) + petalSvg('right:10%', 'top:26%', 38, '#FBF4EA', 13) + petalSvg('right:22%', 'bottom:9%', 70, '#EFA9B0', 16) +
+        `<svg viewBox="0 0 64 64" width="62" height="62" style="position:absolute;left:5%;bottom:5%;transform:rotate(-28deg)"><g filter="url(#rough)" stroke="${INK}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+          <path d="M30 32 L56 8 L59 11 L33 35 Z" fill="#E2DED6"/><path d="M30 32 L60 24 L60 28 L32 36 Z" fill="#CFC9BE"/>
+          <circle cx="17" cy="44" r="9" fill="none" stroke="${INK}" stroke-width="5.4"/><circle cx="17" cy="44" r="9" fill="none" stroke="#9CAF88" stroke-width="3.4"/>
+          <circle cx="29" cy="52" r="8" fill="none" stroke="${INK}" stroke-width="5.4"/><circle cx="29" cy="52" r="8" fill="none" stroke="#9CAF88" stroke-width="3.4"/>
+          <path d="M24 38 L 31 33 M26 46 L 32 36" fill="none"/><circle cx="31" cy="34" r="1.8" fill="${INK}"/></g></svg>`,
+      gobo: `<div style="background:radial-gradient(ellipse at 50% 34%, rgba(255,214,160,.5), transparent 58%);mix-blend-mode:soft-light"></div>
+        <div style="background:radial-gradient(ellipse at 50% 45%, transparent 52%, rgba(50,26,10,.32) 100%);mix-blend-mode:multiply"></div>` },
+    linen: { emoji: '🧺', name: '韓系亞麻野餐布', short: '亞麻野餐布',
+      bg: `repeating-linear-gradient(0deg, rgba(226,198,150,.5) 0 12px, transparent 12px 24px), repeating-linear-gradient(90deg, rgba(226,198,150,.5) 0 12px, transparent 12px 24px), #FBF5EA`,
+      decor: () => `<div style="position:absolute;inset:16px 14px;border-radius:4px;background:repeating-linear-gradient(0deg, rgba(120,98,70,.07) 0 1px, transparent 1px 3px), repeating-linear-gradient(90deg, rgba(120,98,70,.07) 0 1px, transparent 1px 3px), ${NOISE.replace(/"/g, '&quot;')}, #EFE7D8;box-shadow:0 0 0 1px rgba(168,139,110,.22), 0 8px 18px -10px rgba(74,64,58,.4)"></div>`,
+      gobo: `<div style="background:linear-gradient(135deg, rgba(255,255,255,.55) 0%, transparent 45%);mix-blend-mode:soft-light"></div>` },
+    midnight: { emoji: '🌙', name: '午夜微光暗調花房', short: '午夜花房', dark: true,
+      bg: `radial-gradient(ellipse at 50% 42%, #33503F 0%, #213229 42%, #1A2220 72%, #161A1B 100%)`,
+      decor: () => { const R = rng(19); let h = ''; for (let i = 0; i < 18; i++) h += `<span class="ff" style="left:${f1(4 + R() * 92)}%;top:${f1(4 + R() * 90)}%;--d:${f1(2.4 + R() * 3)}s;--dl:-${f1(R() * 4)}s"></span>`; return h; },
+      gobo: `<div style="background:radial-gradient(ellipse at 50% 40%, rgba(255,236,200,.28), transparent 52%);mix-blend-mode:screen"></div>
+        <div style="background:radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(0,0,0,.35) 100%)"></div>` },
+    paper: { emoji: '📄', name: '經典極簡畫布', short: '極簡畫布',
+      bg: `radial-gradient(ellipse at 30% 24%, rgba(236,221,200,.55), transparent 55%), radial-gradient(ellipse at 74% 72%, rgba(220,229,210,.5), transparent 52%), ${NOISE}, #FAF7F2`,
+      decor: '', gobo: '' },
+  };
+  const SCENE_ORDER = ['sun', 'wood', 'linen', 'midnight', 'paper'];
+  const sceneDecor = sc => typeof sc.decor === 'function' ? sc.decor() : sc.decor;
+  function renderScene() {
+    const sc = SCENES[state.scene];
+    $('#scene').style.background = sc.bg;
+    $('#scene').innerHTML = sceneDecor(sc);
+    $('#gobo').innerHTML = sc.gobo;
+    canvasWrap.classList.toggle('scene-dark', !!sc.dark);
   }
 
   // 立體書景深：依疊放順序與種類給每朵花一個 Z 高度（嚴格遞增，確保 3D 排序與圖層順序一致）
@@ -1062,18 +1194,51 @@
             <div class="text-[8.5px] text-ink/45 leading-tight">${st.en}</div>
           </div>`).join('') + `</div>`;
     } else {
-      const c = state.card;
-      panel.innerHTML = section('小卡吊牌 · 直接點畫布上的卡片也可以編輯') +
-        `<div class="grid grid-cols-4 gap-2 mb-3">` + CARDS.map(k => `
-          <div data-act="cardstyle" data-val="${k.id}" class="${cardCls(c.style === k.id)}" role="button">
-            <div class="h-[40px] w-full pointer-events-none">${tagShape(k.bg).replace('<svg', '<svg style="width:100%;height:100%"')}</div>
-            <div class="text-[12px] mt-1">${k.name}</div>
-          </div>`).join('') + `</div>
-        <div class="flex gap-2">
-          <button data-act="cardedit" class="flex-1 rounded-2xl bg-milk text-white py-2.5 text-[14px] font-bold active:scale-95 transition">✏️ 編輯文字與署名</button>
-          <button data-act="cardtoggle" class="rounded-2xl border border-ink/20 bg-white/70 px-4 py-2.5 text-[13px] active:scale-95 transition">${c.show ? '隱藏小卡' : '顯示小卡'}</button>
-        </div>
-        <div class="mt-2.5 rounded-2xl bg-white/50 border border-dashed border-ink/20 px-3 py-2 text-[12px] text-ink/70">「${esc(c.msg)}」 — ${esc(c.sign)}</div>`;
+      const c = state.card, sub = state.cardSub;
+      const subs = [['style', '🏷️ 卡片款式與位置', '5款造型'], ['text', '✍️ 文字與字體', '含靈感金句'], ['scene', '☀️ 背景與光影', '5款場景']];
+      const subBar = `<div class="flex gap-1.5">${subs.map(([id, label, hint]) =>
+        `<button data-act="csub" data-val="${id}" class="flex-1 min-w-0 rounded-xl px-1 py-1 text-[11.5px] leading-tight border transition ${sub === id ? 'bg-white border-sage-dark font-bold shadow-[0_0_0_2px_rgba(125,148,113,.25)]' : 'bg-white/50 border-ink/10 text-ink/70'}">${label}<span class="block text-[9px] font-normal opacity-60 mt-0.5">${hint}</span></button>`).join('')}</div>`;
+      let head = '', body = '';
+      if (sub === 'style') {
+        const st = CARD_STYLES[c.style];
+        head = `<div class="flex items-center justify-between gap-2 mt-1.5">
+            <div class="min-w-0 text-[11px] leading-tight text-ink/65 truncate"><b class="text-ink">${st.name}</b>${c.style === 'none' ? '' : ` · ${toneOf(c.style).n}`}</div>
+            <div class="flex items-center gap-1.5 shrink-0">${c.style === 'none' ? '' : st.tones.map(t =>
+              `<button data-act="ctone" data-val="${t.id}" title="${t.n}" aria-label="${t.n}" class="sw sm ${c.tones[c.style] === t.id ? 'on' : ''}" style="background-color:${t.c}"></button>`).join('') +
+              `<button data-act="creset" class="ml-1 rounded-full border border-ink/15 bg-white/70 px-2 py-0.5 text-[10.5px]">↺ 歸位</button>`}</div>
+          </div>`;
+        body = `<div class="grid grid-cols-5 gap-1.5">` + Object.entries(CARD_STYLES).map(([id, cs]) => `
+            <div data-act="cstyle" data-val="${id}" class="${cardCls(c.style === id)}" role="button" aria-label="${cs.name}">
+              <div class="h-[50px] w-full flex items-center justify-center pointer-events-none">${id === 'none' ? '<span class="text-[22px] opacity-40">∅</span>' :
+                cardSVG(id, c.tones[id]).replace(/width="\d+" height="\d+"/, 'style="max-width:100%;max-height:100%"')}</div>
+              <div class="text-[11px] font-bold mt-1 leading-tight">${cs.short}</div>
+              <div class="text-[8.5px] text-ink/45 leading-tight">${cs.en}</div>
+            </div>`).join('') + `</div>
+          <p class="text-[10.5px] text-ink/50 mt-2">💡 在畫布上直接拖曳卡片：放上方花叢當插牌，放到收腰附近就變成吊牌。</p>`;
+      } else if (sub === 'text') {
+        body = `<div class="flex flex-col gap-1.5 mt-1.5">
+            <div class="grid grid-cols-2 gap-1.5">
+              <label class="fld"><span>To:</span><input id="cTo" data-field="to" maxlength="12" placeholder="收件人" value="${esc(c.to)}"></label>
+              <label class="fld"><span>From:</span><input id="cFrom" data-field="sign" maxlength="12" placeholder="署名" value="${esc(c.sign)}"></label>
+            </div>
+            <label class="fld !items-start"><span class="pt-[7px]">Message</span><textarea id="cMsg" data-field="msg" maxlength="36" rows="2" placeholder="寫下想說的話…">${esc(c.msg)}</textarea></label>
+            <div class="flex gap-1.5">${Object.entries(FONTS).map(([id, n]) =>
+              `<button data-act="cfont" data-val="${id}" class="font-${id} flex-1 min-w-0 rounded-xl border px-1 py-1.5 text-[12px] leading-tight transition ${c.font === id ? 'bg-white border-sage-dark shadow-[0_0_0_2px_rgba(125,148,113,.25)]' : 'bg-white/50 border-ink/10'}">${n}<span class="block text-[10px] opacity-60">Aa 花</span></button>`).join('')}
+              <button data-act="quote" class="lucky-btn shrink-0 rounded-xl px-2.5 text-[11.5px] leading-tight">✨ 靈感<br>金句</button>
+            </div>
+          </div>`;
+      } else {
+        const sc = SCENES[state.scene];
+        head = `<div class="mt-1.5 text-[11px] text-ink/65"><b class="text-ink">${sc.emoji} ${sc.name}</b> · 背景＋窗邊光影，3D 傾斜時光斑會跟著位移</div>`;
+        body = `<div class="grid grid-cols-5 gap-1.5">` + SCENE_ORDER.map(id => { const s2 = SCENES[id]; return `
+            <div data-act="scene" data-val="${id}" class="${cardCls(state.scene === id)}" role="button" aria-label="${s2.name}">
+              <div class="h-[50px] w-full rounded-lg relative overflow-hidden pointer-events-none border border-ink/10" style="background:${s2.bg.replace(/"/g, '&quot;')}">
+                <div class="absolute inset-0 overflow-hidden" style="transform:scale(.5);transform-origin:0 0;width:200%;height:200%">${sceneDecor(s2)}</div>
+                <span class="absolute right-1 bottom-0.5 text-[14px]">${s2.emoji}</span></div>
+              <div class="text-[11px] font-bold mt-1 leading-tight">${s2.short}</div>
+            </div>`; }).join('') + `</div>`;
+      }
+      panel.innerHTML = `<div class="swatch-bar sticky top-0 z-10 -mx-3 px-3 pt-0.5 pb-2 mb-1.5 border-b border-dashed border-ink/15">${subBar}${head}</div>` + body;
     }
   }
 
@@ -1123,8 +1288,10 @@
     scale = Math.min(canvasWrap.clientWidth / 360, canvasWrap.clientHeight / 480);
     applyStageTilt();
   }
+  const goboShift = t => `translate(${(t.y * 1.4).toFixed(1)}px, ${(-t.x * 1.2).toFixed(1)}px)`;
   function applyStageTilt() {
     const t = mainTilt;
+    $('#gobo').style.transform = goboShift(t);
     stage.style.transform = `translate(-50%, -50%) scale(${scale})` + (t.on || t.x || t.y ? ` rotateX(${t.x.toFixed(2)}deg) rotateY(${t.y.toFixed(2)}deg)` : '');
   }
   new ResizeObserver(fit).observe(canvasWrap);
@@ -1145,13 +1312,22 @@
       if (state.sel !== f.id) select(f.id);
       drag = { mode: 'move', f, pid: e.pointerId, px: p.x, py: p.y, x0: f.x, y0: f.y, moved: false };
       e.preventDefault();
-    } else if (!e.target.closest('#tag')) {
+    } else if (e.target.closest('#cardEl')) {
+      const p = toStage(e);
       if (state.sel) select(null);
-    }
+      drag = { mode: 'card', pid: e.pointerId, px: p.x, py: p.y, x0: state.card.x, y0: state.card.y, moved: false };
+      e.preventDefault();
+    } else if (state.sel) select(null);
   });
   window.addEventListener('pointermove', e => {
     if (!drag || e.pointerId !== drag.pid) return;
     const p = toStage(e), f = drag.f;
+    if (drag.mode === 'card') {
+      const dx = p.x - drag.px, dy = p.y - drag.py;
+      if (!drag.moved) { if (Math.hypot(dx, dy) < 4) return; drag.moved = true; $('#cardEl').classList.add('dragging'); }
+      state.card.x = clamp(drag.x0 + dx, -30, 330); state.card.y = clamp(drag.y0 + dy, -20, 440);
+      return positionCard();
+    }
     if (drag.mode === 'move') {
       const dx = p.x - drag.px, dy = p.y - drag.py;
       if (!drag.moved) { if (Math.hypot(dx, dy) < 3) return; drag.moved = true; stage.classList.add('xray'); }
@@ -1163,7 +1339,11 @@
     }
     applyFlower(f);
   });
-  const endDrag = e => { if (!drag || e.pointerId !== drag.pid) return; drag = null; stage.classList.remove('xray'); };
+  const endDrag = e => {
+    if (!drag || e.pointerId !== drag.pid) return;
+    const d = drag; drag = null; stage.classList.remove('xray');
+    if (d.mode === 'card') { $('#cardEl')?.classList.remove('dragging'); if (!d.moved && e.type === 'pointerup') openCardText(); }
+  };
   window.addEventListener('pointerup', endDrag);
   window.addEventListener('pointercancel', endDrag);
 
@@ -1200,27 +1380,34 @@
       state.wrap[t.dataset.key] = val;
       if (t.dataset.key.startsWith('tie')) renderRibbon(); else renderWraps();
     }
-    else if (act === 'cardstyle') { state.card.style = val; state.card.show = true; renderTag(); }
-    else if (act === 'cardtoggle') { state.card.show = !state.card.show; renderTag(); }
-    else if (act === 'cardedit') return openCard();
+    else if (act === 'csub') state.cardSub = val;
+    else if (act === 'cstyle') setCardStyle(val);
+    else if (act === 'ctone') { state.card.tones[state.card.style] = val; renderTag(); }
+    else if (act === 'creset') { [state.card.x, state.card.y] = CARD_STYLES[state.card.style].def; positionCard(); return; }
+    else if (act === 'cfont') { state.card.font = val; renderTag(); }
+    else if (act === 'quote') {
+      state.card.msg = QUOTES[quoteIdx++ % QUOTES.length];
+      ensureCardVisible(); renderTag();
+      const m = $('#cMsg'); if (m) m.value = state.card.msg;
+      return;
+    } else if (act === 'scene') { state.scene = val; renderScene(); }
     renderWorkspace();
   });
 
-  /* ---------- 小卡編輯 ---------- */
-  const cardModal = $('#cardModal');
-  function openCard() {
-    $('#inMsg').value = state.card.msg; $('#inSign').value = state.card.sign;
-    cardModal.classList.remove('hide');
-    setTimeout(() => $('#inMsg').focus(), 250);
+  /* ---------- 小卡文字（工作台內直接輸入） ---------- */
+  function ensureCardVisible() {
+    if (state.card.style !== 'none') return;
+    setCardStyle('tag'); toast('已顯示毛邊吊牌小卡');
   }
-  const closeCard = () => cardModal.classList.add('hide');
-  $('#layerCard').addEventListener('click', e => { if (e.target.closest('#tag') && !state.finished) openCard(); });
-  $('#cardCancel').onclick = closeCard;
-  cardModal.addEventListener('click', e => { if (e.target === cardModal) closeCard(); });
-  $('#cardSave').onclick = () => {
-    state.card.msg = $('#inMsg').value.trim(); state.card.sign = $('#inSign').value.trim(); state.card.show = true;
-    renderTag(); renderWorkspace(); closeCard(); toast('小卡寫好了 ✉️');
-  };
+  $('#workspace').addEventListener('input', e => {
+    const f = e.target.dataset.field; if (!f) return;
+    state.card[f] = e.target.value;
+    ensureCardVisible(); renderTag();
+  });
+  function openCardText() {
+    state.tab = 'card'; state.cardSub = 'text'; renderWorkspace();
+    setTimeout(() => $('#cMsg')?.focus(), 60);
+  }
 
   /* ---------- 頂部列 ---------- */
   $('#btnClear').onclick = () => {
@@ -1272,7 +1459,7 @@
 
     $('#receiptBody').innerHTML = `
       <div class="polaroid p-3 pb-4 rounded-[4px]">
-        <div id="pv" class="paper-tex relative overflow-hidden" style="width:250px;height:290px"></div>
+        <div id="pv" class="relative overflow-hidden" style="width:250px;height:290px"></div>
         <div class="flex justify-between items-end mt-3 px-1">
           <div class="text-[19px] font-bold">For you ♡</div>
           <div class="text-[11px] text-ink/55">${date}</div>
@@ -1287,11 +1474,14 @@
         <div class="border-t border-dashed border-ink/30 my-3"></div>
         ${order.map(k => row(`${MAT[k].name} × ${counts[k]}${MAT[k].seasonal ? '<span class="stamp">★ SEASONAL</span>' : ''}`, label(MAT[k]), MAT[k].meaning)).join('')}
         <div class="border-t border-dashed border-ink/30 my-3"></div>
-        ${row('外層主紙', `${OUTERS[w.outer].short} · ${colorOf(OUTER_COLORS, w.outerColor).n}`)}${row('內層襯紙', w.tissue === 'none' ? '無內襯' : `${TISSUES[w.tissue].short} · ${colorOf(TISSUE_COLORS, w.tissueColor).n}`)}${row('緞帶綁繩', `${TIES[w.tie].short} · ${colorOf(TIE_COLORS, w.tieColor).n}`)}${row('花材總數', `${total} 枝`)}
+        ${row('外層主紙', `${OUTERS[w.outer].short} · ${colorOf(OUTER_COLORS, w.outerColor).n}`)}${row('內層襯紙', w.tissue === 'none' ? '無內襯' : `${TISSUES[w.tissue].short} · ${colorOf(TISSUE_COLORS, w.tissueColor).n}`)}${row('緞帶綁繩', `${TIES[w.tie].short} · ${colorOf(TIE_COLORS, w.tieColor).n}`)}${row('空間氛圍', `${SCENES[state.scene].emoji} ${SCENES[state.scene].short}`)}${row('小卡', state.card.style === 'none' ? '未附小卡' : `${CARD_STYLES[state.card.style].short} · ${FONTS[state.card.font]}`)}${row('花材總數', `${total} 枝`)}
         <div class="border-t border-dashed border-ink/30 my-3"></div>
         <div class="text-[11px] tracking-[.2em] text-ink/55 mb-1">專屬花語</div>
         <p class="text-[14px] leading-relaxed">${poem}</p>
-        ${state.card.show && state.card.msg ? `<div class="mt-3 rounded-xl bg-[#F3ECE2] px-3 py-2 text-[13px]">✉️ 「${esc(state.card.msg)}」<div class="text-right text-[12px] text-ink/60 mt-1">— ${esc(state.card.sign)}</div></div>` : ''}
+        ${state.card.style !== 'none' && state.card.msg ? `<div class="font-${state.card.font} mt-3 rounded-xl bg-[#F3ECE2] px-3 py-2.5">
+          ${state.card.to ? `<div class="text-[12px] text-ink/60">To. ${esc(state.card.to)}</div>` : ''}
+          <div class="text-[14px] leading-relaxed mt-0.5">✉️ ${esc(state.card.msg)}</div>
+          <div class="text-right text-[12px] text-ink/60 mt-1">— From. ${esc(state.card.sign)}</div></div>` : ''}
         ${state.fortune ? `<div class="fortune-box mt-4 rounded-xl px-3 py-3 text-center">
           <div class="text-[11px] tracking-[.14em] font-bold text-milk-deep">【 TODAY'S FORTUNE 今日花籤 】</div>
           <div class="text-[14px] font-bold mt-1.5">${state.fortune.emoji} ${state.fortune.name}</div>
@@ -1316,8 +1506,13 @@
     cFlowers.forEach(el => { const f = get(el.dataset.id); el.style.transform = `translateZ(0px) rotate(${f.rot}deg) scale(${f.scale})`; });
     clone.querySelector('.layer-flowers').classList.add('z-anim');
     pv.classList.add('pv-3d'); pv.style.touchAction = 'none';
-    pv.appendChild(clone);
-    pvTilt = makeTilt(() => { clone.style.transform = `${base} rotateX(${pvTilt.x.toFixed(2)}deg) rotateY(${pvTilt.y.toFixed(2)}deg)`; });
+    const pvScene = $('#scene').cloneNode(true), pvGobo = $('#gobo').cloneNode(true);
+    pvScene.removeAttribute('id'); pvGobo.removeAttribute('id'); pvGobo.style.transform = '';
+    pv.append(pvScene, clone, pvGobo);
+    pvTilt = makeTilt(() => {
+      clone.style.transform = `${base} rotateX(${pvTilt.x.toFixed(2)}deg) rotateY(${pvTilt.y.toFixed(2)}deg)`;
+      pvGobo.style.transform = goboShift(pvTilt);
+    });
     bindTilt(pv, pvTilt);
     const zs = depthMap();
     setTimeout(() => {
@@ -1457,31 +1652,31 @@
   /* ================= 🔮 今日幸運花束（花藝師主題靈感庫 + 黃金結構插花） ================= */
   // 每個主題：主花 / 配花與果實（花材 → 可用色票名）、葉材、包裝組合 [款式, 色票]、籤詩
   const THEMES = [
-    { id: 'sun', emoji: '☀️', name: '晨間暖陽與元氣', en: 'Morning Sunshine',
+    { id: 'sun', scenes: ['sun', 'linen'], cardStyle: 'tag', cardTone: 'cotton', font: 'hand', emoji: '☀️', name: '晨間暖陽與元氣', en: 'Morning Sunshine',
       mains: { sunflower: ['陽光黃'], tulip: ['鵝黃', '鬱金香橘'], gerbera: ['暖陽橘', '奶油白'], rose: ['奶油黃'] },
       fillers: { chamomile: ['純白'], freesia: ['鵝黃', '奶白'], babysbreath: ['白'] },
       foliage: ['eucalyptus', 'olive', 'fern'],
       outer: [['craft', 'kraft'], ['craft', 'oat'], ['korean', 'oat']], tissue: [['news', 'apricot'], ['news', 'beige']], tie: [['jute', 'caramel'], ['jute', 'gold'], ['long', 'caramel']],
       fortune: '把生活調成喜歡的頻道，今天的你自帶溫暖光芒，好事正順著陽光向你走來。', card: '今天的你自帶溫暖光芒，好事正向你走來' },
-    { id: 'romance', emoji: '🩰', name: '溫柔芭蕾與初戀', en: 'Soft Romance',
+    { id: 'romance', scenes: ['linen', 'paper', 'sun'], cardStyle: 'seal', cardTone: 'gold', font: 'hand', emoji: '🩰', name: '溫柔芭蕾與初戀', en: 'Soft Romance',
       mains: { rose: ['茱萸粉', '香檳白'], tulip: ['蜜桃粉'], ranunculus: ['藕粉'], gerbera: ['珊瑚粉'] },
       fillers: { babysbreath: ['淺粉', '白'], freesia: ['奶白'], lily: ['純白'] },
       foliage: ['eucalyptus', 'fern', 'olive'],
       outer: [['korean', 'pink'], ['korean', 'cream']], tissue: [['tulle', 'pink'], ['tulle', 'white']], tie: [['chiffon', 'rose'], ['chiffon', 'cream']],
       fortune: '允許自己偶爾慢下來，今天適合買杯喜歡的飲料，溫柔地偏愛自己一回。', card: '慢下來，溫柔地偏愛自己一回' },
-    { id: 'forest', emoji: '🌿', name: '森林微風與深呼吸', en: 'Forest Breeze',
+    { id: 'forest', scenes: ['sun', 'linen'], cardStyle: 'botanical', cardTone: 'parchment', font: 'serif', emoji: '🌿', name: '森林微風與深呼吸', en: 'Forest Breeze',
       mains: { hydrangea: ['雪球白', '霧霾藍'], tulip: ['純白'], ranunculus: ['奶白'], rose: ['香檳白'], gerbera: ['奶油白'] },
       fillers: { lily: ['純白'], babysbreath: ['白'], chamomile: ['純白'], berries: ['青綠果實'] },
       foliage: ['eucalyptus', 'olive', 'fern'],
       outer: [['korean', 'sage'], ['korean', 'blue'], ['craft', 'sage'], ['cello', 'cream'], ['cello', 'sage']], tissue: [['tissue', 'white'], ['tissue', 'apricot']], tie: [['long', 'forest'], ['long', 'cream']],
       fortune: '那些困擾你的小事都會隨風散去，今天的幸運藏在一次深呼吸與放寬心裡。', card: '小事隨風散去，幸運藏在深呼吸裡' },
-    { id: 'vintage', emoji: '🍷', name: '復古電影與微醺', en: 'Vintage Muse',
+    { id: 'vintage', scenes: ['wood', 'midnight'], cardStyle: 'seal', cardTone: 'wine', font: 'type', emoji: '🍷', name: '復古電影與微醺', en: 'Vintage Muse',
       mains: { rose: ['經典紅'], ranunculus: ['香檳杏'], sunflower: ['復古焦糖橘'], tulip: ['鬱金香橘'] },
       fillers: { berries: ['紅棕果實'], cotton: ['原色'], babysbreath: ['白'] },
       foliage: ['eucalyptus', 'olive', 'fern'],
       outer: [['korean', 'black'], ['cone', 'black'], ['craft', 'kraft'], ['cone', 'kraft']], tissue: [['news', 'beige']], tie: [['long', 'wine'], ['seal', 'wine']],
       fortune: '不必迎合所有人的期待，你獨特的靈魂與神秘感，就是今天最迷人的風景。', card: '你獨特的靈魂，就是今天最迷人的風景' },
-    { id: 'miracle', emoji: '✨', name: '奇蹟降臨・季節限定特調', en: 'Seasonal Miracle', seasonal: true,
+    { id: 'miracle', scenes: ['midnight', 'sun'], cardStyle: 'pick', cardTone: 'cream', font: 'serif', emoji: '✨', name: '奇蹟降臨・季節限定特調', en: 'Seasonal Miracle', seasonal: true,
       mains: { rose: ['香檳白', '茱萸粉'], ranunculus: ['奶白', '藕粉'], tulip: ['純白'] },
       fillers: { babysbreath: ['白'], lily: ['純白'] },
       foliage: ['eucalyptus', 'fern', 'olive'],
@@ -1533,6 +1728,10 @@
     // 三明治包裝
     const [outer, outerColor] = pick(th.outer), [tissue, tissueColor] = pick(th.tissue), [tie, tieColor] = pick(th.tie);
     state.wrap = { outer, outerColor, tissue, tissueColor, tie, tieColor };
+    // 小卡自動填上主題短句，並換上最適合的卡片、字體與光影背景
+    state.card.msg = th.card; state.card.font = th.font; state.card.tones[th.cardStyle] = th.cardTone;
+    state.card.style = th.cardStyle; [state.card.x, state.card.y] = CARD_STYLES[th.cardStyle].def;
+    state.scene = pick(th.scenes);
     state.fortune = th;
   }
 
@@ -1559,11 +1758,8 @@
   }
   const hideFortune = () => $('#fortune').classList.add('hide');
   $('#fortuneClose').onclick = hideFortune;
-  $('#fortuneToCard').onclick = () => {
-    if (!state.fortune) return;
-    state.card.msg = state.fortune.card; state.card.show = true;
-    renderTag(); renderWorkspace(); hideFortune(); toast('花籤已寫進吊牌小卡 💌');
-  };
+  // 抽花時已自動把短句寫進小卡，這裡直接帶去編輯
+  $('#fortuneToCard').onclick = () => { hideFortune(); openCardText(); };
 
   async function drawLucky() {
     if (luckyBusy || state.finished) return;
@@ -1574,7 +1770,7 @@
     await wait(600);
     const th = pickTheme();
     generateLucky(th);
-    renderWraps(); renderRibbon();
+    renderWraps(); renderRibbon(); renderTag(); renderScene();
     state.tab = 'main'; state.activeMat = state.flowers[state.flowers.length - 1].type;
     renderFlowers(); renderWorkspace();
     setMode(true);
@@ -1583,7 +1779,7 @@
   $('#btnLucky').onclick = drawLucky;
 
   /* ================= 初始化 ================= */
-  renderWraps(); renderRibbon(); renderTag(); renderFlowers(); renderWorkspace(); buildPetals(); fit();
+  renderScene(); renderWraps(); renderRibbon(); renderTag(); renderFlowers(); renderWorkspace(); buildPetals(); fit();
   bindTilt(canvasWrap, mainTilt); syncModeUI();
   if (document.fonts) document.fonts.ready.then(syncModeUI);
 })();
