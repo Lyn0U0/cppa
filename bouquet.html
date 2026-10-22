@@ -55,6 +55,7 @@
   .layer { position: absolute; inset: 0; }
   .layer > svg { width: 100%; height: 100%; display: block; overflow: visible; }
   .layer-back, .layer-tissue, .layer-front, .layer-ribbon, .layer-flowers { pointer-events: none; }
+  .layer-front { transform-origin: 180px 340px; } /* 左右側翼以收腰中心為軸 */
   .layer-back { z-index: 1; } .layer-tissue { z-index: 2; } .layer-flowers { z-index: 3; } .layer-front { z-index: 4; }
   .layer-ribbon { z-index: 5; } .layer-card { z-index: 6; pointer-events: none; } .sel-layer { z-index: 7; pointer-events: none; }
   .stage.xray .layer-front { opacity: .4; }
@@ -65,12 +66,16 @@
   .z-anim .flower { transition: transform .5s cubic-bezier(0.2, 0.8, 0.2, 1); }
   .stage.is3d, .stage.is3d-out, .stage.is3d .layer-flowers, .stage.is3d-out .layer-flowers { transform-style: preserve-3d; }
   .stage.is3d .layer-back   { transform: translateZ(-40px); }
-  .stage.is3d .layer-tissue { transform: translateZ(-28px); }
-  .stage.is3d .layer-front  { transform: translateZ(50px); }
-  .stage.is3d .layer-ribbon { transform: translateZ(65px); }
-  .stage.is3d .layer-card   { transform: translateZ(80px); }
+  .stage.is3d .layer-tissue { transform: translateZ(-20px); }
+  /* 前包裝紙拆成左右側翼：中心在 Z 30，外緣往後彎，從兩側抱住花莖。
+     角度刻意壓在 3.5°：外緣最深約 Z 21，仍在花材層（最高 Z 20）之前，
+     不與花朵平面相交，避免瀏覽器切割相交平面時出現破洞 */
+  .stage.is3d .fold-l { transform: translateZ(30px) rotateY(-3.5deg); }
+  .stage.is3d .fold-r { transform: translateZ(30px) rotateY(3.5deg); }
+  .stage.is3d .layer-ribbon { transform: translateZ(45px); }
+  .stage.is3d .layer-card   { transform: translateZ(60px); }
   .stage.is3d .layer > svg, .stage.is3d .flower svg, .stage.is3d .card-el svg { filter: drop-shadow(0 8px 9px rgba(74, 64, 58, .2)); }
-  .stage.is3d .layer-back > svg { filter: drop-shadow(0 14px 18px rgba(74, 64, 58, .28)); }
+  .stage.is3d .layer-back > svg, .stage.is3d .layer-front > svg { filter: drop-shadow(0 15px 15px rgba(0, 0, 0, .15)) drop-shadow(0 3px 4px rgba(0, 0, 0, .1)); }
   .glare { opacity: 0; transition: opacity .5s; }
   .stage.is3d .glare { opacity: 1; }
 
@@ -244,6 +249,16 @@
       <stop id="g3" offset=".68" stop-color="#fff" stop-opacity="0" />
       <stop offset="1" stop-color="#fff" stop-opacity="0" />
     </linearGradient>
+    <!-- 包裝紙內側陰影：後背紙越往收腰越深；左右側翼外緣（彎向後方）較暗 -->
+    <radialGradient id="shadeBack" gradientUnits="userSpaceOnUse" cx="180" cy="330" r="240">
+      <stop offset="0" stop-color="#2B1E14" stop-opacity=".3" /><stop offset=".55" stop-color="#2B1E14" stop-opacity=".08" /><stop offset="1" stop-color="#2B1E14" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="shadeL" gradientUnits="userSpaceOnUse" x1="36" y1="0" x2="190" y2="0">
+      <stop offset="0" stop-color="#2B1E14" stop-opacity=".28" /><stop offset=".35" stop-color="#2B1E14" stop-opacity=".1" /><stop offset=".75" stop-color="#2B1E14" stop-opacity="0" />
+    </linearGradient>
+    <linearGradient id="shadeR" gradientUnits="userSpaceOnUse" x1="324" y1="0" x2="170" y2="0">
+      <stop offset="0" stop-color="#2B1E14" stop-opacity=".28" /><stop offset=".35" stop-color="#2B1E14" stop-opacity=".1" /><stop offset=".75" stop-color="#2B1E14" stop-opacity="0" />
+    </linearGradient>
     <!-- 牛皮紙橫紋與紙漿斑點 -->
     <pattern id="kraftTex" width="40" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(-8)">
       <path d="M0 2.5 H14 M18 2.5 H40" stroke="#4A403A" stroke-opacity=".08" stroke-width=".9" />
@@ -290,7 +305,8 @@
       <div class="layer layer-back" id="layerBack"></div>
       <div class="layer layer-tissue" id="layerTissue"></div>
       <div class="layer layer-flowers" id="layerFlowers"></div>
-      <div class="layer layer-front" id="layerFront"></div>
+      <div class="layer layer-front fold-l" id="foldL"></div>
+      <div class="layer layer-front fold-r" id="foldR"></div>
       <div class="layer layer-ribbon" id="layerRibbon"></div>
       <div class="layer layer-card" id="layerCard"></div>
       <div class="layer sel-layer">
@@ -740,6 +756,8 @@
   const svgWrap = (inner, vb = '0 0 360 480', style = '') => `<svg viewBox="${vb}"${style ? ` style="${style}"` : ''}><g filter="url(#rough)">${inner}</g></svg>`;
 
   const SKIRT = 'M164 336 L 198 336 L 232 468 C 206 476, 156 476, 130 468 Z';
+  const SKIRT_L = 'M164 336 L 181 336 L 180 474 C 164 474, 146 472, 130 468 Z';
+  const SKIRT_R = 'M181 336 L 198 336 L 232 468 C 216 472, 196 474, 180 474 Z';
   const CRAFT_BACK = 'M180 354 C 110 332, 14 262, 12 152 C 18 92, 60 58, 102 62 C 122 30, 160 22, 180 36 C 200 22, 238 30, 258 62 C 300 58, 342 92, 348 152 C 346 262, 250 332, 180 354 Z';
   const CRAFT_L = 'M56 246 C 100 264, 152 254, 216 234 L 198 342 L 164 342 Z';
   const CRAFT_R = 'M306 242 C 262 262, 208 258, 144 238 L 164 342 L 198 342 Z';
@@ -761,13 +779,15 @@
       front: p => {
         const L = 'M38 236 L 92 212 L 128 238 L 214 226 L 198 344 L 164 344 Z', R = 'M322 250 L 272 236 L 240 262 L 146 246 L 166 344 L 198 344 Z';
         return {
-          paths: [SKIRT, L, R],
-          art: `<path d="${SKIRT}" fill="${p.base}" ${SP(p)}/>${texFill(SKIRT, 'korean')}${pline(p, 'M181 344 L 178 470')}` +
-            `<path d="${L}" fill="${p.light}" ${SP(p)}/>${texFill(L, 'korean')}<path d="M92 212 L 104 236 L 128 238 Z" fill="${p.dark}" ${SP(p)}/>` +
-            `<path d="M38 236 L 92 212 L 128 238 L 214 226" transform="translate(1 5)" fill="none" stroke="${p.gold}" stroke-width="1.5" stroke-linejoin="round"/>` +
-            `<path d="${R}" fill="${p.base}" ${SP(p)}/>${texFill(R, 'korean')}<path d="M272 236 L 262 256 L 240 262 Z" fill="${p.dark}" ${SP(p)}/>` +
-            `<path d="M322 250 L 272 236 L 240 262 L 146 246" transform="translate(-1 5)" fill="none" stroke="${p.gold}" stroke-width="1.5" stroke-linejoin="round"/>` +
-            pline(p, 'M236 266 C 214 296, 198 320, 188 342'),
+          l: { paths: [SKIRT_L, L],
+            art: `<path d="${SKIRT_L}" fill="${p.base}" ${SP(p)}/>${texFill(SKIRT_L, 'korean')}` +
+              `<path d="${L}" fill="${p.light}" ${SP(p)}/>${texFill(L, 'korean')}<path d="M92 212 L 104 236 L 128 238 Z" fill="${p.dark}" ${SP(p)}/>` +
+              `<path d="M38 236 L 92 212 L 128 238 L 214 226" transform="translate(1 5)" fill="none" stroke="${p.gold}" stroke-width="1.5" stroke-linejoin="round"/>` },
+          r: { paths: [SKIRT_R, R],
+            art: `<path d="${SKIRT_R}" fill="${p.base}" ${SP(p)}/>${texFill(SKIRT_R, 'korean')}${pline(p, 'M181 344 L 180 470')}` +
+              `<path d="${R}" fill="${p.base}" ${SP(p)}/>${texFill(R, 'korean')}<path d="M272 236 L 262 256 L 240 262 Z" fill="${p.dark}" ${SP(p)}/>` +
+              `<path d="M322 250 L 272 236 L 240 262 L 146 246" transform="translate(-1 5)" fill="none" stroke="${p.gold}" stroke-width="1.5" stroke-linejoin="round"/>` +
+              pline(p, 'M236 266 C 214 296, 198 320, 188 342') },
         };
       },
     },
@@ -778,13 +798,15 @@
         `<path d="${CRAFT_BACK}" fill="${p.base}" ${SP(p)}/>${texFill(CRAFT_BACK, 'craft')}` +
         hl('M30 150 C 38 108, 70 84, 104 86', 5, .3) + pline(p, 'M180 350 C 150 250, 120 140, 102 64') + pline(p, 'M180 350 C 210 250, 240 140, 258 64'),
       front: p => ({
-        paths: [SKIRT, CRAFT_L, CRAFT_R],
-        art: `<path d="${SKIRT}" fill="${p.base}" ${SP(p)}/>${texFill(SKIRT, 'craft')}${pline(p, 'M181 344 L 178 470')}${pline(p, 'M170 344 L 150 470', .25)}` +
-          `<path d="${CRAFT_L}" fill="${p.dark}" ${SP(p)}/>${texFill(CRAFT_L, 'craft')}` +
-          `<path d="M56 246 C 64 236, 72 230, 84 226 C 85 240, 87 250, 92 257 Z" fill="${p.light}" ${SP(p)}/>` +
-          `<path d="${CRAFT_R}" fill="${p.base}" ${SP(p)}/>${texFill(CRAFT_R, 'craft')}` +
-          `<path d="M144 238 C 152 230, 160 226, 172 223 C 172 236, 174 246, 178 252 Z" fill="${p.light}" ${SP(p)}/>` +
-          pline(p, 'M232 254 C 212 290, 198 318, 188 340') + hl('M296 248 C 262 264, 220 262, 186 254', 3, .35),
+        l: { paths: [SKIRT_L, CRAFT_L],
+          art: `<path d="${SKIRT_L}" fill="${p.base}" ${SP(p)}/>${texFill(SKIRT_L, 'craft')}${pline(p, 'M170 344 L 150 470', .25)}` +
+            `<path d="${CRAFT_L}" fill="${p.dark}" ${SP(p)}/>${texFill(CRAFT_L, 'craft')}` +
+            `<path d="M56 246 C 64 236, 72 230, 84 226 C 85 240, 87 250, 92 257 Z" fill="${p.light}" ${SP(p)}/>` },
+        r: { paths: [SKIRT_R, CRAFT_R],
+          art: `<path d="${SKIRT_R}" fill="${p.base}" ${SP(p)}/>${texFill(SKIRT_R, 'craft')}${pline(p, 'M181 344 L 180 470')}` +
+            `<path d="${CRAFT_R}" fill="${p.base}" ${SP(p)}/>${texFill(CRAFT_R, 'craft')}` +
+            `<path d="M144 238 C 152 230, 160 226, 172 223 C 172 236, 174 246, 178 252 Z" fill="${p.light}" ${SP(p)}/>` +
+            pline(p, 'M232 254 C 212 290, 198 318, 188 340') + hl('M296 248 C 262 264, 220 262, 186 254', 3, .35) },
       }),
     },
     cone: {
@@ -795,12 +817,13 @@
           pline(p, 'M180 356 L 112 78', .25) + pline(p, 'M180 356 L 248 78', .25);
       },
       front: p => {
-        const C = 'M96 220 C 150 232, 210 232, 264 220 L 197 344 L 187 438 Q 180 448 173 438 L 163 344 Z';
+        const CL = 'M96 220 C 132 228, 158 231, 180 231 L 180 446 Q 176 444 173 438 L 163 344 Z';
+        const CR = 'M180 231 C 202 231, 228 228, 264 220 L 197 344 L 187 438 Q 184 444 180 446 Z';
         const F = 'M264 220 C 228 238, 186 244, 140 242 L 178 444 Z';
         return {
-          paths: [C],
-          art: `<path d="${C}" fill="${p.base}" ${SP(p)}/>${texFill(C, 'cone')}<path d="${F}" fill="${p.light}" ${SP(p)}/>${texFill(F, 'cone')}` +
-            pline(p, 'M140 242 L 178 444', .2) + hl('M250 228 C 230 270, 210 310, 196 344', 3, .4),
+          l: { paths: [CL], art: `<path d="${CL}" fill="${p.base}" ${SP(p)}/>${texFill(CL, 'cone')}` },
+          r: { paths: [CR], art: `<path d="${CR}" fill="${p.base}" ${SP(p)}/>${texFill(CR, 'cone')}<path d="${F}" fill="${p.light}" ${SP(p)}/>${texFill(F, 'cone')}` +
+            pline(p, 'M140 242 L 178 444', .2) + hl('M250 228 C 230 270, 210 310, 196 344', 3, .4) },
         };
       },
     },
@@ -810,20 +833,36 @@
         hl('M40 150 C 50 110, 80 86, 112 82', 5, .85) + hl('M320 160 C 316 128, 300 104, 278 92', 3.5, .75) +
         hl('M130 100 L 152 200', 1.6, .6) + hl('M236 96 L 216 190', 1.6, .6) + hl('M74 200 L 120 250', 1.4, .5),
       front: p => ({
-        paths: [SKIRT, CRAFT_L, CRAFT_R],
-        art: `<g opacity=".55"><path d="${SKIRT}" fill="${p.base}" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/>` +
-          `<path d="${CRAFT_L}" fill="${p.light}" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/>` +
-          `<path d="${CRAFT_R}" fill="${p.base}" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/></g>` +
-          hl('M70 254 C 110 262, 150 256, 200 242', 3.5, .9) + hl('M290 250 C 262 262, 236 262, 214 258', 3, .8) +
-          hl('M186 300 L 180 330', 2.2, .7) + hl('M150 380 L 160 450', 2.4, .7) + hl('M208 372 L 214 440', 1.6, .6),
+        l: { paths: [SKIRT_L, CRAFT_L],
+          art: `<g opacity=".55"><path d="${SKIRT_L}" fill="${p.base}" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/>` +
+            `<path d="${CRAFT_L}" fill="${p.light}" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/></g>` +
+            hl('M70 254 C 110 262, 150 256, 200 242', 3.5, .9) + hl('M150 380 L 160 450', 2.4, .7) },
+        r: { paths: [SKIRT_R, CRAFT_R],
+          art: `<g opacity=".55"><path d="${SKIRT_R}" fill="${p.base}" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/>` +
+            `<path d="${CRAFT_R}" fill="${p.base}" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/></g>` +
+            hl('M290 250 C 262 262, 236 262, 214 258', 3, .8) + hl('M186 300 L 180 330', 2.2, .7) + hl('M208 372 L 214 440', 1.6, .6) },
       }),
     },
   };
 
-  function backWrapSVG(w, vb) { return svgWrap(OUTER_ART[w.outer].back(paperOf(colorOf(OUTER_COLORS, w.outerColor).c)), vb); }
-  function frontWrapSVG(w, vb) {
+  // 後背紙主形狀（加內側陰影用）
+  const BACK_SHAPES = {
+    korean: ['M180 356 C 118 334, 26 262, 10 160 L 34 116 L 62 128 L 82 74 L 118 88 L 148 42 L 184 62 Z', 'M180 356 C 242 334, 338 266, 352 168 L 332 120 L 302 130 L 286 70 L 250 82 L 222 30 L 194 54 L 176 70 Z'],
+    craft: [CRAFT_BACK], cone: ['M180 362 L 40 112 C 90 78, 138 68, 180 72 C 222 68, 270 78, 320 112 Z'], cello: [CRAFT_BACK],
+  };
+  function backWrapSVG(w, vb) {
+    const shade = BACK_SHAPES[w.outer].map(d => `<path d="${d}" fill="url(#shadeBack)"${w.outer === 'cello' ? ' opacity=".5"' : ''}/>`).join('');
+    return svgWrap(OUTER_ART[w.outer].back(paperOf(colorOf(OUTER_COLORS, w.outerColor).c)) + shade, vb);
+  }
+  // 前包裝紙左右側翼（side: 'l' | 'r'）；不給 side 時合成一張（給工作台縮圖用）
+  function foldArt(f, side) {
+    const part = f[side];
+    return part.art + part.paths.map(d => `<path d="${d}" fill="url(#shade${side.toUpperCase()})"/>`).join('') +
+      `<g class="glare">${part.paths.map(d => `<path d="${d}" fill="url(#glare)"/>`).join('')}</g>`;
+  }
+  function frontWrapSVG(w, vb, side) {
     const f = OUTER_ART[w.outer].front(paperOf(colorOf(OUTER_COLORS, w.outerColor).c));
-    return svgWrap(f.art + `<g class="glare">${f.paths.map(d => `<path d="${d}" fill="url(#glare)"/>`).join('')}</g>`, vb);
+    return svgWrap(side ? foldArt(f, side) : foldArt(f, 'l') + foldArt(f, 'r'), vb);
   }
 
   // 內層襯紙：依外層版型決定探出的範圍，邊緣依材質產生波浪／撕邊／荷葉邊
@@ -920,7 +959,8 @@
   function renderWraps() {
     $('#layerBack').innerHTML = backWrapSVG(state.wrap);
     $('#layerTissue').innerHTML = tissueSVG(state.wrap);
-    $('#layerFront').innerHTML = frontWrapSVG(state.wrap);
+    $('#foldL').innerHTML = frontWrapSVG(state.wrap, undefined, 'l');
+    $('#foldR').innerHTML = frontWrapSVG(state.wrap, undefined, 'r');
   }
   function renderRibbon() { $('#layerRibbon').innerHTML = tieSVG(state.wrap); }
   /* ================= 💌 小卡（Layer 5）與空間背景 ================= */
@@ -1071,7 +1111,8 @@
   }
 
   // 立體書景深：依疊放順序與種類給每朵花一個 Z 高度（嚴格遞增，確保 3D 排序與圖層順序一致）
-  const Z_RANGE = { foliage: [-20, -12], filler: [-12, -5], base: [4, 10], main: [10, 25] };
+  // 花材層維持在 Z 0 ~ 20：在內襯（-20）之前、左右側翼（30）之後，花頭從紙的懷抱中探出
+  const Z_RANGE = { foliage: [0, 3], filler: [3, 7], base: [7, 10], main: [10, 17] }, Z_MAX = 20;
   function depthMap() {
     const list = state.flowers, n = list.length, z = {};
     const groups = {};
@@ -1080,10 +1121,12 @@
     list.forEach((f, i) => {
       const slot = MAT[f.type].slot, g = groups[slot], k = g.indexOf(f), [a, b] = Z_RANGE[slot];
       let v = a + (b - a) * (g.length > 1 ? k / (g.length - 1) : .5);
-      if (i === n - 1 && RANK[slot] >= RANK.base) v = 35; // 最前排焦點主花
-      v = Math.min(45, Math.max(v, prev + 1.2));
-      z[f.id] = prev = v;
+      if (i === n - 1 && RANK[slot] >= RANK.base) v = Z_MAX; // 最前排焦點主花
+      z[f.id] = prev = Math.max(v, prev + 1.2);
     });
+    // 花很多時嚴格遞增可能超出 20，等比例壓回 0 ~ 20（保持前後順序）
+    const vals = Object.values(z), lo = Math.min(...vals), hi = Math.max(...vals);
+    if (hi > Z_MAX) for (const id in z) z[id] = lo + (z[id] - lo) * (Z_MAX - lo) / (hi - lo);
     return z;
   }
   let zMap = {};
