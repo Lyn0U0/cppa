@@ -103,9 +103,6 @@
   .mode-ui .seg .thumb { position: absolute; top: 3px; bottom: 3px; border-radius: 999px; background: #7D9471; box-shadow: 0 3px 8px -3px rgba(125,148,113,.9);
     transition: left .35s cubic-bezier(.3,1.3,.5,1), width .35s cubic-bezier(.3,1.3,.5,1); }
   .mode-ui .seg.is3d .thumb { background: linear-gradient(120deg, #C8A98B, #D9B98A 60%, #E7CBA0); }
-  .gyro-btn { transition: opacity .25s, transform .25s; }
-  .gyro-btn.hide { opacity: 0; transform: translateY(-6px); pointer-events: none; }
-  .gyro-btn.on { background: #7D9471; color: #fff; border-color: transparent; }
   .tilt-hint { transition: opacity .4s; }
   .tilt-hint.hide { opacity: 0; }
   @media (prefers-reduced-motion: reduce) { .petal > i { animation: none; opacity: 0; } }
@@ -344,10 +341,9 @@
         <button data-mode="edit" class="on" role="tab">✏️ 編輯</button>
         <button data-mode="3d" role="tab">✨ 3D 預覽</button>
       </div>
-      <button id="gyroBtn" class="gyro-btn hide pointer-events-auto rounded-full border border-ink/15 bg-white/75 px-2.5 py-1 text-[11px] shadow-sm">📱 搖晃手機轉視角</button>
     </div>
     <div id="tiltHint" class="tilt-hint hide absolute left-1/2 -translate-x-1/2 bottom-3 z-30 rounded-full bg-white/80 border border-ink/10 px-3 py-1.5 text-[11.5px] text-ink/70 pointer-events-none whitespace-nowrap">
-      滑動手指或移動滑鼠，轉轉看立體花束
+      用手指拖曳或移動滑鼠，轉轉看立體花束
     </div>
 
     <!-- 懸浮微調工具列 -->
@@ -1568,22 +1564,33 @@
 
   /* ================= ✨ 3D 立體書預覽 ================= */
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const hasGyro = 'DeviceOrientationEvent' in window && matchMedia('(pointer: coarse)').matches;
   const makeTilt = apply => ({ x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0, on: false, hold: false, touching: false, apply });
   const mainTilt = makeTilt(() => applyStageTilt());
-  let pvTilt = null, gyro = null, rafId = 0, outT = 0;
+  let pvTilt = null, rafId = 0, outT = 0;
   const t0 = performance.now();
 
-  // 手指滑動 / 滑鼠移動 → rotateX ±18°、rotateY ±25°
+  // 滑鼠：依游標位置傾斜；手指：從按下的角度開始，拖多少轉多少（rotateX ±18°、rotateY ±25°）
   function bindTilt(el, t) {
     const move = e => {
-      if (!t.on || (e.pointerType !== 'mouse' && !t.touching)) return;
-      const r = el.getBoundingClientRect();
-      const nx = clamp(((e.clientX - r.left) / r.width) * 2 - 1, -1, 1), ny = clamp(((e.clientY - r.top) / r.height) * 2 - 1, -1, 1);
-      t.tx = -ny * 18; t.ty = nx * 25; t.hold = true; kick();
+      if (!t.on) return;
+      if (e.pointerType === 'mouse') {
+        const r = el.getBoundingClientRect();
+        const nx = clamp(((e.clientX - r.left) / r.width) * 2 - 1, -1, 1), ny = clamp(((e.clientY - r.top) / r.height) * 2 - 1, -1, 1);
+        t.tx = -ny * 18; t.ty = nx * 25;
+      } else {
+        if (!t.touching) return;
+        t.ty = clamp(t.by + (e.clientX - t.sx) * .3, -25, 25);
+        t.tx = clamp(t.bx - (e.clientY - t.sy) * .25, -18, 18);
+      }
+      t.hold = true; kick();
     };
     const release = () => { t.touching = false; t.hold = false; };
-    el.addEventListener('pointerdown', e => { if (t.on) { t.touching = true; move(e); } });
+    el.addEventListener('pointerdown', e => {
+      if (!t.on) return;
+      t.touching = true;
+      if (e.pointerType === 'mouse') return move(e);
+      Object.assign(t, { sx: e.clientX, sy: e.clientY, bx: t.x, by: t.y, tx: t.x, ty: t.y, hold: true });
+    });
     el.addEventListener('pointermove', move);
     ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => el.addEventListener(ev, release));
   }
@@ -1597,7 +1604,6 @@
       let tx = 0, ty = 0;
       if (t.on) {
         if (t.hold) { tx = t.tx; ty = t.ty; }
-        else if (gyro && gyro.has) { tx = gyro.x; ty = gyro.y; }
         else if (!reduceMotion) { tx = 3.5 * Math.sin(time * 1.1); ty = 9 * Math.sin(time * 0.7); }
       }
       t.vx = (t.vx + (tx - t.x) * 0.06) * 0.84;
@@ -1638,7 +1644,6 @@
       setTimeout(() => layerFlowers.classList.remove('z-anim'), 600);
     });
     mainTilt.on = on; mainTilt.hold = false;
-    if (!on && gyro) toggleGyro();
     kick(); syncModeUI();
     const hint = $('#tiltHint');
     hint.classList.toggle('hide', !on);
@@ -1652,31 +1657,8 @@
       b.classList.toggle('on', on); b.setAttribute('aria-selected', on);
       if (on) { thumb.style.left = b.offsetLeft + 'px'; thumb.style.width = b.offsetWidth + 'px'; }
     });
-    $('#gyroBtn').classList.toggle('hide', !(state.mode3d && hasGyro));
   }
   $('#modeSeg').addEventListener('click', e => { const b = e.target.closest('[data-mode]'); if (b) setMode(b.dataset.mode === '3d'); });
-
-  // 手機陀螺儀（iOS 需使用者點擊授權）
-  function onOrient(e) {
-    if (!gyro || e.beta == null) return;
-    if (gyro.b0 == null) gyro.b0 = e.beta;
-    gyro.has = true;
-    gyro.x = clamp((e.beta - gyro.b0) * 0.7, -18, 18);
-    gyro.y = clamp((e.gamma || 0) * 0.9, -25, 25);
-    kick();
-  }
-  async function toggleGyro() {
-    const btn = $('#gyroBtn');
-    if (gyro) { window.removeEventListener('deviceorientation', onOrient); gyro = null; btn.classList.remove('on'); return; }
-    try {
-      if (typeof DeviceOrientationEvent.requestPermission === 'function' && (await DeviceOrientationEvent.requestPermission()) !== 'granted') throw new Error('denied');
-      gyro = { has: false };
-      window.addEventListener('deviceorientation', onOrient);
-      btn.classList.add('on'); toast('搖晃手機試試看 📱');
-      setTimeout(() => { if (gyro && !gyro.has) toast('這個瀏覽器沒有提供陀螺儀資料'); }, 1500);
-    } catch { toast('無法使用陀螺儀，請允許動作與方向感測'); }
-  }
-  $('#gyroBtn').onclick = toggleGyro;
 
   // 飄落花瓣與微光粒子（各自不同的 translateZ 景深）
   function buildPetals() {
