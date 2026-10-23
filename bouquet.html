@@ -54,7 +54,8 @@
   .layer-back, .layer-tissue, .layer-front, .layer-ribbon, .layer-flowers { pointer-events: none; }
   .layer-front { transform-origin: 180px 340px; } /* 左右側翼以收腰中心為軸 */
   .layer-back { z-index: 1; } .layer-tissue { z-index: 2; } .layer-flowers { z-index: 3; } .layer-front { z-index: 4; }
-  .layer-ribbon { z-index: 5; } .layer-card { z-index: 6; pointer-events: none; } .sel-layer { z-index: 7; pointer-events: none; }
+  .layer-ribbon { z-index: 5; } .layer-card { z-index: 6; pointer-events: none; }
+  .layer-card.tucked { z-index: 3; } /* 插地標籤：與花材同層、在後面插入，前包裝紙（4）與緞帶（5）蓋住木棒下半段 */ .sel-layer { z-index: 7; pointer-events: none; }
   .stage.xray .layer-front { opacity: .4; }
 
   /* ---------- 微景深（圖鑑排列為主，只保留極輕微的前後層次） ---------- */
@@ -67,6 +68,7 @@
   .stage.is3d .layer-front  { transform: translateZ(9px); }
   .stage.is3d .layer-ribbon { transform: translateZ(13px); }
   .stage.is3d .layer-card   { transform: translateZ(18px); }
+  .stage.is3d .layer-card.tucked { transform: translateZ(7px); }
   .stage.is3d .layer-front > svg, .stage.is3d .card-el svg { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .08)); }
 
   /* 編輯 / 3D 切換膠囊 */
@@ -180,6 +182,20 @@
   .order-detail summary::-webkit-details-marker { display: none; }
   .order-detail summary::before { content: "＋ "; }
   .order-detail[open] summary::before { content: "－ "; }
+  /* 音樂按鈕：播放中顯示跳動音量條 */
+  .music-btn { position: relative; color: #4A403A; }
+  .music-btn .eq { display: none; position: absolute; right: -3px; top: -3px; gap: 1px; align-items: flex-end; height: 10px; padding: 1px 2px; border-radius: 6px; background: #4A403A; }
+  .music-btn.on { background: #4A403A; color: #fff; border-color: #4A403A; }
+  .music-btn.on .eq { display: flex; background: #9CAF88; }
+  .music-btn .eq i { display: block; width: 2px; background: #fff; animation: eq 1s ease-in-out infinite; }
+  .music-btn .eq i:nth-child(2) { animation-delay: -.3s; } .music-btn .eq i:nth-child(3) { animation-delay: -.6s; }
+  @keyframes eq { 0%, 100% { height: 3px; } 50% { height: 8px; } }
+  /* 特效：加花時的花粉光點、完成時落下的花瓣 */
+  .fx-spark { position: absolute; pointer-events: none; z-index: 40; animation: burst .75s cubic-bezier(.2,.8,.3,1) forwards; }
+  .confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 5; }
+  .confetti i { position: absolute; top: -20px; display: block; animation: drop var(--d) cubic-bezier(.3,.1,.6,1) var(--dl) forwards; opacity: 0; }
+  @keyframes drop { 0% { opacity: 0; transform: translate(0, 0) rotate(0); } 10% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--sx), 900px) rotate(var(--r)); } }
+  @media (prefers-reduced-motion: reduce) { .fx-spark, .confetti, .music-btn .eq i { animation: none; display: none; } }
   .mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
   .toast { transition: opacity .25s, transform .25s; }
   .toast.hide { opacity: 0; transform: translate(-50%, -8px); }
@@ -216,7 +232,13 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>隨機重排
       </button>
     </div>
+    <div class="flex items-center gap-2">
+    <button id="btnMusic" class="music-btn w-9 h-9 rounded-full border border-[#CFCFC8] bg-white flex items-center justify-center active:scale-95 transition" aria-pressed="false" title="背景音樂與音效">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>
+      <span class="eq" aria-hidden="true"><i></i><i></i><i></i></span>
+    </button>
     <button id="btnDone" class="rounded-full bg-[#333] text-white px-4 py-2 text-[13.5px] font-medium active:scale-95 transition">完成包裝</button>
+    </div>
   </header>
 
   <!-- 2. 中央畫布 57% -->
@@ -598,7 +620,8 @@
     chamomile: .9, babysbreath: .92, freesia: .94, lily: .9, cotton: .9,
     eucalyptus: 1.04, olive: 1.04, fern: 1.0, berries: .9,
   };
-  const naturalScale = type => +((BASE_SIZE[type] || 1) * (.9 + Math.random() * .2)).toFixed(3);
+  const SIZE_BOOST = 1.18; // 花材整體放大，讓花束更飽滿
+  const naturalScale = type => +((BASE_SIZE[type] || 1) * SIZE_BOOST * (.9 + Math.random() * .2)).toFixed(3);
   const newInstance = (type, v) => ({
     scale: naturalScale(type), ext: 0, bend: HEADS[type] ? +((Math.random() * 2 - 1) * 5).toFixed(1) : 0,
     v: v || (HEADS[type] ? (r => r < .5 ? 'full' : r < .8 ? 'semi' : 'bud')(Math.random()) : 'full'),
@@ -1301,7 +1324,8 @@
   const CARD_TONES = [{ id: 'white', n: '純白', c: '#FFFFFF' }, { id: 'stone', n: '石灰', c: '#E8E8E2' }, { id: 'sage', n: '鼠尾草', c: '#DCE5D2' }];
   const CARD_STYLES = {
     label: { name: '植物學名標籤', short: '學名標籤', en: 'Specimen Label', w: 124, h: 70, def: [196, 372], box: [8, 19, 116, 64], lines: 3 },
-    stake: { name: '插地標籤牌', short: '插地標籤', en: 'Plant Stake', w: 96, h: 70, stake: 104, def: [252, 170], box: [7, 17, 89, 65], lines: 2 },
+    // def＝木棒底端（藏在前包裝紙後面）的位置；rot＝往右斜插的角度
+    stake: { name: '插地標籤牌', short: '插地標籤', en: 'Plant Stake', w: 96, h: 70, stake: 104, def: [196, 300], rot: 15, tucked: true, box: [7, 17, 89, 65], lines: 2 },
     hang: { name: '吊掛標籤牌', short: '吊掛標籤', en: 'Hang Tag', w: 72, h: 108, def: [222, 352], box: [8, 27, 64, 101], lines: 5, hole: [36, 11] },
     none: { name: '隱藏小卡', short: '隱藏小卡', en: 'None' },
   };
@@ -1352,11 +1376,21 @@
     positionCard();
   }
   // 吊掛標籤離收腰處夠近時，自動用細線連到綁結
+  const CARD_SCALE = .9; // 小卡整體縮小 10%，當作點綴不搶花的焦點
   function positionCard() {
     const c = state.card, el = $('#cardEl');
     if (!el) return;
     const st = CARD_STYLES[c.style];
-    el.style.left = c.x + 'px'; el.style.top = c.y + 'px';
+    $('#layerCard').classList.toggle('tucked', !!st.tucked);
+    if (st.stake) {
+      // 以木棒底端為支點縮放＋斜插：c.x / c.y 是木棒底端
+      const H = st.h + st.stake;
+      el.style.left = (c.x - 46) + 'px'; el.style.top = (c.y - H) + 'px';
+      el.style.transformOrigin = `46px ${H}px`; el.style.transform = `rotate(${st.rot}deg) scale(${CARD_SCALE})`;
+    } else {
+      el.style.left = c.x + 'px'; el.style.top = c.y + 'px';
+      el.style.transformOrigin = '50% 0'; el.style.transform = `scale(${CARD_SCALE})`;
+    }
     const str = $('#cardString');
     if (st.hole) {
       const hx = c.x + st.hole[0], hy = c.y + st.hole[1], near = Math.hypot(hx - 182, hy - 344) < 170;
@@ -1594,6 +1628,7 @@
     lastAdded = f.id; state.focus = f.id; state.activeMat = type;
     state.sel = null;
     renderFlowers(); renderWorkspace();
+    sparkleAt(layerFlowers.querySelector(`[data-id="${f.id}"]`)); Sound.sfx.pop();
     toast(`${m.seasonal ? '★ ' : ''}${m.name}${HEADS[type] ? `（${VARIANTS[f.v]}）` : ''}・${m.meaning}`);
   }
   function reshuffle() {
@@ -1765,7 +1800,7 @@
     state.finished = true; select(null);
     app.classList.add('finished');
     buildReceipt();
-    setTimeout(() => $('#receiptModal').classList.remove('hide'), 200);
+    setTimeout(() => { $('#receiptModal').classList.remove('hide'); petalRain(); Sound.sfx.fanfare(); }, 200);
   }
   function backToEdit() {
     $('#receiptModal').classList.add('hide');
@@ -1818,10 +1853,9 @@
         </div>
       </div>
 
-      <div class="mt-5 grid grid-cols-3 gap-2 w-[310px]">
+      <div class="mt-5 grid grid-cols-2 gap-2 w-[310px]">
         <button id="btnClaim" class="act rounded-2xl bg-[#4A403A] text-white">💐<span>領取花束</span></button>
         <button id="btnOrder" class="act rounded-2xl border border-[#CFCFC8] bg-white">🧾<span>下載訂單</span></button>
-        <button id="btnShare" class="act rounded-2xl border border-[#CFCFC8] bg-white">↗︎<span>分享</span></button>
       </div>
       <button id="btnBack" class="mt-3 text-[13px] text-[#777] underline underline-offset-4">← 返回修改</button>`;
 
@@ -1838,7 +1872,6 @@
     $('#btnBack').onclick = backToEdit;
     $('#btnClaim').onclick = e => runAction(e.currentTarget, claimBouquet);
     $('#btnOrder').onclick = e => runAction(e.currentTarget, downloadOrder);
-    $('#btnShare').onclick = e => runAction(e.currentTarget, shareBouquet);
   }
 
   /* ================= 微景深預覽 ================= */
@@ -2057,7 +2090,7 @@
     if (luckyBusy || state.finished) return;
     luckyBusy = true; $('#btnLucky').disabled = true;
     select(null); hideFortune();
-    magicBurst();
+    magicBurst(); Sound.sfx.chime();
     layerFlowers.querySelectorAll('.flip').forEach(el => el.classList.add('poof'));
     await wait(600);
     const th = pickTheme();
@@ -2158,20 +2191,108 @@
     });
     await saveImage(canvas, `bouquet-order-${orderMeta.no}.png`, '訂單');
   }
-  // ↗︎ 分享：手機用系統分享（附花束圖），不支援時改成複製分享文字
-  async function shareBouquet() {
-    const counts = {};
-    state.flowers.forEach(f => (counts[MAT[f.type].name] = (counts[MAT[f.type].name] || 0) + 1));
-    const text = `我包了一束花 💐\n${Object.entries(counts).map(([n, k]) => `${n}×${k}`).join('、')}\n${state.card.style !== 'none' && state.card.msg ? `「${state.card.msg}」` : ''}`.trim();
-    try {
-      const file = new File([await toBlob(await bouquetCanvas())], `bouquet-${stamp()}.png`, { type: 'image/png' });
-      if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file], text, title: '我的花束' }); return; }
-      if (navigator.share) { await navigator.share({ text, title: '我的花束' }); return; }
-    } catch (err) { if (err?.name === 'AbortError') return; }
-    try { await navigator.clipboard.writeText(text); toast('已複製分享文字，可以貼給朋友了'); }
-    catch { toast('這個環境無法分享，請先「領取花束」再傳送圖片'); }
-  }
   $('#pngClose').onclick = () => $('#pngModal').classList.add('hide');
+
+  /* ================= ♪ 背景音樂（Web Audio 即時合成的音樂盒）與音效 ================= */
+  const Sound = (() => {
+    let ctx = null, master = null, wet = null, timer = 0, on = false, step = 0, nextT = 0;
+    const BPM = 76, EIGHTH = 60 / BPM / 2;
+    // Cmaj7 → Am7 → Fmaj7 → G6，每和弦兩小節；旋律在五聲音階上輕輕游走
+    const CHORDS = [[48, 55, 64, 71], [45, 52, 60, 67], [41, 48, 57, 64], [43, 50, 59, 64]];
+    const SCALE = [60, 62, 64, 67, 69, 72, 74, 76, 79, 81];
+    const hz = m => 440 * 2 ** ((m - 69) / 12);
+    let mel = 4;
+    function init() {
+      if (ctx) return;
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      master = ctx.createGain(); master.gain.value = 0; master.connect(ctx.destination);
+      // 簡單的回聲殘響
+      const delay = ctx.createDelay(); delay.delayTime.value = EIGHTH * 3;
+      const fb = ctx.createGain(); fb.gain.value = .32;
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2600;
+      wet = ctx.createGain(); wet.gain.value = .35;
+      wet.connect(delay); delay.connect(lp); lp.connect(fb); fb.connect(delay); lp.connect(master);
+    }
+    // 音樂盒音色：正弦＋高八度泛音，快速起音、長尾衰減
+    function bell(t, m, vel = .16, dur = 1.8, dest = master) {
+      [[1, 1], [2, .18], [3.01, .06]].forEach(([mult, amp]) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.value = hz(m) * mult;
+        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vel * amp, t + .008); g.gain.exponentialRampToValueAtTime(.0001, t + dur / mult);
+        o.connect(g); g.connect(dest); g.connect(wet); o.start(t); o.stop(t + dur + .1);
+      });
+    }
+    function pad(t, notes, dur) {
+      notes.forEach(m => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'triangle'; o.frequency.value = hz(m - 12);
+        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.018, t + dur * .4); g.gain.linearRampToValueAtTime(0, t + dur);
+        o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + .05);
+      });
+    }
+    function schedule() {
+      while (nextT < ctx.currentTime + .25) {
+        const bar = Math.floor(step / 8), chord = CHORDS[Math.floor(bar / 2) % 4], beat = step % 8;
+        if (step % 16 === 0) pad(nextT, chord, EIGHTH * 16);
+        if (beat === 0 || beat === 4) bell(nextT, chord[0] + 12, .07, 2.4);
+        if (beat % 2 === 0 || Math.random() < .35) {
+          mel = Math.max(0, Math.min(SCALE.length - 1, mel + [-2, -1, -1, 0, 1, 1, 2][(Math.random() * 7) | 0]));
+          if (Math.random() < .85) bell(nextT, SCALE[mel], beat % 4 === 0 ? .13 : .09);
+        }
+        step++; nextT += EIGHTH * (beat % 2 ? .9 : 1.1); // 輕微搖擺感
+      }
+    }
+    function start() {
+      init(); ctx.resume(); on = true;
+      master.gain.cancelScheduledValues(ctx.currentTime); master.gain.linearRampToValueAtTime(.9, ctx.currentTime + 1.2);
+      nextT = ctx.currentTime + .05; clearInterval(timer); timer = setInterval(schedule, 90);
+    }
+    function stop() {
+      on = false; if (!ctx) return;
+      master.gain.cancelScheduledValues(ctx.currentTime); master.gain.linearRampToValueAtTime(0, ctx.currentTime + .6);
+      setTimeout(() => { if (!on) clearInterval(timer); }, 700);
+    }
+    // 音效（音樂開啟時才播放）
+    const sfx = {
+      pop() { if (!on) return; const t = ctx.currentTime; bell(t, 79 + ((Math.random() * 3) | 0) * 2, .14, .5); bell(t + .06, 86, .06, .4); },
+      chime() { if (!on) return; const t = ctx.currentTime; [72, 76, 79, 84, 88].forEach((m, i) => bell(t + i * .09, m, .12, 1.6)); },
+      fanfare() { if (!on) return; const t = ctx.currentTime; [67, 72, 76, 79, 84, 79, 84, 88].forEach((m, i) => bell(t + i * .12, m, .13, 2)); },
+    };
+    return { toggle: () => (on ? stop() : start(), on), get on() { return on; }, sfx };
+  })();
+  const musicBtn = $('#btnMusic');
+  musicBtn.onclick = () => {
+    const on = Sound.toggle();
+    musicBtn.classList.toggle('on', on); musicBtn.setAttribute('aria-pressed', on);
+    toast(on ? '♪ 背景音樂已開啟' : '背景音樂已關閉');
+  };
+
+  // 加花特效：從花頭噴出幾顆花粉光點
+  function sparkleAt(el) {
+    if (!el || reduceMotion) return;
+    const r = el.getBoundingClientRect(), w = canvasWrap.getBoundingClientRect();
+    const x = r.left + r.width / 2 - w.left, y = r.top + Math.min(40, r.height * .2) - w.top;
+    const colors = ['#F1E3B8', '#FFFFFF', '#E8C5C8', '#C5D1C5'];
+    for (let i = 0; i < 9; i++) {
+      const a = (i / 9) * Math.PI * 2, d = 22 + Math.random() * 22, sz = 4 + Math.random() * 4, sp = document.createElement('span');
+      sp.className = 'fx-spark';
+      sp.style.cssText = `left:${x}px;top:${y}px;--dx:${(Math.cos(a) * d).toFixed(1)}px;--dy:${(Math.sin(a) * d).toFixed(1)}px;--r:${(Math.random() * 180) | 0}deg;--dl:0s;` +
+        `width:${sz}px;height:${sz}px;border-radius:999px;background:${colors[i % 4]};border:1px solid #4A403A`;
+      canvasWrap.appendChild(sp); setTimeout(() => sp.remove(), 800);
+    }
+  }
+  // 完成特效：花瓣從訂製單上方落下
+  function petalRain() {
+    if (reduceMotion) return;
+    const box = document.createElement('div'), colors = ['#E8C5C8', '#F1E3B8', '#FFFFFF', '#C5D1C5', '#E6D7C3', '#EFA9B0'];
+    box.className = 'confetti';
+    box.innerHTML = Array.from({ length: 34 }, (_, i) => {
+      const sz = 9 + Math.random() * 9;
+      return `<i style="left:${(Math.random() * 100).toFixed(1)}%;--d:${(2.6 + Math.random() * 2.4).toFixed(2)}s;--dl:${(Math.random() * 1.4).toFixed(2)}s;--sx:${((Math.random() - .5) * 140) | 0}px;--r:${((Math.random() - .5) * 720) | 0}deg">` +
+        `<svg width="${sz}" height="${sz * 1.25}" viewBox="0 0 16 20"><path d="M8 1 C 14 5, 15 12, 8 19 C 1 12, 2 5, 8 1 Z" fill="${colors[i % colors.length]}" stroke="#4A403A" stroke-width=".9"/></svg></i>`;
+    }).join('');
+    $('#receiptModal').appendChild(box); setTimeout(() => box.remove(), 6500);
+  }
 
   /* ================= 初始化 ================= */
   renderScene(); renderWraps(); renderRibbon(); renderTag(); renderFlowers(); renderWorkspace(); fit();
