@@ -391,6 +391,17 @@
     .map(([dx, dy]) => C(cx + dx, cy + dy, r, c.p) + dot(cx + dx + r * .3, cy + dy - r * .3, r * .22, c.d)).join('');
   const sepals = (cx, cy, d0, len) => [150, 180, 210].map(a => petal(cx, cy, a, d0, 'point', len, 4.2, LEAF)).join('');
 
+  /* ---------- 擴充花材用的小工具 ---------- */
+  const ell = (cx, cy, rx, ry, rot, fill, extra = '') => `<ellipse cx="${f1(cx)}" cy="${f1(cy)}" rx="${f1(rx)}" ry="${f1(ry)}" transform="rotate(${f1(rot)} ${f1(cx)} ${f1(cy)})" fill="${fill}" ${S}${extra}/>`;
+  // 三次貝茲曲線上的點與切線角度（0 = 正上方）
+  const bz = (P, t) => { const u = 1 - t; return [0, 1].map(k => u ** 3 * P[0][k] + 3 * u * u * t * P[1][k] + 3 * u * t * t * P[2][k] + t ** 3 * P[3][k]); };
+  const bzAng = (P, t) => { const [x0, y0] = bz(P, Math.max(0, t - .01)), [x1, y1] = bz(P, Math.min(1, t + .01)); return Math.atan2(x1 - x0, y0 - y1) * 180 / Math.PI; };
+  const bzPath = P => `M${P[0].join(' ')} C ${P[1].join(' ')}, ${P[2].join(' ')}, ${P[3].join(' ')}`;
+  const twig = P => line(bzPath(P));
+  // 沿著曲線在 t0~t1 之間放 n 個元件（fn(x, y, 角度, i, 0~1 進度)）
+  const along = (P, t0, t1, n, fn) => Array.from({ length: n }, (_, i) => { const k = n > 1 ? i / (n - 1) : 0, t = t0 + (t1 - t0) * k, [x, y] = bz(P, t); return fn(x, y, bzAng(P, t), i, k); }).join('');
+  const star5 = (x, y, r, fill, eye) => petals(x, y, 5, r * .15, 'round', r, r * .5, fill) + (eye ? dot(x, y, r * .28, eye) : '');
+
   /* ================= 主花：花莖葉片＋花頭分開定義，才能產生「盛開／半開／花苞」三種變體 ================= */
   // cx, cy：花頭中心；base：花莖頂端（花頭接點）；top：盛開時花頭最高點；bud：花苞造型
   const HEADS = {
@@ -458,6 +469,50 @@
       body: () => pair(205, 36, 10, 54) + pair(155, 27, 8, 48, LEAF2),
       head: c => sepals(60, 58, 24, 16) + scallop(60, 59, 31, 12, c.d) + petals(60, 58, 7, 5, 'round', 22, 11, soft(c.l, c.p), 25, .5) +
         scallop(60, 57, 14, 9, c.l, 10) + [0, 60, 120, 180, 240, 300].map(a => C(60 + 4.6 * Math.sin(a * Math.PI / 180), 57 - 4.6 * Math.cos(a * Math.PI / 180), 2.6, c.p)).join('') + C(60, 57, 2.4, '#E9D28A') },
+    // ---------- 擴充主花（皆有盛開／半開／花苞） ----------
+    carnation: { cx: 60, cy: 54, base: 92, top: 22, bud: 'cup',
+      body: () => lens(60, 222, 42, 4, -34, LEAF2) + lens(60, 216, 40, 4, 32, LEAF2) + lens(60, 168, 30, 3.5, -28, LEAF),
+      head: c => petal(60, 96, 0, 0, 'cup', 24, 7, LEAF, .6) + scallop(60, 56, 31, 26, c.d, 0, .4) + scallop(60, 54, 25, 22, soft(c.l, c.p), 6, .4) +
+        scallop(60, 52, 18, 18, c.p, 3, .42) + scallop(60, 50, 10.5, 13, c.l, 0, .45) + line('M44 58 Q 52 64 60 62 Q 68 64 76 58', .3) },
+    lisianthus: { cx: 60, cy: 56, base: 88, top: 25, bud: 'cup',
+      body: () => lens(60, 210, 34, 9, -46, LEAF2) + lens(60, 206, 34, 9, 46, LEAF2) + lens(60, 150, 24, 7, 40, LEAF),
+      head: c => sepals(60, 58, 22, 14) + petals(60, 57, 5, 1, 'rose', 31, 14, soft(c.l, c.p), 0, .5) +
+        petals(60, 56, 5, 0, 'round', 20, 10, soft('#FFFFFF', c.l), 36, .4) + C(60, 55, 5.5, '#E9DDA8') + [0, 72, 144, 216, 288].map(a => dot(60 + 3 * Math.sin(a * Math.PI / 180), 55 - 3 * Math.cos(a * Math.PI / 180), .9, '#A08A3A')).join('') },
+    dahlia: { cx: 60, cy: 55, base: 86, top: 18, bud: 'ball',
+      body: () => pair(200, 38, 12, 54) + pair(150, 28, 9, 48, LEAF2),
+      head: c => sepals(60, 55, 24, 15) + petals(60, 55, 18, 6, 'point', 31, 5.6, c.d, 0, .6) + petals(60, 55, 16, 5, 'point', 24, 5.4, soft(c.l, c.p), 11, .6) +
+        petals(60, 55, 13, 3, 'point', 16, 4.6, c.p, 4, .5) + petals(60, 55, 9, 1, 'cup', 9, 3.6, c.l, 20) + C(60, 55, 3.4, c.d) },
+    anemone: { cx: 60, cy: 56, base: 90, top: 25, bud: 'ball',
+      body: () => lens(60, 106, 22, 3, -62, LEAF) + lens(60, 106, 22, 3, 62, LEAF) + lens(60, 106, 18, 2.5, -20, LEAF2) + lens(60, 106, 18, 2.5, 20, LEAF2),
+      head: c => petals(60, 56, 6, 2, 'round', 29, 14, soft('#FFFFFF', c.p), 0, .6) + C(60, 56, 10, '#3E3638') +
+        Array.from({ length: 18 }, (_, i) => { const a = i * 20 * Math.PI / 180; return line(`M${f1(60 + 9 * Math.sin(a))} ${f1(56 - 9 * Math.cos(a))} L${f1(60 + 13.5 * Math.sin(a))} ${f1(56 - 13.5 * Math.cos(a))}`, .7) + dot(60 + 14 * Math.sin(a), 56 - 14 * Math.cos(a), 1.2, '#3E3638'); }).join('') +
+        C(60, 56, 4.5, c.c || '#5C6E8A') },
+    calla: { cx: 60, cy: 55, base: 94, top: 22, bud: 'cup',
+      body: () => lens(60, 296, 120, 22, -14, LEAF) + lens(60, 290, 96, 18, 18, LEAF2),
+      head: c => `<path d="M60 94 C 52 82, 38 62, 36 40 C 35 28, 46 20, 60 23 C 76 27, 86 34, 88 43 C 80 45, 71 53, 67 70 C 65 80, 62 88, 60 94 Z" fill="${soft(c.l, c.p)}" ${S}/>` +
+        `<path d="M88 43 C 80 45, 71 53, 67 70 C 70 56, 76 48, 88 43 Z" fill="${c.d}" ${S}/>` + ell(58, 47, 3.2, 14, -8, '#E8BE4E') + line('M48 30 Q 44 46 52 72', .25) },
+    cosmos: { cx: 60, cy: 54, base: 82, top: 24, bud: 'green',
+      body: () => [[170, -1], [190, 1], [230, -1], [250, 1]].map(([y, sd]) => line(`M60 ${y} q ${sd * 14} -10 ${sd * 24} -6 M60 ${y} q ${sd * 10} -16 ${sd * 16} -22`, .9)).join(''),
+      head: c => petals(60, 54, 8, 4, 'round', 27, 9.5, soft(c.l, c.p), 0, .75) + C(60, 54, 7.5, '#E9B53E') +
+        Array.from({ length: 10 }, (_, i) => { const a = i * 2.4, r = 5 * Math.sqrt((i + .5) / 10); return dot(60 + r * Math.cos(a), 54 + r * Math.sin(a), .8, '#A87A1E'); }).join('') },
+    oriental: { cx: 60, cy: 56, base: 90, top: 18, bud: 'cup',
+      body: () => [190, 160, 130].map((y, i) => lens(60, y, 30, 5, i % 2 ? 40 : -40, LEAF)).join(''),
+      head: c => petals(60, 56, 3, 0, 'point', 38, 10, c.d, 30, .8) + petals(60, 56, 3, 0, 'point', 36, 10, soft(c.l, c.p), 90, .8) +
+        [30, 90, 150, 210, 270, 330].map(a => [12, 18, 23].map(r => dot(60 + r * Math.sin(a * Math.PI / 180) + 2, 56 - r * Math.cos(a * Math.PI / 180), .9, c.s || '#9A4A5A')).join('')).join('') +
+        [15, 75, 135, 195, 255, 315].map(a => { const r = a * Math.PI / 180, x = 60 + 22 * Math.sin(r), y = 56 - 22 * Math.cos(r); return line(`M60 56 L${f1(x)} ${f1(y)}`, .8) + ell(x, y, 1.6, 3.2, a + 90, '#9A5A3A'); }).join('') + C(60, 56, 3.4, LEAF2) },
+    protea: { cx: 60, cy: 58, base: 94, top: 24, bud: 'ball',
+      body: () => pair(200, 30, 9, 42, '#8E9E86') + pair(160, 24, 8, 38, '#9DAE95'),
+      head: c => petals(60, 60, 14, 4, 'point', 31, 6.5, c.d, 0, .6) + petals(60, 60, 12, 2, 'point', 23, 6, soft(c.l, c.p), 15, .5) +
+        C(60, 58, 13.5, '#F3E8DC') + Array.from({ length: 26 }, (_, i) => { const a = i * 2.4, r = 12 * Math.sqrt((i + .5) / 26); return dot(60 + r * Math.cos(a), 58 + r * Math.sin(a), .9, c.d); }).join('') },
+    camellia: { cx: 60, cy: 55, base: 86, top: 25, bud: 'ball',
+      body: () => lens(60, 104, 30, 11, -58, '#5F7A55') + lens(60, 104, 28, 10, 56, '#6E8963') + lens(60, 190, 30, 11, -40, '#6E8963'),
+      head: c => petals(60, 55, 7, 2, 'round', 29, 13, c.d, 0, .5) + petals(60, 55, 7, 1, 'round', 21, 10, soft(c.l, c.p), 26, .4) +
+        petals(60, 55, 5, 0, 'round', 12, 6.5, c.l, 10) + C(60, 55, 5.5, '#F2D272') + Array.from({ length: 9 }, (_, i) => { const a = i * 40 * Math.PI / 180; return dot(60 + 4 * Math.sin(a), 55 - 4 * Math.cos(a), .9, '#B98A2E'); }).join('') },
+    iris: { cx: 60, cy: 56, base: 90, top: 26, bud: 'cup',
+      body: () => lens(60, 296, 150, 9, -6, LEAF) + lens(60, 296, 120, 8, 10, LEAF2),
+      head: c => sepals(60, 82, 0, 12) + [125, 235, 180].map(a => petal(60, 62, a, 0, 'round', 28, 11, c.d, .7)).join('') +
+        [125, 235, 180].map(a => { const r = a * Math.PI / 180; return line(`M${f1(60 + 4 * Math.sin(r))} ${f1(62 - 4 * Math.cos(r))} L${f1(60 + 15 * Math.sin(r))} ${f1(62 - 15 * Math.cos(r))}`).replace('stroke="' + INK + '"', 'stroke="#E9B53E"').replace('stroke-width="1"', 'stroke-width="2.4"'); }).join('') +
+        [-32, 32, 0].map(a => petal(60, 62, a, 0, 'cup', 32, 9, soft(c.l, c.p), .7)).join('') },
   };
   const VARIANTS = { full: '盛開', semi: '半開', bud: '花苞' };
   const budArt = (h, c) => {
@@ -529,11 +584,14 @@
   // 新花例項：隨機變體（有花頭的主花才有花苞／半開）＋ 微色差
   // 現實比例基準尺寸（鎖定，不開放手動縮放）：大花＞中花＞小配花；葉材枝條較長
   const BASE_SIZE = {
+    carnation: .92, lisianthus: .94, dahlia: 1.04, anemone: .9, calla: .98, cosmos: .9, oriental: 1.04, protea: 1.06, camellia: .92, iris: .98,
+    lavender: .94, waxflower: .9, statice: .92, veronica: .94, forgetmenot: .86, solidago: .96, craspedia: .9, bunnytail: .88, snapdragon: .96, sweetpea: .9,
+    ruscus: 1.04, pittosporum: 1.0, monstera: .98, ivy: 1.0, dustymiller: .94, pampas: 1.06, wheat: 1.0, hypericum: .9, lunaria: .96, pepperberry: 1.0,
     sunflower: 1.06, hydrangea: 1.04, peony: 1.04, rose: .96, ranunculus: .94, tulip: .96, gerbera: .96, pinecone: .9,
     chamomile: .9, babysbreath: .92, freesia: .94, lily: .9, cotton: .9,
     eucalyptus: 1.04, olive: 1.04, fern: 1.0, berries: .9,
   };
-  const naturalScale = type => +(BASE_SIZE[type] * (.9 + Math.random() * .2)).toFixed(3);
+  const naturalScale = type => +((BASE_SIZE[type] || 1) * (.9 + Math.random() * .2)).toFixed(3);
   const newInstance = (type, v) => ({
     scale: naturalScale(type), ext: 0, bend: HEADS[type] ? +((Math.random() * 2 - 1) * 5).toFixed(1) : 0,
     v: v || (HEADS[type] ? (r => r < .5 ? 'full' : r < .8 ? 'semi' : 'bud')(Math.random()) : 'full'),
@@ -636,6 +694,125 @@
 
     berries: c => STEM(112) + line('M60 112 L36 72 M60 112 L84 72 M60 112 L60 46') + pair(205, 30, 9, 54, '#AEBAA8') +
       cluster(36, 72, c) + cluster(84, 72, c) + cluster(60, 46, c),
+
+    // ---------- 擴充配花 ----------
+    lavender: c => {
+      const S1 = [[60, 298], [60, 220], [52, 140], [44, 60]], S2 = [[60, 298], [61, 210], [64, 130], [70, 46]], S3 = [[60, 298], [60, 230], [72, 170], [84, 98]];
+      const spike = P => along(P, .72, 1, 11, (x, y, a, i, k) => ell(x - 3, y, 2.4 - k, 4 - k, a - 25, i % 2 ? c.p : c.d) + ell(x + 3, y - 1, 2.4 - k, 4 - k, a + 25, i % 2 ? c.d : c.p));
+      return twig(S1) + twig(S2) + twig(S3) + spike(S1) + spike(S2) + spike(S3) + lens(60, 250, 32, 2.4, -24, LEAF2) + lens(60, 240, 30, 2.4, 22, LEAF2);
+    },
+    waxflower: c => {
+      const tips = [[40, 52], [60, 34], [80, 48], [30, 84], [92, 80], [50, 96], [72, 100]];
+      return line('M60 298 C 60 220, 60 170, 60 140') + tips.map(([x, y]) => line(`M60 140 Q ${(60 + x) / 2} ${(140 + y) / 2 + 10} ${x} ${y}`)).join('') +
+        tips.map(([x, y]) => lens(x, y + 12, 9, 1.4, -40, LEAF) + lens(x, y + 12, 9, 1.4, 40, LEAF) + star5(x, y, 4.6, c.p, c.c) + star5(x - 7, y + 6, 3.6, c.p, c.c) + star5(x + 7, y + 5, 3.6, c.p, c.c)).join('');
+    },
+    statice: c => {
+      const tips = [[42, 56], [60, 40], [78, 54], [34, 86], [86, 84], [56, 74], [68, 96]];
+      return line('M60 298 C 60 220, 61 170, 60 140') + lens(60, 230, 34, 7, -36, LEAF2) + lens(60, 214, 30, 6, 34, LEAF2) +
+        tips.map(([x, y]) => line(`M60 140 Q ${(60 + x) / 2 + 4} ${(140 + y) / 2} ${x} ${y}`)).join('') +
+        tips.map(([x, y]) => [[0, 0], [-5, 3], [5, 3], [0, 6], [-3, -4], [3, -4]].map(([dx, dy], i) => scallop(x + dx, y + dy, 3.2, 5, i % 3 ? c.p : c.d, i * 13, .55) + dot(x + dx, y + dy, .8, '#FFFFFF')).join('')).join('');
+    },
+    veronica: c => {
+      const A = [[60, 298], [60, 210], [56, 140], [52, 40]], B = [[60, 298], [62, 220], [70, 150], [80, 70]];
+      const spike = P => along(P, .62, 1, 16, (x, y, a, i, k) => C(x + (i % 2 ? 1.6 : -1.6), y, 3.6 - k * 2.6, i % 3 ? c.p : c.d));
+      return twig(A) + twig(B) + pair(230, 30, 6, 40) + pair(196, 24, 5, 36, LEAF2) + spike(A) + spike(B);
+    },
+    forgetmenot: c => {
+      const tips = [[46, 60], [62, 46], [78, 62], [36, 92], [86, 94], [58, 82]];
+      return line('M60 298 C 60 230, 61 180, 60 150') + lens(60, 236, 30, 8, -38, LEAF) + lens(60, 216, 28, 7, 36, LEAF2) +
+        tips.map(([x, y]) => line(`M60 150 Q ${(60 + x) / 2} ${(150 + y) / 2 + 8} ${x} ${y}`)).join('') +
+        tips.map(([x, y]) => star5(x, y, 4.4, c.p, '#F2D272') + star5(x - 8, y + 4, 3.6, c.p, '#F2D272') + star5(x + 7, y + 6, 3.4, c.p, '#F2D272') + C(x + 1, y - 7, 2, c.d)).join('');
+    },
+    solidago: c => {
+      const M = [[60, 298], [60, 220], [58, 140], [56, 46]], R = rng(41);
+      let s = twig(M) + pair(240, 30, 4, 34) + pair(210, 26, 3.5, 32, LEAF2);
+      [.55, .63, .71, .79, .87, .94].forEach((t, i) => {
+        const [x, y] = bz(M, t), sd = i % 2 ? 1 : -1, len = 22 - i * 2.5, P = [[x, y], [x + sd * len * .4, y - 4], [x + sd * len * .8, y - 6], [x + sd * len, y - 2]];
+        s += twig(P) + along(P, .15, 1, 7, (px, py) => dot(px + (R() - .5) * 3, py - 2 - R() * 3, 1.7, R() < .5 ? c.p : c.d) + dot(px + (R() - .5) * 3, py - R() * 2, 1.4, c.p));
+      });
+      return s + along(M, .9, 1, 5, (x, y) => dot(x, y - 1, 1.8, c.p));
+    },
+    craspedia: c => {
+      const ball = (x, y, r) => C(x, y, r, c.p) + Array.from({ length: 16 }, (_, i) => { const a = i * 2.4, rr = (r - 1.6) * Math.sqrt((i + .5) / 16); return dot(x + rr * Math.cos(a), y + rr * Math.sin(a), .9, c.d); }).join('');
+      return line('M60 298 C 60 220, 56 130, 48 50') + line('M60 298 C 61 220, 66 150, 74 72') + line('M60 298 C 60 230, 62 170, 60 104') + ball(48, 50, 10) + ball(74, 72, 9) + ball(60, 104, 8);
+    },
+    bunnytail: c => {
+      const plume = (x, y, a) => ell(x, y, 6.5, 12, a, c.p) + [-3, 0, 3].map(d => line(`M${f1(x + d)} ${f1(y - 8)} l ${f1(d * .3)} 4`, .25)).join('');
+      return line('M60 298 C 60 220, 52 140, 46 66') + line('M60 298 C 60 226, 66 150, 74 80') + line('M60 298 C 61 230, 60 170, 60 118') +
+        plume(46, 58, -10) + plume(75, 72, 12) + plume(60, 110, 0) + lens(60, 270, 40, 3, -18, LEAF2) + lens(60, 266, 36, 3, 20, LEAF2);
+    },
+    snapdragon: c => {
+      const M = [[60, 298], [60, 220], [60, 150], [60, 40]];
+      return twig(M) + pair(240, 32, 6, 40) + pair(205, 26, 5, 36, LEAF2) +
+        along(M, .55, .92, 7, (x, y, a, i, k) => { const r = 9 - k * 4, sd = i % 2 ? 1 : -1; return petal(x + sd * 2, y + 3, sd * 60, 0, 'cup', r * 1.3, r * .5, LEAF2) + C(x + sd * r * .6, y - r * .2, r * .62, c.p) + ell(x + sd * r * 1.1, y + r * .3, r * .45, r * .3, sd * 20, c.d); }) +
+        along(M, .94, 1, 3, (x, y, a, i) => ell(x, y, 2.6 - i * .4, 3.6 - i * .5, 0, LEAF));
+    },
+    sweetpea: c => {
+      const flower = (x, y, a) => `<g transform="rotate(${a} ${x} ${y})">` + scallop(x, y - 3, 8.5, 9, soft(c.l, c.p), 0, .5) + petal(x, y + 3, -28, 0, 'cup', 10, 4.5, c.d) + petal(x, y + 3, 28, 0, 'cup', 10, 4.5, c.d) + petal(x, y + 6, 0, 0, 'cup', 6, 3, LEAF) + '</g>';
+      return line('M60 298 C 60 220, 58 150, 62 70') + line('M62 120 C 74 112, 84 100, 82 90 C 80 82, 72 86, 76 92', .8) +
+        line('M60 100 Q 48 92 44 76') + line('M61 140 Q 74 132 80 118') + line('M60 170 Q 46 162 40 148') +
+        flower(62, 66, 0) + flower(44, 74, -24) + flower(80, 114, 22) + flower(40, 146, -30) + lens(60, 230, 30, 7, -34, LEAF) + lens(60, 222, 28, 6, 32, LEAF2);
+    },
+
+    // ---------- 擴充葉材與果實 ----------
+    ruscus: () => {
+      const M = [[60, 298], [58, 200], [70, 110], [84, 26]];
+      return twig(M) + along(M, .18, .96, 14, (x, y, a, i, k) => lens(x, y, 22 - k * 11, 5.6 - k * 2.4, a + (i % 2 ? 42 : -42), i % 3 ? LEAF : LEAF3));
+    },
+    pittosporum: c => {
+      const M = [[60, 298], [60, 220], [56, 140], [58, 50]];
+      return twig(M) + [.35, .58, .8, 1].map((t, j) => { const [x, y] = bz(M, t); return [-70, -35, 0, 35, 70].map((a, i) => (j === 3 || i !== 2) ? lens(x, y, 26 - j * 3, 8 - j, a + (j % 2 ? 12 : -12), i % 2 ? c.p : c.d) : '').join(''); }).join('');
+    },
+    // 龜背芋：心形大葉，葉緣裂口與孔洞用遮罩真正挖空（不靠塗背景色）
+    monstera: c => {
+      const leaf = 'M60 150 C 30 148, 12 120, 14 92 C 16 62, 36 42, 57 46 C 59 48, 61 48, 63 46 C 86 42, 106 62, 106 92 C 108 120, 90 148, 60 150 Z';
+      const cuts = [[15, 106, 42, 108], [17, 82, 44, 92], [28, 58, 49, 74], [105, 102, 79, 106], [103, 76, 77, 88], [90, 54, 72, 72]];
+      GRAD.set('mkMonstera', `<mask id="mkMonstera" maskUnits="userSpaceOnUse" x="0" y="0" width="120" height="300"><rect width="120" height="300" fill="#fff"/>` +
+        cuts.map(([x1, y1, x2, y2]) => `<path d="M${x1} ${y1} Q ${(x1 + x2) / 2} ${(y1 + y2) / 2 - 3} ${x2} ${y2}" stroke="#000" stroke-width="4" stroke-linecap="round" fill="none"/>`).join('') +
+        [[52, 118, -30], [69, 104, 35], [52, 90, -40]].map(([x, y, r]) => `<ellipse cx="${x}" cy="${y}" rx="1.8" ry="3.6" transform="rotate(${r} ${x} ${y})" fill="#000"/>`).join('') + '</mask>');
+      return line('M60 298 C 60 240, 61 190, 60 150') +
+        `<g mask="url(#mkMonstera)"><path d="${leaf}" fill="${soft(c.p, c.d)}" ${S}/>` + line('M60 150 C 60 120, 60 84, 60 48', .55) +
+        [[60, 128, 30, 130], [60, 108, 26, 100], [60, 86, 32, 70], [60, 128, 90, 128], [60, 106, 94, 98], [60, 84, 86, 68]].map(([x1, y1, x2, y2]) => line(`M${x1} ${y1} Q ${(x1 + x2) / 2} ${y1 - 4} ${x2} ${y2}`, .3)).join('') + '</g>';
+    },
+    ivy: c => {
+      const M = [[60, 298], [44, 220], [76, 140], [50, 40]];
+      const leaf3 = (x, y, a, s, fill) => `<path d="M0 0 C -4 -2, -10 -2, -12 -6 C -10 -8, -8 -10, -6 -10 C -6 -14, -3 -18, 0 -20 C 3 -18, 6 -14, 6 -10 C 8 -10, 10 -8, 12 -6 C 10 -2, 4 -2, 0 0 Z" transform="translate(${f1(x)} ${f1(y)}) rotate(${f1(a)}) scale(${s})" fill="${fill}" ${S}/>` +
+        `<path d="M0 0 L0 -15 M0 -4 L-8 -7 M0 -4 L8 -7" transform="translate(${f1(x)} ${f1(y)}) rotate(${f1(a)}) scale(${s})" fill="none" stroke="#E8EBDD" stroke-width="1" opacity=".8"/>`;
+      return twig(M) + along(M, .1, .98, 11, (x, y, a, i, k) => leaf3(x, y, a + (i % 2 ? 60 : -60), 1.15 - k * .5, i % 3 ? c.p : c.d));
+    },
+    dustymiller: c => {
+      const lobed = (x, y, a, len) => `<g transform="translate(${f1(x)} ${f1(y)}) rotate(${f1(a)})">` +
+        [.25, .45, .65, .82].map((t, i) => ell(-len * .16 * (1 - t * .4), -len * t, len * .13, len * .1, -30, c.p) + ell(len * .16 * (1 - t * .4), -len * t, len * .13, len * .1, 30, c.p)).join('') +
+        ell(0, -len * .55, len * .12, len * .48, 0, c.p) + ell(0, -len * .95, len * .1, len * .08, 0, c.p) + `<path d="M0 0 L0 ${f1(-len * .95)}" fill="none" stroke="${c.d}" stroke-width="1"/></g>`;
+      return line('M60 298 C 60 230, 60 190, 60 160') + [[-58, 62], [58, 60], [-30, 78], [30, 76], [0, 92]].map(([a, len]) => lobed(60, 160, a, len)).join('');
+    },
+    pampas: c => {
+      const M = [[60, 298], [60, 220], [56, 150], [50, 30]];
+      return twig(M) + `<path d="M58 160 C 40 140, 34 90, 46 40 C 50 26, 56 24, 54 40 C 66 80, 74 130, 62 160 Z" fill="${c.p}" ${S} opacity=".92"/>` +
+        along(M, .5, .98, 18, (x, y, a, i) => line(`M${f1(x)} ${f1(y)} q ${i % 2 ? 9 : -9} -4 ${i % 2 ? 12 : -12} -12`, .35)) + lens(60, 280, 70, 3, -10, LEAF2) + lens(60, 280, 60, 3, 14, LEAF2);
+    },
+    wheat: c => {
+      const ear = (P) => along(P, .62, 1, 10, (x, y, a, i, k) => { const sd = i % 2 ? 1 : -1; return ell(x + sd * 3, y, 2.8 - k * .8, 5.2 - k * 1.2, a + sd * 22, i % 3 ? c.p : c.d) + line(`M${f1(x + sd * 3)} ${f1(y - 4)} l ${sd * 4} -12`, .6); });
+      const A = [[60, 298], [60, 220], [56, 140], [50, 40]], B = [[60, 298], [61, 220], [66, 150], [74, 60]];
+      return twig(A) + twig(B) + ear(A) + ear(B) + lens(60, 240, 50, 3, -16, '#C9B98A') + lens(60, 220, 40, 3, 20, '#C9B98A');
+    },
+    hypericum: c => {
+      const berry = (x, y, r) => petals(x, y + r * .7, 5, 0, 'point', r * .7, r * .3, LEAF) + ell(x, y, r * .85, r, 0, c.p) + dot(x - r * .3, y - r * .4, r * .22, '#FFFFFF') + dot(x, y - r, r * .2, c.d);
+      const tips = [[42, 60], [60, 46], [78, 62], [50, 84], [72, 88]];
+      return line('M60 298 C 60 230, 60 170, 60 130') + tips.map(([x, y]) => line(`M60 130 Q ${(60 + x) / 2} ${(130 + y) / 2 + 6} ${x} ${y + 6}`)).join('') +
+        pair(200, 34, 9, 46) + pair(160, 28, 8, 42, LEAF2) + tips.map(([x, y]) => berry(x, y, 5.5) + berry(x - 7, y + 6, 4.6) + berry(x + 7, y + 7, 4.6)).join('');
+    },
+    lunaria: c => {
+      const disc = (x, y, r) => `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(r)}" fill="${c.p}" fill-opacity=".72" ${S}/>` + [-.3, 0, .3].map(d => dot(x + d * r, y + (d ? .2 : -.15) * r, r * .14, c.d)).join('');
+      const tips = [[44, 50, 11], [66, 40, 10], [82, 66, 10.5], [38, 86, 10], [62, 76, 11.5], [78, 104, 9.5], [46, 118, 9]];
+      return line('M60 298 C 60 220, 60 180, 60 150') + tips.map(([x, y]) => line(`M60 150 Q ${(60 + x) / 2} ${(150 + y) / 2 + 6} ${x} ${y}`)).join('') + tips.map(([x, y, r]) => disc(x, y, r)).join('');
+    },
+    pepperberry: c => {
+      const M = [[60, 298], [60, 220], [58, 150], [60, 70]];
+      const string = (x, y, sd) => { const P = [[x, y], [x + sd * 10, y - 2], [x + sd * 16, y + 10], [x + sd * 18, y + 30]]; return twig(P) + along(P, .25, 1, 7, (px, py, a, i) => C(px + (i % 2 ? 2 : -2), py, 2.4, i % 3 ? c.p : c.d)); };
+      return twig(M) + along(M, .3, .95, 10, (x, y, a, i, k) => lens(x, y, 28 - k * 10, 2.6, a + (i % 2 ? 38 : -38), LEAF2)) +
+        string(...bz(M, .55), -1) + string(...bz(M, .7), 1) + string(...bz(M, .86), -1) + string(...bz(M, .98), 1);
+    },
   };
 
   /* ================= 花材庫（主花 6 + 季節限定 2 ／ 配花 5 ／ 葉材與果實 4） ================= */
@@ -683,14 +860,77 @@
       colors: [{ n: '翠綠', p: '#8FAE7E' }] },
     berries: { name: '尤加利果實', en: 'Berries', tab: 'foliage', slot: 'foliage', meaning: '豐盛的收穫與小確幸', h: 270, thumb: '20 22 84 116',
       colors: [{ n: '紅棕果實', p: '#9B4A3C', d: '#6E2E24' }, { n: '青綠果實', p: '#9DB38A', d: '#6E8460' }] },
+    // ---------- 擴充主花 ----------
+    carnation: { name: '康乃馨', en: 'Carnation', tab: 'main', slot: 'main', meaning: '溫柔的愛與感謝', h: 270, thumb: '12 6 96 104',
+      colors: [{ n: '蜜粉', p: '#EFB3B7', d: '#D98C93', l: '#F8D4D6' }, { n: '奶白', p: '#F6EFE3', d: '#E3D4BF', l: '#FFFDF8' }, { n: '酒紅', p: '#B4505E', d: '#8E3B46', l: '#D07C86' }] },
+    lisianthus: { name: '洋桔梗', en: 'Lisianthus', tab: 'main', slot: 'main', meaning: '真誠不變的愛', h: 272, thumb: '12 8 96 102',
+      colors: [{ n: '淡紫', p: '#C9B4DA', d: '#A68FC0', l: '#E6DBF0' }, { n: '奶白', p: '#F5F0E6', d: '#DED5C4', l: '#FFFFFF' }, { n: '霧粉', p: '#EDC1C6', d: '#D69EA6', l: '#F7DEE0' }] },
+    dahlia: { name: '大理花', en: 'Dahlia', tab: 'main', slot: 'main', meaning: '華麗而真摯的感謝', h: 282, thumb: '6 2 108 108',
+      colors: [{ n: '珊瑚', p: '#EE9C86', d: '#D5786A', l: '#F8C9B8' }, { n: '酒紅', p: '#A5414E', d: '#7E2F3B', l: '#C86A75' }, { n: '奶油', p: '#F4E2BE', d: '#DEC492', l: '#FBF2DE' }] },
+    anemone: { name: '銀蓮花', en: 'Anemone', tab: 'main', slot: 'main', meaning: '期待與真心的守候', h: 266, thumb: '10 10 100 100',
+      colors: [{ n: '純白', p: '#F6F3EE', d: '#DDD6CB', l: '#FFFFFF', c: '#5C6E8A' }, { n: '玫瑰粉', p: '#EAA6B4', d: '#CF8395', l: '#F6D3DA', c: '#3E3638' }, { n: '深紫', p: '#8D6A9F', d: '#6E4F82', l: '#B79CC6', c: '#3E3638' }] },
+    calla: { name: '海芋', en: 'Calla Lily', tab: 'main', slot: 'main', meaning: '純潔與希望', h: 290, thumb: '22 10 80 92',
+      colors: [{ n: '白', p: '#F4F1E8', d: '#D9D3C2', l: '#FFFFFF' }, { n: '奶黃', p: '#F2DE9C', d: '#D9BE6E', l: '#FAF0C8' }, { n: '霧粉', p: '#E9B9BF', d: '#CF949D', l: '#F6DADD' }] },
+    cosmos: { name: '波斯菊', en: 'Cosmos', tab: 'main', slot: 'main', meaning: '少女的純情與自由', h: 286, thumb: '12 8 96 96',
+      colors: [{ n: '粉紅', p: '#EFA9C0', d: '#D886A2', l: '#F8D2DE' }, { n: '純白', p: '#F7F4EE', d: '#DED7CB', l: '#FFFFFF' }, { n: '酒紅', p: '#B4485F', d: '#8E3449', l: '#D07489' }] },
+    oriental: { name: '百合', en: 'Lily', tab: 'main', slot: 'main', meaning: '百年好合與高雅', h: 288, thumb: '6 2 108 108',
+      colors: [{ n: '純白', p: '#F7F3EA', d: '#DFD7C6', l: '#FFFFFF', s: '#B7A27A' }, { n: '粉紅', p: '#EFAFBE', d: '#D88A9D', l: '#F9DCE3', s: '#9A4A5A' }] },
+    protea: { name: '帝王花', en: 'King Protea', tab: 'main', slot: 'main', meaning: '勇敢與蛻變', h: 270, thumb: '10 12 100 100',
+      colors: [{ n: '粉紅', p: '#EAB1B8', d: '#CF8A95', l: '#F6D6DA' }, { n: '奶白', p: '#F1E7D8', d: '#D8C7AF', l: '#FBF6EE' }] },
+    camellia: { name: '山茶花', en: 'Camellia', tab: 'main', slot: 'main', meaning: '理想的愛與謙遜', h: 264, thumb: '12 8 96 100',
+      colors: [{ n: '正紅', p: '#C9505A', d: '#A83C47', l: '#E07F86' }, { n: '粉紅', p: '#EDAFB6', d: '#D58C96', l: '#F7D6DA' }, { n: '純白', p: '#F7F3EC', d: '#DED6C8', l: '#FFFFFF' }] },
+    iris: { name: '鳶尾花', en: 'Iris', tab: 'main', slot: 'main', meaning: '好消息與信念', h: 290, thumb: '14 14 92 96',
+      colors: [{ n: '藍紫', p: '#8E86C4', d: '#6E66A6', l: '#C2BCE3' }, { n: '純白', p: '#F4F2EE', d: '#D9D5CB', l: '#FFFFFF' }] },
+    // ---------- 擴充配花 ----------
+    lavender: { name: '薰衣草', en: 'Lavender', tab: 'filler', slot: 'filler', meaning: '等待愛情與寧靜', h: 290, thumb: '24 30 72 130',
+      colors: [{ n: '薰衣紫', p: '#A99BD0', d: '#857AB3' }, { n: '淡藕紫', p: '#C9BDE0', d: '#A99BC8' }] },
+    waxflower: { name: '澳洲蠟花', en: 'Waxflower', tab: 'filler', slot: 'filler', meaning: '持久的愛與財富', h: 268, thumb: '16 24 88 96',
+      colors: [{ n: '淡粉', p: '#F3CCD4', c: '#B9667A' }, { n: '純白', p: '#FBF8F2', c: '#C7A15A' }] },
+    statice: { name: '星辰花', en: 'Statice', tab: 'filler', slot: 'filler', meaning: '永不變心', h: 270, thumb: '20 28 82 96',
+      colors: [{ n: '紫', p: '#B59BD4', d: '#9278B8' }, { n: '粉', p: '#EBB6CB', d: '#D093AE' }, { n: '白', p: '#F4F1EA', d: '#DCD6C8' }] },
+    veronica: { name: '穗花婆婆納', en: 'Veronica', tab: 'filler', slot: 'filler', meaning: '忠誠與穩定', h: 286, thumb: '34 30 60 140',
+      colors: [{ n: '紫藍', p: '#9C93CF', d: '#7C72B4' }, { n: '粉紅', p: '#EBAEC4', d: '#D18BA8' }, { n: '白', p: '#F4F2EC', d: '#DCD7CB' }] },
+    forgetmenot: { name: '勿忘我', en: 'Forget-me-not', tab: 'filler', slot: 'filler', meaning: '請不要忘記我', h: 256, thumb: '24 32 76 84',
+      colors: [{ n: '天藍', p: '#A7C4E6', d: '#7FA3CE' }, { n: '淡粉', p: '#F1C6D3', d: '#D9A1B5' }] },
+    solidago: { name: '一枝黃花', en: 'Solidago', tab: 'filler', slot: 'filler', meaning: '幸運與鼓勵', h: 290, thumb: '24 30 72 140',
+      colors: [{ n: '金黃', p: '#EDC955', d: '#D4AA36' }] },
+    craspedia: { name: '金杖球', en: 'Craspedia', tab: 'filler', slot: 'filler', meaning: '永遠的幸福', h: 300, thumb: '30 36 60 80',
+      colors: [{ n: '金黃', p: '#EFC24B', d: '#C99A2E' }] },
+    bunnytail: { name: '兔尾草', en: 'Bunny Tail', tab: 'filler', slot: 'filler', meaning: '可愛與溫柔的陪伴', h: 280, thumb: '30 40 60 84',
+      colors: [{ n: '奶白', p: '#F3EDE0' }, { n: '粉紅', p: '#EFCBD2' }, { n: '奶茶', p: '#DCC6AA' }] },
+    snapdragon: { name: '金魚草', en: 'Snapdragon', tab: 'filler', slot: 'filler', meaning: '活潑熱鬧與有求必應', h: 288, thumb: '30 30 60 140',
+      colors: [{ n: '粉紅', p: '#EFB0C0', d: '#D88BA0' }, { n: '鵝黃', p: '#F2DC8C', d: '#DDBF5E' }, { n: '奶白', p: '#F6F1E6', d: '#DED5C2' }] },
+    sweetpea: { name: '香豌豆', en: 'Sweet Pea', tab: 'filler', slot: 'filler', meaning: '溫柔的回憶與啟程', h: 270, thumb: '24 50 72 110',
+      colors: [{ n: '粉紫', p: '#D9B7DE', d: '#B892C2', l: '#EEDCF0' }, { n: '蜜桃', p: '#F3C0B2', d: '#DE9C8C', l: '#FADDD4' }, { n: '奶白', p: '#F7F2EA', d: '#DED5C6', l: '#FFFFFF' }] },
+    // ---------- 擴充葉材與果實 ----------
+    ruscus: { name: '義大利伯利恆', en: 'Italian Ruscus', tab: 'foliage', slot: 'foliage', meaning: '堅定的守護', h: 306, thumb: '30 20 70 150',
+      colors: [{ n: '翠綠', p: '#8FA77E' }] },
+    pittosporum: { name: '海桐', en: 'Pittosporum', tab: 'foliage', slot: 'foliage', meaning: '安心與平和', h: 290, thumb: '14 20 92 150',
+      colors: [{ n: '翠綠', p: '#9DB389', d: '#7E9670' }, { n: '斑葉', p: '#C9D3AE', d: '#9DB389' }] },
+    monstera: { name: '龜背芋', en: 'Monstera', tab: 'foliage', slot: 'foliage', meaning: '健康長壽與包容', h: 280, thumb: '10 28 100 130',
+      colors: [{ n: '墨綠', p: '#7E9A73', d: '#5F7A55' }] },
+    ivy: { name: '常春藤', en: 'Ivy', tab: 'foliage', slot: 'foliage', meaning: '永恆的友誼與忠誠', h: 300, thumb: '20 20 80 150',
+      colors: [{ n: '深綠', p: '#7D9670', d: '#617A57' }, { n: '斑葉', p: '#B9C79E', d: '#8FA77E' }] },
+    dustymiller: { name: '銀葉菊', en: 'Dusty Miller', tab: 'foliage', slot: 'foliage', meaning: '溫柔的關懷', h: 260, thumb: '0 40 120 120',
+      colors: [{ n: '銀白', p: '#D3D8D0', d: '#A9B0A5' }] },
+    pampas: { name: '蒲葦', en: 'Pampas Grass', tab: 'foliage', slot: 'foliage', meaning: '自由與雅緻', h: 316, thumb: '24 16 72 160',
+      colors: [{ n: '奶茶', p: '#E6D6BC' }, { n: '奶白', p: '#F2EBDD' }, { n: '霧粉', p: '#E8CFC8' }] },
+    wheat: { name: '麥穗', en: 'Wheat', tab: 'foliage', slot: 'foliage', meaning: '豐收與感恩', h: 300, thumb: '30 16 60 140',
+      colors: [{ n: '麥金', p: '#E1C88E', d: '#C9AA68' }] },
+    hypericum: { name: '金絲桃果', en: 'Hypericum Berry', tab: 'foliage', slot: 'foliage', meaning: '悲傷將會消逝', h: 264, thumb: '22 32 76 90',
+      colors: [{ n: '酒紅', p: '#A7444F', d: '#6E2E36' }, { n: '蜜桃', p: '#EBA088', d: '#B66A55' }, { n: '奶白', p: '#F2E8D2', d: '#B9A27A' }] },
+    lunaria: { name: '銀扇草', en: 'Lunaria', tab: 'foliage', slot: 'foliage', meaning: '誠實與財富', h: 280, thumb: '20 26 80 110',
+      colors: [{ n: '銀白', p: '#F1EEE6', d: '#B5AA94' }] },
+    pepperberry: { name: '胡椒果', en: 'Pepperberry', tab: 'foliage', slot: 'foliage', meaning: '熱情與好運', h: 292, thumb: '24 30 72 150',
+      colors: [{ n: '粉紅', p: '#E9A1AE', d: '#C97A8A' }, { n: '酒紅', p: '#A6434F', d: '#7E2F3B' }] },
   };
   Object.values(MAT).forEach(m => (m.w = (120 * m.h) / 300));
   // 圖層排序：葉材墊最底 → 配花 → 繡球打底 → 主花最前
   const RANK = { foliage: 0, filler: 1, base: 2, main: 3 };
 
   const TABS = [
-    { id: 'main', label: '主花', count: '6+2' }, { id: 'filler', label: '配花', count: '5' },
-    { id: 'foliage', label: '葉材與果實', count: '4' }, { id: 'wrap', label: '包裝與緞帶' }, { id: 'card', label: '標籤與背景' },
+    { id: 'main', label: '主花', count: '16+2' }, { id: 'filler', label: '配花', count: '15' },
+    { id: 'foliage', label: '葉材與果實', count: '14' }, { id: 'wrap', label: '包裝與緞帶' }, { id: 'card', label: '標籤與背景' },
   ];
   const FLOWER_TABS = ['main', 'filler', 'foliage'];
 
