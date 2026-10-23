@@ -1839,10 +1839,18 @@
           st.querySelectorAll('svg').forEach(svg => svg.insertAdjacentHTML('afterbegin', defs));
         },
       });
-      const url = canvas.toDataURL('image/png');
-      const a = document.createElement('a');
-      a.href = url; a.download = `bouquet-${new Date().toISOString().slice(0, 10)}.png`;
-      document.body.appendChild(a); a.click(); a.remove();
+      const filename = `bouquet-${new Date().toISOString().slice(0, 10)}.png`, url = canvas.toDataURL('image/png');
+      // 在 claude.ai 檢視器裡用 downloads 能力存檔（會先請檢視者確認）；其他環境用一般的瀏覽器下載
+      const dl = window.claude?.use ? await window.claude.use('downloads').catch(() => null) : null;
+      if (dl) {
+        const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+        try { await dl.save({ filename, data: blob }); toast('花束圖片已下載'); return; }
+        catch (err) { if (err?.code === 'declined') return; } // 其他錯誤：改顯示預覽讓使用者手動另存
+      } else {
+        const a = document.createElement('a');
+        a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click(); a.remove();
+      }
       $('#pngImg').src = url; $('#pngModal').classList.remove('hide');
     } catch (err) {
       console.error(err); toast('匯出失敗，請再試一次');
