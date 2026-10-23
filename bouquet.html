@@ -1152,8 +1152,26 @@
     }
     return d + ` C ${f1(rx)} ${f1(ry + 120)}, 240 336, 194 352 Z`;
   }
+  // 外層後背紙輪廓（內襯的裁切範圍）
+  const BACK_OUTLINE = {
+    korean: ['M180 356 C 118 334, 26 262, 10 160 L 34 116 L 62 128 L 82 74 L 118 88 L 148 42 L 184 62 Z', 'M180 356 C 242 334, 338 266, 352 168 L 332 120 L 302 130 L 286 70 L 250 82 L 222 30 L 194 54 L 176 70 Z'],
+    craft: [CRAFT_BACK], cello: [CRAFT_BACK], geo: [GEO_BACK],
+    cone: ['M180 362 L 40 112 C 90 78, 138 68, 180 72 C 222 68, 270 78, 320 112 Z'],
+  };
+  const WAIST_Y = 342;
+  const tissueClip = outer => {
+    const id = `tclip-${outer}`;
+    // clipPath 裡不能放 <g>：縮放直接套在每條路徑上
+    const tf = `translate(180 ${WAIST_Y}) scale(1.06) translate(-180 ${-WAIST_Y})`;
+    return [id, `<defs><clipPath id="${id}" clipPathUnits="userSpaceOnUse">` +
+      BACK_OUTLINE[outer].map(d => `<path d="${d}" transform="${tf}"/>`).join('') + `</clipPath><clipPath id="${id}-cut" clipPathUnits="userSpaceOnUse"><rect x="-200" y="-200" width="760" height="${WAIST_Y + 200}"/></clipPath></defs>`];
+  };
   function tissueSVG(w, vb) {
     if (w.tissue === 'none') return '';
+    const [clipId, clipDefs] = tissueClip(w.outer);
+    return svgWrap(clipDefs + `<g clip-path="url(#${clipId}-cut)"><g clip-path="url(#${clipId})">${tissueArt(w)}</g></g>`, vb);
+  }
+  function tissueArt(w) {
     const c = colorOf(TISSUE_COLORS, w.tissueColor).c, g = TISSUE_GEOM[w.outer], edge = mix(c, INK, .1);
     let s = '';
     if (w.tissue === 'tissue') {
@@ -1173,9 +1191,11 @@
       s = `<path d="${frill}" fill="${c}" fill-opacity=".5" stroke="${INK}" stroke-width="1" stroke-opacity=".45" stroke-linejoin="round"/><path d="${frill}" fill="url(#mesh)"/>` +
         `<path d="${inner}" fill="${c}" fill-opacity=".6" stroke="${INK}" stroke-width="1.1" stroke-opacity=".55" stroke-linejoin="round"/><path d="${inner}" fill="url(#mesh)"/>`;
     }
-    return svgWrap(s, vb);
+    return s;
   }
 
+  // 各款外層主紙收腰最細處（綁繩的定位基準）：中心 x、高度 y、半寬
+  const WAIST = { korean: { cx: 181, y: 344, hw: 17.5 }, craft: { cx: 181, y: 342, hw: 17.5 }, cello: { cx: 181, y: 342, hw: 17.5 }, cone: { cx: 180, y: 344, hw: 17 }, geo: { cx: 180, y: 340, hw: 50 } };
   // 緞帶與綁繩：綁在收腰支點（180, 338）
   function tieSVG(w, vb) {
     const base = colorOf(TIE_COLORS, w.tieColor).c, c = base, d = mix(base, '#2B2420', .22), l = mix(base, '#FFFFFF', .4);
@@ -1201,10 +1221,28 @@
         `<ellipse cx="181" cy="339" rx="11" ry="10" fill="${d}" fill-opacity=".9" ${S}/>` + hl('M104 314 C 112 304, 126 298, 140 298', 2.6, .55);
     } else if (w.tie === 'jute') {
       const cord = (dd, wd = 3.4) => `<path d="${dd}" fill="none" stroke="${INK}" stroke-width="${wd + 2}" stroke-linecap="round"/><path d="${dd}" fill="none" stroke="${c}" stroke-width="${wd}" stroke-linecap="round"/><path d="${dd}" fill="none" stroke="${d}" stroke-width="${wd}" stroke-dasharray="1.6 2.4" stroke-linecap="round"/>`;
-      s = [0, 1, 2].map(i => cord(`M157 ${331 + i * 7} C 172 ${326 + i * 7}, 190 ${326 + i * 7}, 205 ${331 + i * 7}`)).join('') +
-        cord('M193 340 C 178 324, 166 332, 178 342 C 184 345, 189 343, 193 340', 2.6) + cord('M193 340 C 206 322, 220 330, 208 342 C 202 346, 197 344, 193 340', 2.6) +
-        cord('M193 342 C 198 360, 190 378, 197 396', 2.6) + cord('M195 342 C 208 356, 214 372, 216 388', 2.6) +
-        `<circle cx="193" cy="341" r="4.6" fill="${c}" ${S}/>` + line('M195 396 l -3 5 M197 396 l 0 6 M199 396 l 3 5 M214 388 l -2 6 M216 388 l 1 6 M218 388 l 4 4', .7, 1);
+      const { cx, y: wy, hw } = WAIST[w.outer] || WAIST.korean, y0 = wy - 9, step = 6.4, back = mix(base, '#2B2420', .4);
+      // 紙張被繩子勒緊的皺褶
+      s = [-.7, -.25, .25, .7].map(k => line(`M${f1(cx + k * hw)} ${f1(y0 - 14)} Q ${f1(cx + k * hw * .9)} ${f1(y0 - 4)}, ${f1(cx + k * hw * .82)} ${f1(y0 + 2)} M${f1(cx + k * hw * .82)} ${f1(y0 + step * 3)} Q ${f1(cx + k * hw * .9)} ${f1(y0 + step * 3 + 8)}, ${f1(cx + k * hw * 1.02)} ${f1(y0 + step * 3 + 16)}`, .28)).join('');
+      // 繞到後方的部分：左右邊緣的轉折弧（較暗，表示在紙的側面／背面）
+      for (let i = 0; i < 3; i++) {
+        const yr = y0 + i * step + 3.2, yl = y0 + (i + 1) * step;
+        s += cord(`M${f1(cx + hw - .5)} ${f1(yr)} C ${f1(cx + hw + 3.5)} ${f1(yr + 1)}, ${f1(cx + hw + 3.5)} ${f1(yr + step - 2)}, ${f1(cx + hw - 1.5)} ${f1(yr + step - .6)}`, 3).replace(`stroke="${c}"`, `stroke="${back}"`);
+        if (i < 2) s += cord(`M${f1(cx - hw + .5)} ${f1(yl - 1)} C ${f1(cx - hw - 3.5)} ${f1(yl - .2)}, ${f1(cx - hw - 3.5)} ${f1(yl + step - 3)}, ${f1(cx - hw + 1.5)} ${f1(yl + 1.6)}`, 3).replace(`stroke="${c}"`, `stroke="${back}"`);
+      }
+      // 正面三圈：由左往右微微下斜（螺旋纏繞），中間略往下凸，貼著紙的弧面
+      for (let i = 0; i < 3; i++) {
+        const ya = y0 + i * step, yb = ya + 3.2;
+        s += cord(`M${f1(cx - hw - .5)} ${f1(ya)} C ${f1(cx - hw * .4)} ${f1(ya + 3.4)}, ${f1(cx + hw * .4)} ${f1(yb + 3.4)}, ${f1(cx + hw + .5)} ${f1(yb)}`, 3);
+      }
+      // 正面打結：繩結＋兩個小圈＋自然垂下的繩尾（尾端鬚鬚）
+      const kx = cx + hw * .3, ky = y0 + step * 1.6;
+      s += cord(`M${f1(kx)} ${f1(ky)} C ${f1(kx - 14)} ${f1(ky - 16)}, ${f1(kx - 22)} ${f1(ky - 3)}, ${f1(kx - 2)} ${f1(ky + 1.5)}`, 2.6) +
+        cord(`M${f1(kx)} ${f1(ky)} C ${f1(kx + 12)} ${f1(ky - 17)}, ${f1(kx + 22)} ${f1(ky - 5)}, ${f1(kx + 2)} ${f1(ky + 1.5)}`, 2.6) +
+        cord(`M${f1(kx - 1)} ${f1(ky + 2)} C ${f1(kx - 5)} ${f1(ky + 18)}, ${f1(kx - 1)} ${f1(ky + 34)}, ${f1(kx - 6)} ${f1(ky + 52)}`, 2.6) +
+        cord(`M${f1(kx + 1)} ${f1(ky + 2)} C ${f1(kx + 9)} ${f1(ky + 16)}, ${f1(kx + 12)} ${f1(ky + 30)}, ${f1(kx + 16)} ${f1(ky + 44)}`, 2.6) +
+        `<ellipse cx="${f1(kx)}" cy="${f1(ky + .5)}" rx="4.6" ry="4" fill="${c}" ${S}/>` + line(`M${f1(kx - 3)} ${f1(ky - .8)} Q ${f1(kx)} ${f1(ky + 1.6)}, ${f1(kx + 3)} ${f1(ky - .8)}`, .5) +
+        line(`M${f1(kx - 6)} ${f1(ky + 52)} l -2.5 4.5 M${f1(kx - 6)} ${f1(ky + 52)} l .5 5 M${f1(kx - 6)} ${f1(ky + 52)} l 3 4 M${f1(kx + 16)} ${f1(ky + 44)} l -1 5 M${f1(kx + 16)} ${f1(ky + 44)} l 2 4.5 M${f1(kx + 16)} ${f1(ky + 44)} l 4 3`, .7);
     } else if (w.tie === 'lace') {
       const tl = 'M175 344 C 166 370, 158 392, 146 414 L 156 412 L 160 424 C 172 400, 180 374, 186 346 Z';
       const lace = p => `<path d="${p}" fill="none" stroke="#FBF7EE" stroke-width="6" stroke-dasharray=".1 4.6" stroke-linecap="round"/><path d="${p}" fill="none" stroke="${INK}" stroke-width="6.8" stroke-dasharray=".1 4.6" stroke-linecap="round" opacity=".25"/>`;
@@ -1246,6 +1284,7 @@
     $('#layerTissue').innerHTML = tissueSVG(state.wrap);
     $('#foldL').innerHTML = frontWrapSVG(state.wrap, undefined, 'l');
     $('#foldR').innerHTML = frontWrapSVG(state.wrap, undefined, 'r');
+    renderRibbon(); // 綁繩依外層主紙的收腰位置重新定位
   }
   function renderRibbon() { $('#layerRibbon').innerHTML = tieSVG(state.wrap); }
   /* ================= 小卡（Layer 5：長方形專業標籤牌）與空間背景 ================= */
@@ -1890,33 +1929,33 @@
   // 每個主題：主花 / 配花與果實（花材 → 可用色票名）、葉材、包裝組合 [款式, 色票]、籤詩
   const THEMES = [
     { id: 'sun', scenes: ['sun', 'paper'], cardStyle: 'hang', cardTone: 'white', emoji: '☀️', name: '晨間暖陽與元氣', en: 'Morning Sunshine',
-      mains: { sunflower: ['陽光黃'], tulip: ['鵝黃', '鬱金香橘'], gerbera: ['暖陽橘', '奶油白'], rose: ['奶油黃'] },
-      fillers: { chamomile: ['純白'], freesia: ['鵝黃', '奶白'], babysbreath: ['白'] },
-      foliage: ['eucalyptus', 'olive', 'fern'],
+      mains: { sunflower: ['陽光黃'], tulip: ['鵝黃', '鬱金香橘'], gerbera: ['暖陽橘', '奶油白'], rose: ['奶油黃'], dahlia: ['奶油'], calla: ['奶黃'], carnation: ['奶白'] },
+      fillers: { chamomile: ['純白'], freesia: ['鵝黃', '奶白'], babysbreath: ['白'], craspedia: ['金黃'], solidago: ['金黃'], waxflower: ['純白'], snapdragon: ['鵝黃'], bunnytail: ['奶茶'] },
+      foliage: ['eucalyptus', 'olive', 'fern', 'wheat', 'pittosporum', 'ruscus'],
       outer: [['craft', 'kraft'], ['craft', 'oat'], ['korean', 'oat']], tissue: [['news', 'apricot'], ['news', 'beige']], tie: [['jute', 'caramel'], ['jute', 'gold'], ['long', 'caramel']],
       fortune: '把生活調成喜歡的頻道，今天的你自帶溫暖光芒，好事正順著陽光向你走來。', card: '今天的你自帶溫暖光芒，好事正向你走來' },
     { id: 'romance', scenes: ['paper', 'grey'], cardStyle: 'label', cardTone: 'white', emoji: '🩰', name: '溫柔芭蕾與初戀', en: 'Soft Romance',
-      mains: { rose: ['茱萸粉', '香檳白'], tulip: ['蜜桃粉'], ranunculus: ['藕粉'], gerbera: ['珊瑚粉'] },
-      fillers: { babysbreath: ['淺粉', '白'], freesia: ['奶白'], lily: ['純白'] },
-      foliage: ['eucalyptus', 'fern', 'olive'],
+      mains: { rose: ['茱萸粉', '香檳白'], tulip: ['蜜桃粉'], ranunculus: ['藕粉'], gerbera: ['珊瑚粉'], carnation: ['蜜粉', '奶白'], lisianthus: ['霧粉', '奶白'], cosmos: ['粉紅'], camellia: ['粉紅'], protea: ['粉紅'], anemone: ['玫瑰粉'] },
+      fillers: { babysbreath: ['淺粉', '白'], freesia: ['奶白'], lily: ['純白'], waxflower: ['淡粉'], sweetpea: ['蜜桃', '粉紫'], bunnytail: ['粉紅'], statice: ['粉'], forgetmenot: ['淡粉'] },
+      foliage: ['eucalyptus', 'fern', 'olive', 'dustymiller', 'ruscus', 'pampas'],
       outer: [['korean', 'pink'], ['korean', 'cream']], tissue: [['tulle', 'pink'], ['tulle', 'white']], tie: [['chiffon', 'rose'], ['chiffon', 'cream']],
       fortune: '允許自己偶爾慢下來，今天適合買杯喜歡的飲料，溫柔地偏愛自己一回。', card: '慢下來，溫柔地偏愛自己一回' },
     { id: 'forest', scenes: ['grey', 'sun'], cardStyle: 'label', cardTone: 'sage', emoji: '🌿', name: '森林微風與深呼吸', en: 'Forest Breeze',
-      mains: { hydrangea: ['雪球白', '霧霾藍'], tulip: ['純白'], ranunculus: ['奶白'], rose: ['香檳白'], gerbera: ['奶油白'] },
-      fillers: { lily: ['純白'], babysbreath: ['白'], chamomile: ['純白'], berries: ['青綠果實'] },
-      foliage: ['eucalyptus', 'olive', 'fern'],
+      mains: { hydrangea: ['雪球白', '霧霾藍'], tulip: ['純白'], ranunculus: ['奶白'], rose: ['香檳白'], gerbera: ['奶油白'], anemone: ['純白'], lisianthus: ['奶白'], iris: ['純白', '藍紫'], calla: ['白'], cosmos: ['純白'] },
+      fillers: { lily: ['純白'], babysbreath: ['白'], chamomile: ['純白'], berries: ['青綠果實'], forgetmenot: ['天藍'], veronica: ['白', '紫藍'], lavender: ['淡藕紫'], hypericum: ['奶白'] },
+      foliage: ['eucalyptus', 'olive', 'fern', 'pittosporum', 'ivy', 'ruscus', 'dustymiller', 'lunaria'],
       outer: [['korean', 'sage'], ['korean', 'blue'], ['craft', 'sage'], ['cello', 'cream'], ['cello', 'sage']], tissue: [['tissue', 'white'], ['tissue', 'apricot']], tie: [['long', 'forest'], ['long', 'cream']],
       fortune: '那些困擾你的小事都會隨風散去，今天的幸運藏在一次深呼吸與放寬心裡。', card: '小事隨風散去，幸運藏在深呼吸裡' },
     { id: 'vintage', scenes: ['wood', 'midnight'], cardStyle: 'label', cardTone: 'stone', emoji: '🍷', name: '復古電影與微醺', en: 'Vintage Muse',
-      mains: { rose: ['經典紅'], ranunculus: ['香檳杏'], sunflower: ['復古焦糖橘'], tulip: ['鬱金香橘'] },
-      fillers: { berries: ['紅棕果實'], cotton: ['原色'], babysbreath: ['白'] },
-      foliage: ['eucalyptus', 'olive', 'fern'],
+      mains: { rose: ['經典紅'], ranunculus: ['香檳杏'], sunflower: ['復古焦糖橘'], tulip: ['鬱金香橘'], dahlia: ['酒紅'], camellia: ['正紅'], carnation: ['酒紅'], cosmos: ['酒紅'], anemone: ['深紫'] },
+      fillers: { berries: ['紅棕果實'], cotton: ['原色'], babysbreath: ['白'], hypericum: ['酒紅'], pepperberry: ['酒紅'], statice: ['紫'], lavender: ['薰衣紫'] },
+      foliage: ['eucalyptus', 'olive', 'fern', 'wheat', 'pampas', 'ivy', 'ruscus'],
       outer: [['korean', 'black'], ['cone', 'black'], ['craft', 'kraft'], ['cone', 'kraft']], tissue: [['news', 'beige']], tie: [['long', 'wine'], ['seal', 'wine']],
       fortune: '不必迎合所有人的期待，你獨特的靈魂與神秘感，就是今天最迷人的風景。', card: '你獨特的靈魂，就是今天最迷人的風景' },
     { id: 'miracle', scenes: ['midnight', 'paper'], cardStyle: 'stake', cardTone: 'white', emoji: '✨', name: '奇蹟降臨・季節限定特調', en: 'Seasonal Miracle', seasonal: true,
-      mains: { rose: ['香檳白', '茱萸粉'], ranunculus: ['奶白', '藕粉'], tulip: ['純白'] },
-      fillers: { babysbreath: ['白'], lily: ['純白'] },
-      foliage: ['eucalyptus', 'fern', 'olive'],
+      mains: { rose: ['香檳白', '茱萸粉'], ranunculus: ['奶白', '藕粉'], tulip: ['純白'], lisianthus: ['奶白'], protea: ['奶白'], oriental: ['純白'], calla: ['白'], camellia: ['純白'] },
+      fillers: { babysbreath: ['白'], lily: ['純白'], waxflower: ['純白'], bunnytail: ['奶白'], pepperberry: ['粉紅'] },
+      foliage: ['eucalyptus', 'fern', 'olive', 'lunaria', 'dustymiller', 'pampas'],
       outer: [['korean', 'cream'], ['korean', 'oat']], tissue: [['tulle', 'white'], ['tissue', 'white']], tie: [['lace', 'gold']],
       fortune: '恭喜抽中隱藏版季節花束！今天會有意想不到的小確幸敲門，請準備好微笑收下。', card: '小確幸正在敲門，請微笑收下' },
   ];
