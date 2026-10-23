@@ -299,118 +299,181 @@
   /* ================= 繪圖工具（極簡植物圖鑑：1px #555 線條＋平面色塊，無漸層） ================= */
   const INK = '#555555';
   const S = `stroke="${INK}" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"`;
-  const S1 = S;
   const LEAF = '#9CAF88', LEAF2 = '#B7C4A7', LEAF3 = '#7F9474';
   const f1 = n => (+n).toFixed(1);
   const rng = seed => () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
   const line = (d, o = 1) => `<path d="${d}" fill="none" stroke="${INK}" stroke-width="1" stroke-linecap="round" opacity="${o}"/>`;
-  const stem = d => line(d);
-  const leaf = (d, vein, fill = LEAF) => `<path d="${d}" fill="${fill}" ${S}/>` + (vein ? line(vein, .45) : '');
   const C = (cx, cy, r, fill) => `<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${f1(r)}" fill="${fill}" ${S}/>`;
-  const E = (cx, cy, rx, ry, rot, fill) => `<ellipse cx="${f1(cx)}" cy="${f1(cy)}" rx="${f1(rx)}" ry="${f1(ry)}" transform="rotate(${f1(rot)} ${f1(cx)} ${f1(cy)})" fill="${fill}" ${S}/>`;
-  // n 片橢圓花瓣，等角度環繞 (cx, cy)
-  const ring = (cx, cy, n, dist, rx, ry, fill, off = 0) => {
+  const dot = (cx, cy, r, fill) => `<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${f1(r)}" fill="${fill}"/>`;
+  const STEM = (top, bottom = 298) => line(`M60 ${bottom} L60 ${top}`);
+  const at = (x, y, ang, d0 = 0) => `transform="translate(${f1(x)} ${f1(y)}) rotate(${f1(ang)}) translate(0 ${f1(-d0)})"`;
+
+  // 花瓣造型（本地座標：基部在原點、朝上延伸 len、半寬 w）
+  const SHAPE = {
+    point: (len, w) => `M0 0 C ${f1(w)} ${f1(-len * .35)}, ${f1(w * .55)} ${f1(-len * .85)}, 0 ${f1(-len)} C ${f1(-w * .55)} ${f1(-len * .85)}, ${f1(-w)} ${f1(-len * .35)}, 0 0 Z`,
+    round: (len, w) => `M0 0 C ${f1(w * 1.25)} ${f1(-len * .3)}, ${f1(w * 1.15)} ${f1(-len * 1.02)}, 0 ${f1(-len * .9)} C ${f1(-w * 1.15)} ${f1(-len * 1.02)}, ${f1(-w * 1.25)} ${f1(-len * .3)}, 0 0 Z`,
+    cup: (len, w) => `M0 0 C ${f1(w * 1.2)} ${f1(-len * .12)}, ${f1(w)} ${f1(-len * .8)}, 0 ${f1(-len)} C ${f1(-w)} ${f1(-len * .8)}, ${f1(-w * 1.2)} ${f1(-len * .12)}, 0 0 Z`,
+    strap: (len, w) => `M${f1(-w * .5)} 0 L${f1(-w)} ${f1(-len * .85)} A ${f1(w)} ${f1(w)} 0 0 1 ${f1(w)} ${f1(-len * .85)} L${f1(w * .5)} 0 Z`,
+  };
+  const petal = (x, y, ang, d0, shape, len, w, fill, vein = 0) =>
+    `<path d="${SHAPE[shape](len, w)}" ${at(x, y, ang, d0)} fill="${fill}" ${S}/>` +
+    (vein ? `<path d="M0 ${f1(-len * .12)} L0 ${f1(-len * vein)}" ${at(x, y, ang, d0)} fill="none" stroke="${INK}" stroke-width="1" stroke-linecap="round" opacity=".3"/>` : '');
+  // n 片花瓣等角度環繞 (cx, cy)
+  const petals = (cx, cy, n, d0, shape, len, w, fill, off = 0, vein = 0) => {
     let s = '';
-    for (let i = 0; i < n; i++) { const a = off + (i * 360) / n, r = a * Math.PI / 180; s += E(cx + dist * Math.sin(r), cy - dist * Math.cos(r), rx, ry, a, fill); }
+    for (let i = 0; i < n; i++) s += petal(cx, cy, off + (i * 360) / n, d0, shape, len, w, fill, vein);
     return s;
   };
-  // 兩端尖的葉片：從 (x, y) 朝 ang 度（0 = 正上方）伸出
+  // 扇貝邊圓（重瓣花的一層花瓣）；bulge 越接近 .5 弧越飽滿（.5 = 半圓）
+  const scallop = (cx, cy, r, n, fill, off = 0, bulge = .62) => {
+    const pt = i => { const a = (off + i * 360 / n) * Math.PI / 180; return [cx + r * Math.sin(a), cy - r * Math.cos(a)]; };
+    const rr = 2 * r * Math.sin(Math.PI / n) * bulge;
+    let d = `M${f1(pt(0)[0])} ${f1(pt(0)[1])}`;
+    for (let i = 1; i <= n; i++) { const [x, y] = pt(i); d += ` A ${f1(rr)} ${f1(rr)} 0 0 1 ${f1(x)} ${f1(y)}`; }
+    return `<path d="${d} Z" fill="${fill}" ${S}/>`;
+  };
+  // 阿基米德螺旋（玫瑰花心）
+  const spiral = (cx, cy, r0, turns) => {
+    let d = '';
+    for (let k = 0; k <= 48; k++) { const t = k / 48, r = r0 * (1 - t) + .8, a = t * turns * 2 * Math.PI; d += `${k ? 'L' : 'M'}${f1(cx + r * Math.sin(a))} ${f1(cy - r * Math.cos(a))} `; }
+    return line(d);
+  };
+  // 兩端尖的葉片（ang：0 = 正上方），大片葉子加上主脈與側脈
   const lens = (x, y, len, w, ang, fill) => {
-    const r = ang * Math.PI / 180, tx = x + len * Math.sin(r), ty = y - len * Math.cos(r), mx = (x + tx) / 2, my = (y + ty) / 2, px = Math.cos(r) * w, py = Math.sin(r) * w;
-    return `<path d="M${f1(x)} ${f1(y)} Q ${f1(mx + px)} ${f1(my + py)}, ${f1(tx)} ${f1(ty)} Q ${f1(mx - px)} ${f1(my - py)}, ${f1(x)} ${f1(y)} Z" fill="${fill}" ${S}/>` +
-      line(`M${f1(x)} ${f1(y)} L ${f1(x + (tx - x) * .8)} ${f1(y + (ty - y) * .8)}`, .4);
+    let s = `<path d="M0 0 Q ${f1(w * 2)} ${f1(-len / 2)}, 0 ${f1(-len)} Q ${f1(-w * 2)} ${f1(-len / 2)}, 0 0 Z" ${at(x, y, ang)} fill="${fill}" ${S}/>`;
+    let v = `M0 0 L0 ${f1(-len * .82)}`;
+    // 側脈長度依該處實際葉寬（二次曲線半寬 = 4w·t(1−t)）縮放，保證留在葉片內
+    if (len >= 22 && w >= 6) [.3, .5, .7].forEach(t => { const yy = -len * t, k = 4 * w * t * (1 - t) * .55; v += ` M0 ${f1(yy)} L${f1(k)} ${f1(yy - k * .6)} M0 ${f1(yy)} L${f1(-k)} ${f1(yy - k * .6)}`; });
+    return s + `<path d="${v}" ${at(x, y, ang)} fill="none" stroke="${INK}" stroke-width="1" stroke-linecap="round" opacity=".38"/>`;
   };
   const pair = (y, len, w, ang, fill = LEAF) => lens(60, y, len, w, -ang, fill) + lens(60, y, len, w, ang, fill);
-  const STEM = (top, bottom = 298) => line(`M60 ${bottom} L60 ${top}`);
-  const daisyHead = (cx, cy, r, c) => ring(cx, cy, 12, r * .58, r * .19, r * .4, c.p) + C(cx, cy, r * .3, c.c);
-  const cluster = (cx, cy, c, r = 4.2) => [[0, 0], [-7.5, 0], [7.5, 0], [-3.75, -6.5], [3.75, -6.5], [-3.75, 6.5], [3.75, 6.5]].map(([dx, dy]) => C(cx + dx, cy + dy, r, c.p)).join('');
+  // 冬青：鋸齒葉緣
+  const holly = (x, y, len, w, ang, fill) => {
+    const R = [], L = [];
+    for (let i = 1; i <= 6; i++) { const t = i / 7, ww = w * Math.sin(Math.PI * t) * (i % 2 ? 1.25 : .8); R.push(`${f1(ww)} ${f1(-len * t)}`); L.unshift(`${f1(-ww)} ${f1(-len * t)}`); }
+    return `<path d="M0 0 L${R.join(' L')} L0 ${f1(-len)} L${L.join(' L')} Z" ${at(x, y, ang)} fill="${fill}" ${S}/>` +
+      `<path d="M0 0 L0 ${f1(-len * .85)}" ${at(x, y, ang)} fill="none" stroke="${INK}" opacity=".38"/>`;
+  };
+  const daisyHead = (cx, cy, r, c) => petals(cx, cy, 14, r * .26, 'round', r * .72, r * .13, c.p, 0, .7) + C(cx, cy, r * .3, c.c) +
+    [0, 72, 144, 216, 288].map(a => dot(cx + r * .14 * Math.sin(a * Math.PI / 180), cy - r * .14 * Math.cos(a * Math.PI / 180), r * .045, '#B98A2E')).join('');
+  const cluster = (cx, cy, c, r = 4.2) => [[0, 0], [-7.5, 0], [7.5, 0], [-3.75, -6.5], [3.75, -6.5], [-3.75, 6.5], [3.75, 6.5]]
+    .map(([dx, dy]) => C(cx + dx, cy + dy, r, c.p) + dot(cx + dx + r * .3, cy + dy - r * .3, r * .22, c.d)).join('');
+  const sepals = (cx, cy, d0, len) => [150, 180, 210].map(a => petal(cx, cy, a, d0, 'point', len, 4.2, LEAF)).join('');
 
   /* ================= 幾何花材 SVG（viewBox 0 0 120 300，花莖底部 = 旋轉支點；造型左右對稱） ================= */
   const DRAW = {
-    rose: c => STEM(86) + pair(205, 34, 9, 52) + pair(150, 26, 7, 46, LEAF2) +
-      `<path d="M60 92 L46 82 L60 86 L74 82 Z" fill="${LEAF}" ${S}/>` +
-      ring(60, 55, 5, 15, 14, 14, c.p) + C(60, 55, 13, c.l) + C(60, 55, 7.5, c.p) + C(60, 55, 3, c.d),
+    rose: c => STEM(84) + pair(205, 36, 10, 52) + pair(152, 27, 8, 46, LEAF2) +
+      sepals(60, 55, 20, 17) +
+      petals(60, 55, 5, 3, 'round', 30, 13, c.d, 0, .55) + petals(60, 55, 5, 2, 'round', 22, 11, c.p, 36) +
+      C(60, 55, 11, c.l) + spiral(60, 55, 9.5, 2.3),
 
     tulip: c => STEM(92) + lens(60, 292, 120, 13, -12, LEAF) + lens(60, 292, 120, 13, 12, LEAF2) +
-      lens(60, 94, 72, 15, 0, c.l) + lens(60, 94, 68, 16, -18, c.p) + lens(60, 94, 68, 16, 18, c.p),
+      petal(60, 96, 0, 0, 'cup', 66, 16, c.d, .8) + petal(60, 96, -17, 0, 'cup', 60, 16, c.p, .8) + petal(60, 96, 17, 0, 'cup', 60, 16, c.p, .8) +
+      petal(60, 97, 0, 0, 'cup', 50, 12, c.l, .75),
 
-    sunflower: c => STEM(78) + pair(205, 40, 14, 58) + pair(150, 32, 11, 52, LEAF2) +
-      ring(60, 55, 16, 25, 6, 12.5, c.p) + C(60, 55, 16, '#6E5B4B') + C(60, 55, 9, c.d),
+    sunflower: c => {
+      let s = STEM(78) + pair(205, 42, 14, 58) + pair(150, 33, 11, 52, LEAF2) +
+        petals(60, 55, 18, 13, 'point', 25, 6.4, c.d, 10, .6) + petals(60, 55, 18, 14, 'point', 22, 5.8, c.p, 0, .6) +
+        C(60, 55, 16, '#6E5B4B') + `<circle cx="60" cy="55" r="11.5" fill="none" stroke="#4E3F33" stroke-width="1"/>`;
+      for (let k = 1; k < 46; k++) { const r = 2.15 * Math.sqrt(k), a = k * 2.39996; if (r < 14.5) s += dot(60 + r * Math.cos(a), 55 + r * Math.sin(a), .8, c.d); }
+      return s;
+    },
 
     gerbera: c => STEM(72) + pair(282, 24, 7, 64) +
-      ring(60, 55, 24, 23, 3.4, 12, c.p) + C(60, 55, 11, c.c) + C(60, 55, 5, '#4F4436'),
+      petals(60, 55, 22, 8, 'strap', 26, 2.9, c.p, 0) + petals(60, 55, 22, 7, 'point', 12, 2.2, c.d, 8.2) +
+      C(60, 55, 8.5, c.c) + Array.from({ length: 14 }, (_, i) => { const a = i * 2 * Math.PI / 14; return dot(60 + 6.2 * Math.sin(a), 55 - 6.2 * Math.cos(a), .8, '#FFF4D6'); }).join('') +
+      C(60, 55, 3.6, '#4F4436'),
 
-    ranunculus: c => STEM(88) + pair(196, 30, 9, 50) + pair(150, 22, 7, 46, LEAF2) +
-      [31, 25, 19, 13, 7].map((r, k) => C(60, 56, r, k % 2 ? c.l : c.p)).join('') + C(60, 56, 2.6, LEAF),
+    ranunculus: c => STEM(88) + pair(196, 32, 9, 50) + pair(150, 23, 7, 46, LEAF2) + sepals(60, 56, 26, 14) +
+      scallop(60, 57, 30, 14, c.d) + scallop(60, 56, 24.5, 12, c.p, 15) + scallop(60, 55, 19, 10, c.l, 6) +
+      scallop(60, 54, 13.5, 9, c.p, 20) + scallop(60, 53, 8.5, 7, c.l, 10) + C(60, 53, 3.6, LEAF) + dot(60, 53, 1.2, LEAF3),
 
     hydrangea: c => {
-      let s = STEM(96) + pair(132, 44, 15, 62) + C(60, 58, 40, c.d);
-      for (let row = -3; row <= 3; row++) for (let col = -4; col <= 4; col++) {
-        const x = 60 + col * 11 + (row % 2 ? 5.5 : 0), y = 58 + row * 9.6;
-        if (Math.hypot(x - 60, y - 58) <= 33) s += C(x, y, 5.6, (row + col) % 3 ? c.p : c.l) + `<circle cx="${f1(x)}" cy="${f1(y)}" r="1.2" fill="${INK}"/>`;
+      let s = STEM(96) + pair(140, 46, 15, 62) + scallop(60, 58, 38, 16, c.d);
+      for (let row = -3; row <= 3; row++) for (let col = -3; col <= 3; col++) {
+        const x = 60 + col * 13.5 + (row % 2 ? 6.75 : 0), y = 58 + row * 11.7;
+        if (Math.hypot(x - 60, y - 58) > 30) continue;
+        const rot = ((row * 7 + col * 13 + 40) % 4) * 11, fill = (row + col + 8) % 3 ? c.p : c.l;
+        s += scallop(x, y, 4, 4, fill, 45 + rot, .5) + dot(x, y, 1.2, INK); // 四瓣小花：單一路徑，避免線條過密
       }
       return s;
     },
 
-    peony: c => STEM(98) + pair(205, 34, 10, 54) + pair(155, 26, 8, 48, LEAF2) +
-      ring(60, 58, 8, 23, 14, 13, c.d) + ring(60, 58, 6, 12, 11, 11, c.p, 30) + C(60, 58, 8, c.l),
+    peony: c => STEM(98) + pair(205, 36, 10, 54) + pair(155, 27, 8, 48, LEAF2) + sepals(60, 58, 24, 16) +
+      scallop(60, 59, 31, 12, c.d) + petals(60, 58, 7, 5, 'round', 22, 11, c.p, 25, .5) +
+      scallop(60, 57, 14, 9, c.l, 10) + [0, 60, 120, 180, 240, 300].map(a => C(60 + 4.6 * Math.sin(a * Math.PI / 180), 57 - 4.6 * Math.cos(a * Math.PI / 180), 2.6, c.p)).join('') + C(60, 57, 2.4, '#E9D28A'),
 
     pinecone: () => {
-      let s = STEM(82) + pair(112, 30, 10, 64, '#6F8A68') + C(54, 106, 4.5, '#B5655F') + C(66, 106, 4.5, '#B5655F') + C(60, 98, 4.5, '#B5655F') +
-        `<ellipse cx="60" cy="52" rx="19" ry="28" fill="#A6896A" ${S}/>`;
-      for (let y = 32, row = 0; y <= 74; y += 7, row++) {
-        const w = 19 * Math.sqrt(Math.max(0, 1 - ((y - 52) / 28) ** 2)) - 4, n = Math.max(1, Math.round(w / 5));
-        for (let i = 0; i < n; i++) { const x = 60 - w + (2 * w * (i + .5)) / n; s += C(x, y, 4, '#8E7356'); }
+      let s = STEM(82) + holly(60, 112, 32, 9, -64, '#6F8A68') + holly(60, 112, 32, 9, 64, '#7D9774') +
+        C(55, 106, 4.4, '#B5655F') + C(65, 106, 4.4, '#B5655F') + C(60, 99, 4.4, '#B5655F') +
+        `<ellipse cx="60" cy="52" rx="19" ry="29" fill="#8E7356" ${S}/>`;
+      for (let y = 28, row = 0; y <= 78; y += 6.2, row++) {
+        const w = 19 * Math.sqrt(Math.max(0, 1 - ((y - 52) / 29) ** 2)) - 3.5, n = Math.max(1, Math.round(w / 5.2));
+        for (let i = 0; i < n; i++) {
+          const x = 60 - w + (2 * w * (i + .5)) / n + (row % 2 ? 1.6 : -1.6);
+          s += `<path d="M${f1(x)} ${f1(y - 4.6)} Q ${f1(x + 5.6)} ${f1(y - .8)}, ${f1(x)} ${f1(y + 4.6)} Q ${f1(x - 5.6)} ${f1(y - .8)}, ${f1(x)} ${f1(y - 4.6)} Z" fill="${row % 2 ? '#A6896A' : '#B89C7C'}" ${S}/>`;
+        }
       }
       return s;
     },
 
-    chamomile: c => STEM(150) + line('M60 150 L60 64 M60 150 L36 96 M60 150 L84 96') + pair(215, 24, 7, 58) +
+    chamomile: c => STEM(150) + line('M60 150 L60 64 M60 150 L36 96 M60 150 L84 96') + pair(215, 26, 7, 58) +
       daisyHead(60, 60, 21, c) + daisyHead(36, 96, 17, c) + daisyHead(84, 96, 17, c),
 
     babysbreath: c => {
       const tips = [[60, 30], [38, 42], [82, 42], [24, 66], [96, 66], [44, 80], [76, 80]];
-      return STEM(140) + tips.map(([x, y]) => line(`M60 140 L${x} ${y}`)).join('') + pair(215, 20, 6, 58, LEAF2) +
-        tips.map(([x, y]) => C(x, y, 3.2, c.p) + C(x - 5, y + 2, 2.6, c.p) + C(x + 5, y + 2, 2.6, c.p) + C(x, y - 5, 2.6, c.p)).join('');
+      const rosette = (x, y) => C(x, y, 3, c.p) + dot(x, y, .9, '#CFC6AE');
+      return STEM(140) + tips.map(([x, y]) => line(`M60 140 L${x} ${y}`)).join('') + pair(215, 22, 6, 58, LEAF2) +
+        tips.map(([x, y]) => line(`M${x} ${y} L${x - 5} ${y + 3} M${x} ${y} L${x + 5} ${y + 3} M${x} ${y} L${x} ${y - 5}`, .7) +
+          rosette(x, y) + rosette(x - 5, y + 3) + rosette(x + 5, y + 3) + rosette(x, y - 5)).join('');
     },
 
     freesia: c => {
-      const floret = (x, y, r) => E(x - r * .55, y - r * .5, r * .42, r * .8, -32, c.p) + E(x + r * .55, y - r * .5, r * .42, r * .8, 32, c.p) + E(x, y - r * .75, r * .42, r * .85, 0, c.p) + C(x, y - r * .25, r * .28, c.l);
-      return STEM(32) + lens(60, 296, 110, 10, -8, LEAF) + lens(60, 296, 110, 10, 8, LEAF2) +
-        E(60, 36, 3.5, 7, 0, LEAF2) + E(60, 50, 4.5, 8, 0, LEAF) +
-        line('M60 74 L48 70 M60 96 L72 92 M60 118 L48 114 M60 140 L72 136') +
-        floret(48, 72, 11) + floret(72, 94, 12) + floret(48, 116, 13) + floret(72, 138, 13);
+      const floret = (x, y, r, dir) => petal(x, y, dir * 70, 0, 'cup', r * .7, r * .2, LEAF2) +
+        [-58, -20, 20, 58].map(a => petal(x, y, a, 0, 'round', r, r * .38, c.p, .55)).join('') + C(x, y - r * .18, r * .22, c.l);
+      return STEM(32) + lens(60, 296, 112, 10, -8, LEAF) + lens(60, 296, 112, 10, 8, LEAF2) +
+        petal(60, 40, 0, 0, 'point', 12, 3.4, LEAF2) + petal(60, 54, 0, 0, 'point', 13, 4.4, LEAF) +
+        line('M60 74 L48 72 M60 96 L72 94 M60 118 L48 116 M60 140 L72 138') +
+        floret(48, 72, 11, -1) + floret(72, 94, 12, 1) + floret(48, 116, 13, -1) + floret(72, 138, 13.5, 1);
     },
 
     lily: c => {
-      const bell = (x, y, r) => `<path d="M${f1(x - r)} ${f1(y + r * 1.4)} L${f1(x - r)} ${f1(y + r * .6)} A ${r} ${r} 0 0 1 ${f1(x + r)} ${f1(y + r * .6)} L${f1(x + r)} ${f1(y + r * 1.4)} Z" fill="${c.p}" ${S}/>` +
-        [-r * .66, 0, r * .66].map(dx => `<circle cx="${f1(x + dx)}" cy="${f1(y + r * 1.4)}" r="${f1(r * .33)}" fill="${c.p}" ${S}/>`).join('');
+      const bell = (x, y, r) => {
+        const s3 = r / 3;
+        return `<path d="M${f1(x - r)} ${f1(y + r * 1.3)} C ${f1(x - r)} ${f1(y + r * .15)}, ${f1(x - r * .6)} ${f1(y - r * .2)}, ${f1(x)} ${f1(y - r * .2)} C ${f1(x + r * .6)} ${f1(y - r * .2)}, ${f1(x + r)} ${f1(y + r * .15)}, ${f1(x + r)} ${f1(y + r * 1.3)}` +
+          ` A ${f1(s3 * 1.05)} ${f1(s3 * 1.05)} 0 0 1 ${f1(x + s3)} ${f1(y + r * 1.3)} A ${f1(s3 * 1.05)} ${f1(s3 * 1.05)} 0 0 1 ${f1(x - s3)} ${f1(y + r * 1.3)} A ${f1(s3 * 1.05)} ${f1(s3 * 1.05)} 0 0 1 ${f1(x - r)} ${f1(y + r * 1.3)} Z" fill="${c.p}" ${S}/>` +
+          line(`M${f1(x - r * .35)} ${f1(y + r * .3)} L${f1(x - r * .45)} ${f1(y + r * 1.1)} M${f1(x + r * .35)} ${f1(y + r * .3)} L${f1(x + r * .45)} ${f1(y + r * 1.1)}`, .3);
+      };
       const bells = [[46, 58, 6], [74, 72, 6.5], [46, 88, 7], [74, 104, 7.5], [46, 120, 8]];
       return STEM(40) + lens(60, 296, 140, 22, -10, LEAF) + lens(60, 296, 140, 22, 10, LEAF2) + C(60, 40, 3, LEAF2) +
-        bells.map(([x, y]) => line(`M60 ${y - 6} L${x} ${y - 2}`)).join('') + bells.map(([x, y, r]) => bell(x, y, r)).join('');
+        bells.map(([x, y, r]) => line(`M60 ${y - 8} Q ${(60 + x) / 2} ${y - 10}, ${x} ${f1(y - r * .2)}`)).join('') + bells.map(([x, y, r]) => bell(x, y, r)).join('');
     },
 
     cotton: () => {
       const boll = (cx, cy, r) => {
         let star = '';
         for (let i = 0; i < 10; i++) { const a = Math.PI / 2 + (i * Math.PI) / 5, rr = i % 2 ? r * .55 : r * 1.25; star += `${i ? 'L' : 'M'}${f1(cx + rr * Math.cos(a))} ${f1(cy + rr * Math.sin(a))} `; }
-        return `<path d="${star}Z" fill="#9C8670" ${S}/>` + [0, 120, 240].map(a => C(cx + r * .42 * Math.sin(a * Math.PI / 180), cy - r * .42 * Math.cos(a * Math.PI / 180), r * .58, '#FFFFFF')).join('') + C(cx, cy, r * .3, '#FFFFFF');
+        return `<path d="${star}Z" fill="#9C8670" ${S}/>` + scallop(cx, cy, r * .78, 9, '#FFFFFF') +
+          line(`M${f1(cx)} ${f1(cy - r * .7)} L${f1(cx)} ${f1(cy + r * .1)} M${f1(cx - r * .6)} ${f1(cy + r * .4)} L${f1(cx)} ${f1(cy + r * .1)} L${f1(cx + r * .6)} ${f1(cy + r * .4)}`, .28);
       };
-      return STEM(60) + line('M60 150 L36 108 M60 150 L84 108') + pair(215, 22, 7, 58, LEAF2) + boll(60, 54, 18) + boll(36, 104, 13) + boll(84, 104, 13);
+      return STEM(60) + line('M60 150 L36 108 M60 150 L84 108') + pair(215, 24, 7, 58, LEAF2) + boll(60, 54, 18) + boll(36, 104, 13) + boll(84, 104, 13);
     },
 
-    // 圓葉尤加利：左右對稱的正圓葉片沿莖串聯
+    // 圓葉尤加利：左右對稱的正圓葉片沿莖串聯（每片帶葉柄與葉脈）
     eucalyptus: c => {
       let s = STEM(26);
-      [[262, 14], [234, 13], [208, 12], [184, 11], [162, 10], [142, 9], [124, 8], [108, 7], [94, 6], [82, 5], [72, 4.2], [64, 3.6]].forEach(([y, r], i) =>
-        s += C(60 - r, y, r, i % 2 ? c.p : c.d) + C(60 + r, y, r, i % 2 ? c.p : c.d));
+      [[262, 14], [234, 13], [208, 12], [184, 11], [162, 10], [142, 9], [124, 8], [108, 7], [94, 6], [82, 5], [72, 4.2], [64, 3.6]].forEach(([y, r], i) => {
+        const fill = i % 2 ? c.p : c.d;
+        s += C(60 - r, y, r, fill) + C(60 + r, y, r, fill);
+        if (r >= 7) s += line(`M60 ${y} L${f1(60 - r * 1.55)} ${f1(y - r * .5)} M60 ${y} L${f1(60 + r * 1.55)} ${f1(y - r * .5)}`, .3);
+      });
       return s + C(60, 54, 3.4, c.p);
     },
 
     olive: () => {
       let s = STEM(22);
       for (let y = 262, i = 0; y > 30; y -= 18, i++) { const L = 14 + 12 * Math.min(1, (y - 30) / 160); s += pair(y, L + 6, 4, 48, i % 2 ? '#A7B394' : '#BFC6AC'); }
-      return s + E(48, 182, 3.6, 5, 0, '#5B6B3E') + E(72, 182, 3.6, 5, 0, '#5B6B3E');
+      return s + `<ellipse cx="48" cy="182" rx="3.6" ry="5" fill="#5B6B3E" ${S}/><ellipse cx="72" cy="182" rx="3.6" ry="5" fill="#5B6B3E" ${S}/>`;
     },
 
     fern: () => {
@@ -419,7 +482,7 @@
       return s;
     },
 
-    berries: c => STEM(112) + line('M60 112 L36 72 M60 112 L84 72 M60 112 L60 46') + pair(205, 28, 9, 54, '#AEBAA8') +
+    berries: c => STEM(112) + line('M60 112 L36 72 M60 112 L84 72 M60 112 L60 46') + pair(205, 30, 9, 54, '#AEBAA8') +
       cluster(36, 72, c) + cluster(84, 72, c) + cluster(60, 46, c),
   };
 
