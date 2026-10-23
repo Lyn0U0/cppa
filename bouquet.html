@@ -560,7 +560,7 @@
   // 花頭最高點（viewBox 座標）：選取把手放在它正上方
   const headTop = (type, v, ext) => {
     const h = HEADS[type];
-    if (!h) return 22;
+    if (!h) return 22 - (ext || 0);
     return (ext || 0) * -1 + (v === 'bud' ? h.base - (h.bud === 'cluster' ? 42 : h.bud === 'cup' ? 50 : 36) : v === 'semi' ? h.base - (h.base - h.top) * .76 : h.top);
   };
 
@@ -971,7 +971,10 @@
   function flowerSVG(type, ci, vb, style = '', inst) {
     const m = MAT[type], c = tint(m.colors[ci] || m.colors[0], inst);
     GRAD.clear();
-    const art = DRAW[type](c, inst?.v, inst && { ...inst, ci });
+    let art = DRAW[type](c, inst?.v, inst && { ...inst, ci });
+    // 配花與葉材：整枝沿花莖往上（或往下）移，底部補上一段花莖，等同改變花莖長度
+    const ext = inst?.ext || 0;
+    if (ext && !HEADS[type]) art = line(`M60 298 L60 ${f1(298 - ext)}`) + `<g transform="translate(0 ${f1(-ext)})">${art}</g>`;
     return `<svg viewBox="${vb || '0 0 120 300'}" xmlns="http://www.w3.org/2000/svg"${style ? ` style="${style}"` : ''}><defs>${[...GRAD.values()].join('')}</defs>${art}</svg>`;
   }
 
@@ -1660,13 +1663,11 @@
       // 花頭跟著手指走：左右拖＝繞綁點擺角度；上下拖＝沿花莖拉高／插深
       f.rot = clamp(drag.rot0 + angDiff(knotAngle(p), drag.a0), -40, 40);
       const r = f.rot * Math.PI / 180, along = dx * -Math.sin(r) + dy * Math.cos(r); // 正值＝往下
-      if (HEADS[f.type]) {
-        const k = 300 / (MAT[f.type].h * f.scale), want = drag.ext0 - along * k;
-        f.ext = clamp(want, -30, 70);
-        f.depth = clamp(drag.depth0 + (f.ext - want) / k, -40, 75);
-        const box = layerFlowers.querySelector(`[data-id="${f.id}"] .flip > div`);
-        if (box) box.innerHTML = flowerSVG(f.type, f.color, '', '', f); // 只重畫花莖長度，花頭不變形
-      } else f.depth = clamp(drag.depth0 + along, -40, 75);
+      // 只改花莖長度（花莖底部不動、花頭不變形），不再上下平移整支花
+      const k = 300 / (MAT[f.type].h * f.scale);
+      f.ext = clamp(drag.ext0 - along * k, -40, 80);
+      const box = layerFlowers.querySelector(`[data-id="${f.id}"] .flip > div`);
+      if (box) box.innerHTML = flowerSVG(f.type, f.color, '', '', f);
     } else {
       f.rot = clamp(drag.rot0 + angDiff(knotAngle(p), drag.a0), -40, 40);
     }
