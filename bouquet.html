@@ -182,6 +182,9 @@
   .order-detail summary::-webkit-details-marker { display: none; }
   .order-detail summary::before { content: "＋ "; }
   .order-detail[open] summary::before { content: "－ "; }
+  .sfx-btn { border-radius: 999px; border: 1px solid #CFCFC8; background: #fff; padding: 4px 10px; font-size: 11.5px; color: #4A403A; transition: transform .15s, background .2s; }
+  .sfx-btn:active { transform: scale(.94); }
+  .sfx-btn.off { background: #EDEDE8; color: #888; }
   /* 音樂按鈕：播放中顯示跳動音量條 */
   .music-btn { position: relative; color: #4A403A; }
   .music-btn .eq { display: none; position: absolute; right: -3px; top: -3px; gap: 1px; align-items: flex-end; height: 10px; padding: 1px 2px; border-radius: 6px; background: #4A403A; }
@@ -283,12 +286,13 @@
     </div>
 
     <!-- 編輯 / 3D 預覽切換 -->
-    <div class="mode-ui absolute top-2 right-3 z-30 flex flex-col items-end gap-1.5 pointer-events-none">
+    <div class="mode-ui absolute top-2 right-3 z-30 flex flex-row-reverse items-center gap-1.5 pointer-events-none">
       <div class="seg pointer-events-auto" id="modeSeg" role="tablist" aria-label="檢視模式">
         <span class="thumb" id="modeThumb"></span>
         <button data-mode="edit" class="on" role="tab">平面</button>
         <button data-mode="3d" role="tab">微景深</button>
       </div>
+      <button id="btnSfx" class="sfx-btn pointer-events-auto" aria-pressed="true" title="互動音效">🔊 音效開啟</button>
     </div>
     <div id="tiltHint" class="tilt-hint hide absolute left-1/2 -translate-x-1/2 bottom-3 z-30 rounded-full bg-white border border-[#D5D5CE] px-3 py-1.5 text-[11.5px] text-[#666] pointer-events-none whitespace-nowrap">
       拖曳可微微轉動視角
@@ -1640,7 +1644,7 @@
     lastAdded = f.id; state.focus = f.id; state.activeMat = type;
     state.sel = null;
     renderFlowers(); renderWorkspace();
-    sparkleAt(layerFlowers.querySelector(`[data-id="${f.id}"]`)); Sound.sfx.pop();
+    sparkleAt(layerFlowers.querySelector(`[data-id="${f.id}"]`)); SFX.tap(); SFX.rustle();
     toast(`${m.seasonal ? '★ ' : ''}${m.name}${HEADS[type] ? `（${VARIANTS[f.v]}）` : ''}・${m.meaning}`);
   }
   function reshuffle() {
@@ -1692,7 +1696,7 @@
       e.preventDefault();
     } else if (fl) {
       const f = get(fl.dataset.id), p = toStage(e);
-      if (state.sel !== f.id) select(f.id);
+      if (state.sel !== f.id) { select(f.id); SFX.tap(); }
       drag = { mode: 'move', f, pid: e.pointerId, px: p.x, py: p.y, a0: knotAngle(p), r0: knotDist(p), rot0: f.rot, depth0: f.depth || 0, ext0: f.ext || 0, moved: false };
       e.preventDefault();
     } else if (e.target.closest('#cardEl')) {
@@ -1713,7 +1717,7 @@
     }
     if (drag.mode === 'move') {
       const dx = p.x - drag.px, dy = p.y - drag.py;
-      if (!drag.moved) { if (Math.hypot(dx, dy) < 3) return; drag.moved = true; stage.classList.add('xray'); }
+      if (!drag.moved) { if (Math.hypot(dx, dy) < 3) return; drag.moved = true; stage.classList.add('xray'); SFX.rustle(.6); }
       // 花頭跟著手指走：左右拖＝繞綁點擺角度；上下拖＝沿花莖拉高／插深
       f.rot = clamp(drag.rot0 + angDiff(knotAngle(p), drag.a0), -40, 40);
       const r = f.rot * Math.PI / 180, along = dx * -Math.sin(r) + dy * Math.cos(r); // 正值＝往下
@@ -1727,10 +1731,14 @@
     }
     anchor(f);
     applyFlower(f);
+    const nowT = performance.now(), dt = Math.max(16, nowT - (drag.lt || nowT - 16));
+    const speed = (Math.abs(f.rot - (drag.lr ?? f.rot)) + Math.abs((f.ext || 0) - (drag.le ?? f.ext ?? 0)) * .3) / dt * 16;
+    drag.lt = nowT; drag.lr = f.rot; drag.le = f.ext || 0;
+    if (speed > .05) SFX.slide(f.rot, speed);
   });
   const endDrag = e => {
     if (!drag || e.pointerId !== drag.pid) return;
-    const d = drag; drag = null; stage.classList.remove('xray');
+    const d = drag; drag = null; stage.classList.remove('xray'); SFX.slideEnd();
     if (d.mode === 'card') { $('#cardEl')?.classList.remove('dragging'); if (!d.moved && e.type === 'pointerup') openCardText(); }
   };
   window.addEventListener('pointerup', endDrag);
@@ -1756,6 +1764,7 @@
 
   /* ---------- 工作台事件 ---------- */
   $('#workspace').addEventListener('click', e => {
+    const hit = e.target.closest('[data-act]'); if (hit && hit.dataset.act !== 'add') SFX.tap(); // 加花另有音效
     const t = e.target.closest('[data-act]'); if (!t) return;
     const { act, val } = t.dataset;
     if (act === 'tab') state.tab = val;
@@ -1812,7 +1821,7 @@
     state.finished = true; select(null);
     app.classList.add('finished');
     buildReceipt();
-    setTimeout(() => { $('#receiptModal').classList.remove('hide'); petalRain(); Sound.sfx.fanfare(); }, 200);
+    setTimeout(() => { $('#receiptModal').classList.remove('hide'); petalRain(); SFX.unwrap(); }, 200);
   }
   function backToEdit() {
     $('#receiptModal').classList.add('hide');
@@ -2102,7 +2111,7 @@
     if (luckyBusy || state.finished) return;
     luckyBusy = true; $('#btnLucky').disabled = true;
     select(null); hideFortune();
-    magicBurst(); Sound.sfx.chime();
+    magicBurst(); SFX.chime();
     layerFlowers.querySelectorAll('.flip').forEach(el => el.classList.add('poof'));
     await wait(600);
     const th = pickTheme();
@@ -2171,12 +2180,13 @@
   async function saveImage(canvas, filename, label) {
     const dl = window.claude?.use ? await window.claude.use('downloads').catch(() => null) : null;
     if (dl) {
-      try { await dl.save({ filename, data: await toBlob(canvas) }); toast(`${label}已下載`); return; }
+      try { await dl.save({ filename, data: await toBlob(canvas) }); SFX.success(); toast(`${label}已下載`); return; }
       catch (err) { if (err?.code === 'declined') return; }
     } else {
       const a = document.createElement('a');
       a.href = canvas.toDataURL('image/png'); a.download = filename;
       document.body.appendChild(a); a.click(); a.remove();
+      SFX.success();
     }
     $('#pngImg').src = canvas.toDataURL('image/png'); $('#pngModal').classList.remove('hide');
   }
@@ -2206,6 +2216,103 @@
   $('#pngClose').onclick = () => $('#pngModal').classList.add('hide');
 
   /* ================= ♪ 背景音樂（Web Audio 即時合成的音樂盒）與音效 ================= */
+  let sharedCtx = null;
+  const audioCtx = () => {
+    if (!sharedCtx) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; sharedCtx = new AC(); }
+    if (sharedCtx.state === 'suspended') sharedCtx.resume().catch(() => {});
+    return sharedCtx;
+  };
+  // 捕獲階段解鎖：第一下點擊就能出聲，且不會在使用者互動前建立音訊
+  document.addEventListener('pointerdown', () => { try { audioCtx(); } catch {} }, { capture: true });
+
+  /* ---------- 微音效互動系統：全部即時合成、極短、音量低於背景音樂 ---------- */
+  const SFX = (() => {
+    const KEY = 'bouquet.sfx';
+    let enabled = true;
+    try { enabled = localStorage.getItem(KEY) !== '0'; } catch {}
+    let bus = null, noise = null, slider = null;
+    const ready = () => {
+      // 剛解鎖時 context 可能仍在 resume 中：照常排程，恢復後立即播放
+      if (!enabled || !sharedCtx || sharedCtx.state === 'closed') return null;
+      if (!bus) {
+        bus = sharedCtx.createGain(); bus.gain.value = .5; bus.connect(sharedCtx.destination);
+        noise = sharedCtx.createBuffer(1, sharedCtx.sampleRate, sharedCtx.sampleRate);
+        const d = noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      }
+      return sharedCtx;
+    };
+    const env = (g, t, peak, a, dur) => { g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(.0001, t + dur); };
+    const tone = (t, f, peak, dur, type = 'sine', f2) => {
+      const c = sharedCtx, o = c.createOscillator(), g = c.createGain();
+      o.type = type; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+      env(g, t, peak, .004, dur); o.connect(g); g.connect(bus); o.start(t); o.stop(t + dur + .05);
+    };
+    // 濾波雜訊：紙張、絲帶、快門的質地
+    const hiss = (t, dur, peak, type, f, q = 1, f2) => {
+      const c = sharedCtx, src = c.createBufferSource(), flt = c.createBiquadFilter(), g = c.createGain();
+      src.buffer = noise; flt.type = type; flt.frequency.setValueAtTime(f, t); flt.Q.value = q;
+      if (f2) flt.frequency.exponentialRampToValueAtTime(f2, t + dur);
+      env(g, t, peak, Math.min(.03, dur * .2), dur); src.connect(flt); flt.connect(g); g.connect(bus);
+      src.start(t, Math.random() * .5); src.stop(t + dur + .05);
+    };
+    const bell = (t, m, peak, dur) => { const f = 440 * 2 ** ((m - 69) / 12); tone(t, f, peak, dur); tone(t, f * 2.01, peak * .2, dur * .5); tone(t, f * 3.98, peak * .06, dur * .3); };
+    const safe = fn => (...a) => { try { if (ready()) fn(sharedCtx.currentTime, ...a); } catch {} };
+    let lastTap = -1;
+    return {
+      get enabled() { return enabled; },
+      set(on) { enabled = on; try { localStorage.setItem(KEY, on ? '1' : '0'); } catch {} if (!on) this.slideEnd(); },
+      // 1. 木質輕敲：短促的中頻音＋一點點木頭質感的雜訊
+      tap: safe(t => {
+        if (t - lastTap < .04) return; lastTap = t;
+        tone(t, 820 + Math.random() * 60, .09, .07, 'triangle', 520); tone(t, 1680, .025, .03); hiss(t, .025, .04, 'bandpass', 2400, 3);
+      }),
+      // 2. 紙張摩擦：幾顆高頻雜訊顆粒
+      rustle: safe((t, soft = 1) => {
+        for (let i = 0; i < 4; i++) hiss(t + i * .035 + Math.random() * .02, .06 + Math.random() * .05, (.045 + Math.random() * .03) * soft, 'bandpass', 2800 + Math.random() * 2600, .9);
+        hiss(t, .22, .025 * soft, 'highpass', 1800);
+      }),
+      // 3. 滑動：持續的柔和氣流聲，音量跟拖曳速度、音高跟角度走
+      slide: safe((t, rot, speed) => {
+        if (!slider) {
+          const c = sharedCtx, src = c.createBufferSource(), flt = c.createBiquadFilter(), g = c.createGain();
+          src.buffer = noise; src.loop = true; flt.type = 'bandpass'; flt.Q.value = 2.2; g.gain.value = 0;
+          src.connect(flt); flt.connect(g); g.connect(bus); src.start();
+          slider = { src, flt, g };
+        }
+        slider.flt.frequency.setTargetAtTime(900 + Math.abs(rot) * 22, t, .05);
+        slider.g.gain.setTargetAtTime(Math.min(.05, speed * .012), t, .04);
+        slider.g.gain.setTargetAtTime(0, t + .12, .08); // 停手就自然淡出
+      }),
+      slideEnd() {
+        if (!slider || !sharedCtx) return;
+        const t = sharedCtx.currentTime, sl = slider; slider = null;
+        sl.g.gain.setTargetAtTime(0, t, .05); setTimeout(() => { try { sl.src.stop(); } catch {} }, 400);
+      },
+      // 4. 幸運花束：水晶琴琶音＋閃爍泛音
+      chime: safe(t => {
+        [76, 79, 83, 88, 91, 95].forEach((m, i) => bell(t + i * .075, m, .07, 1.4));
+        for (let i = 0; i < 6; i++) tone(t + .3 + i * .06 + Math.random() * .04, 2600 + Math.random() * 1800, .012, .25);
+      }),
+      // 5. 完成包裝：絲帶滑開（掃頻氣音）→ 信封展開（紙張低沉一聲）→ 溫柔的兩聲鈴
+      unwrap: safe(t => {
+        hiss(t, .45, .05, 'bandpass', 700, 1.4, 3600);
+        hiss(t + .42, .16, .06, 'lowpass', 520); hiss(t + .44, .2, .03, 'bandpass', 3200, .8);
+        bell(t + .62, 84, .07, 1.2); bell(t + .78, 91, .05, 1.4);
+      }),
+      // 6. 下載成功：相機快門兩聲輕響＋完成提示鈴
+      success: safe(t => {
+        hiss(t, .035, .07, 'highpass', 3200); hiss(t + .075, .05, .05, 'highpass', 2400);
+        tone(t + .02, 180, .04, .06, 'sine', 90);
+        bell(t + .2, 88, .08, 1.3);
+      }),
+    };
+  })();
+  const sfxBtn = $('#btnSfx');
+  const syncSfxBtn = () => { sfxBtn.textContent = SFX.enabled ? '🔊 音效開啟' : '🔇 靜音'; sfxBtn.classList.toggle('off', !SFX.enabled); sfxBtn.setAttribute('aria-pressed', SFX.enabled); };
+  sfxBtn.addEventListener('pointerdown', e => e.stopPropagation()); // 不觸發畫布的取消選取
+  sfxBtn.onclick = () => { SFX.set(!SFX.enabled); syncSfxBtn(); if (SFX.enabled) SFX.tap(); };
+  syncSfxBtn();
+
   const Sound = (() => {
     let ctx = null, master = null, wet = null, timer = 0, on = false, step = 0, nextT = 0;
     const BPM = 76, EIGHTH = 60 / BPM / 2;
@@ -2216,7 +2323,7 @@
     let mel = 4;
     function init() {
       if (ctx) return;
-      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      ctx = audioCtx();
       master = ctx.createGain(); master.gain.value = 0; master.connect(ctx.destination);
       // 簡單的回聲殘響
       const delay = ctx.createDelay(); delay.delayTime.value = EIGHTH * 3;
@@ -2264,13 +2371,7 @@
       master.gain.cancelScheduledValues(ctx.currentTime); master.gain.linearRampToValueAtTime(0, ctx.currentTime + .6);
       setTimeout(() => { if (!on) clearInterval(timer); }, 700);
     }
-    // 音效（音樂開啟時才播放）
-    const sfx = {
-      pop() { if (!on) return; const t = ctx.currentTime; bell(t, 79 + ((Math.random() * 3) | 0) * 2, .14, .5); bell(t + .06, 86, .06, .4); },
-      chime() { if (!on) return; const t = ctx.currentTime; [72, 76, 79, 84, 88].forEach((m, i) => bell(t + i * .09, m, .12, 1.6)); },
-      fanfare() { if (!on) return; const t = ctx.currentTime; [67, 72, 76, 79, 84, 79, 84, 88].forEach((m, i) => bell(t + i * .12, m, .13, 2)); },
-    };
-    return { toggle: () => (on ? stop() : start(), on), get on() { return on; }, sfx };
+    return { toggle: () => (on ? stop() : start(), on), get on() { return on; } };
   })();
   const musicBtn = $('#btnMusic');
   musicBtn.onclick = () => {
