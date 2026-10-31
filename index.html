@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
 <title>一束花💐</title>
+<meta name="version" content="1.1.0" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet" />
@@ -78,6 +79,16 @@
   .lucky-menu button:active { transform: scale(.96); }
   .lucky-menu .lm-halloween { background: #FFF1E4; border-color: #E8B48A; color: #A8501E; }
   .lucky-menu .lm-pride { color: #5B4A8A; border-color: transparent; background-image: linear-gradient(#fff, #fff), linear-gradient(90deg, #E46A6A, #F09A55, #F2CF55, #74B874, #5F92D8, #9C72C8); background-origin: border-box; background-clip: padding-box, border-box; }
+  /* 總計包花數標籤 */
+  .bq-counter { position: absolute; top: 48px; left: 12px; z-index: 29; display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px;
+    font-size: 11px; line-height: 1.3; color: #6B5B52; background: rgba(255,255,255,.82); border: 1px solid #EADFD5; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); pointer-events: none; white-space: nowrap; }
+  .bq-counter b { font-weight: 600; color: #B4566E; display: inline-block; font-variant-numeric: tabular-nums; }
+  .bq-receipt .bq-num { display: inline-block; animation: bqBump .7s .5s cubic-bezier(.3,1.6,.5,1) both; }
+  .bq-counter b.bump { animation: bqBump .6s cubic-bezier(.3,1.6,.5,1); }
+  .bq-counter .plus { position: absolute; right: 8px; top: -2px; font-size: 11px; font-weight: 600; color: #B4566E; opacity: 0; pointer-events: none; }
+  .bq-counter .plus.go { animation: bqPlus 1s ease-out; }
+  @keyframes bqBump { 0% { transform: scale(1); } 35% { transform: scale(1.35) translateY(-2px); color: #E0708A; } 100% { transform: scale(1); } }
+  @keyframes bqPlus { 0% { opacity: 0; transform: translateY(4px); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
   .deco-card { border-radius: 14px; border: 1px solid #E8D9C8; background: #FFFCF7; transition: transform .15s, border-color .2s; }
   .deco-card:active { transform: scale(.94); }
   .stage.xray .layer-front { opacity: .4; }
@@ -309,6 +320,7 @@
     <!-- 🔮 今日幸運花束 -->
     <button id="btnLucky" class="lucky-btn absolute top-2 left-3 z-30 rounded-full px-3 py-[7px] text-[12px] leading-tight transition">✦ 今日幸運花束</button>
     <div id="luckyMenu" class="lucky-menu hide" role="menu" aria-label="選擇幸運花束主題"></div>
+    <div id="bqCounter" class="bq-counter" aria-live="polite"></div>
     <div id="fortune" class="fortune hide absolute left-3 right-3 bottom-2 z-[35] rounded-xl bg-white border border-[#D5D5CE] px-3 py-2" role="status" aria-live="polite">
       <div class="flex items-center gap-2">
         <div class="min-w-0 flex-1">
@@ -1941,6 +1953,75 @@
     clearTimeout(toastT); toastT = setTimeout(() => t.classList.add('hide'), 1600);
   }
 
+  /* ---------- 總計包花數 ----------
+     每次「完成包裝」成功 +1（同一束沒改動不重複計數）。
+     全站總數存在 Firebase Realtime Database 的 counter/total，透過 REST 讀寫，
+     並以串流（EventSource）即時接收別人包好的花。
+     連不上資料庫時退回只算這台裝置（localStorage）。 */
+  const BouquetCounter = (() => {
+    const DB = 'https://happybouquet-b640e-default-rtdb.firebaseio.com';
+    const URL_TOTAL = DB + '/counter/total.json';
+    const KEY = 'totalBouquetsCreated';
+    const el = $('#bqCounter');
+    let mine = 0, total = 0, global = false, lastSig = null, pending = false;
+    try { mine = parseInt(localStorage.getItem(KEY), 10) || 0; } catch {}
+    total = mine;
+    const sig = () => JSON.stringify([state.flowers.map(f => [f.type, f.color, f.rot, f.ext, f.v]), state.wrap, state.card]);
+    function render(bump) {
+      const n = total.toLocaleString('en-US');
+      el.innerHTML = global ? `🌸 全站已累積綻放 <b>${n}</b> 束幸福<span class="plus" aria-hidden="true">+1</span>`
+        : total ? `🌸 你已綻放 <b>${n}</b> 束幸福<span class="plus" aria-hidden="true">+1</span>` : `🌸 包好第一束，開始累積幸福`;
+      if (bump) {
+        const b = el.querySelector('b'), p = el.querySelector('.plus');
+        b?.classList.add('bump'); p?.classList.add('go');
+      }
+    }
+    // 收到全站新數字：別人包好花時直接跳動；收據開著時等返回再跳
+    function apply(n) {
+      if (!Number.isFinite(n)) return;
+      const was = global; global = true;
+      if (was && (n === total || (n < total && total - n < 3))) return; // 沒變化，或樂觀 +1 尚未寫回時不倒退
+      const grew = was && n > total;
+      total = n;
+      if (grew && !state.finished) render(true); else { render(); if (grew) pending = true; }
+    }
+    function listen() {
+      if (!('EventSource' in window)) return;
+      const es = new EventSource(URL_TOTAL);
+      const on = e => { try { const d = JSON.parse(e.data); if (d.path === '/') apply(Number(d.data) || 0); } catch {} };
+      es.addEventListener('put', on); es.addEventListener('patch', on);
+    }
+    async function increment() {
+      // 優先用伺服器端遞增（多人同時按也不會算錯）；被規則拒絕時改用 ETag 比對寫入
+      try {
+        const r = await fetch(URL_TOTAL, { method: 'PUT', body: JSON.stringify({ '.sv': { increment: 1 } }) });
+        if (r.ok) return apply(Number(await r.json()));
+      } catch {}
+      for (let i = 0; i < 5; i++) {
+        const g = await fetch(URL_TOTAL, { headers: { 'X-Firebase-ETag': 'true' } });
+        const tag = g.headers.get('ETag'), cur = Number(await g.json()) || 0;
+        const w = await fetch(URL_TOTAL, { method: 'PUT', headers: { 'if-match': tag }, body: String(cur + 1) });
+        if (w.ok) return apply(cur + 1);
+        if (w.status !== 412) return;
+      }
+    }
+    fetch(URL_TOTAL).then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(n => { apply(Number(n) || 0); listen(); }).catch(() => {});
+    render();
+    return {
+      count() {
+        const s = sig(); if (s === lastSig) return; lastSig = s;
+        mine++; try { localStorage.setItem(KEY, String(mine)); } catch {}
+        if (global) { total++; increment().catch(() => {}); } else total = mine;
+        // 收據會蓋住畫布，標籤先更新數字，等返回編輯時再跳 +1
+        render(); pending = true;
+      },
+      get total() { return total; },
+      get global() { return global; },
+      replay() { if (pending) { pending = false; requestAnimationFrame(() => render(true)); } }
+    };
+  })();
+
   /* ---------- 畫布縮放與座標 ---------- */
   canvasWrap.addEventListener('scroll', () => { canvasWrap.scrollLeft = 0; canvasWrap.scrollTop = 0; });
   function fit() {
@@ -2127,6 +2208,7 @@
     if (!state.flowers.length) return toast('先放幾朵花進花束吧 🌷');
     state.finished = true; select(null); state.selDeco = null; renderDecos();
     app.classList.add('finished');
+    BouquetCounter.count();
     buildReceipt();
     setTimeout(() => { $('#receiptModal').classList.remove('hide'); petalRain(); SFX.unwrap(); prepareImages(); }, 200);
   }
@@ -2136,6 +2218,7 @@
     if (pvTilt) pvTilt.on = false;
     pvTilt = null;
     state.finished = false; app.classList.remove('finished');
+    BouquetCounter.replay();
   }
   function buildReceipt() {
     const now = new Date(), pad = n => String(n).padStart(2, '0');
@@ -2182,7 +2265,8 @@
         </div>
       </div>
 
-      <div class="mt-5 grid grid-cols-3 gap-2 w-[310px]">
+      <div class="bq-receipt mt-4 text-[12px] text-[#8A7468]">🌸 這是${BouquetCounter.global ? '全站' : '你'}綻放的第 <b class="bq-num text-[#B4566E] font-semibold">${BouquetCounter.total.toLocaleString('en-US')}</b> 束幸福</div>
+      <div class="mt-3 grid grid-cols-3 gap-2 w-[310px]">
         <button id="btnClaim" class="act rounded-2xl bg-[#4A403A] text-white">💐<span>領取花束</span><small class="text-[9.5px] opacity-70 mt-0.5">存到相簿</small></button>
         <button id="btnOrder" class="act rounded-2xl border border-[#CFCFC8] bg-white">🧾<span>下載訂單</span></button>
         <button id="btnCutout" class="act rounded-2xl border border-[#CFCFC8] bg-white" style="background-image:repeating-conic-gradient(#EEEDE8 0 25%, #fff 0 50%);background-size:12px 12px">🌸<span>透明背景</span><small class="text-[9.5px] opacity-70 mt-0.5">去背 PNG</small></button>
@@ -2512,7 +2596,7 @@
       const comp = flowerComposite(), defs = $('#globalDefs defs').outerHTML, s = Math.min(canvasWrap.clientWidth / 360, canvasWrap.clientHeight / 480);
       return html2canvas(canvasWrap, {
         scale: 3, backgroundColor: transparent ? null : '#FAF6EE', useCORS: true, logging: false,
-        ignoreElements: el => el.matches?.('#toolbar, #btnLucky, #luckyMenu, #fortune, .mode-ui, #tiltHint, .sel-layer, .empty-hint, .magic, .deco-ui, .fx-spark' + (transparent ? ', #scene, #gobo' : '')),
+        ignoreElements: el => el.matches?.('#toolbar, #btnLucky, #luckyMenu, #bqCounter, #fortune, .mode-ui, #tiltHint, .sel-layer, .empty-hint, .magic, .deco-ui, .fx-spark' + (transparent ? ', #scene, #gobo' : '')),
         onclone: doc => {
           if (transparent) doc.getElementById('canvasWrap').style.background = 'transparent'; // 去背：拿掉空間背景與光影
           const st = doc.getElementById('stage');
