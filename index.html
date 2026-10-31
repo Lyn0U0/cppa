@@ -547,6 +547,14 @@
         [125, 235, 180].map(a => { const r = a * Math.PI / 180; return line(`M${f1(60 + 4 * Math.sin(r))} ${f1(62 - 4 * Math.cos(r))} L${f1(60 + 15 * Math.sin(r))} ${f1(62 - 15 * Math.cos(r))}`).replace('stroke="' + INK + '"', 'stroke="#E9B53E"').replace('stroke-width="1"', 'stroke-width="2.4"'); }).join('') +
         [-32, 32, 0].map(a => petal(60, 62, a, 0, 'cup', 32, 9, soft(c.l, c.p), .7)).join('') },
   };
+  // 🎃 萬聖節限時：10/24 ~ 11/2 自動開啟；網址加 ?halloween 可強制預覽
+  const HALLOWEEN = (() => {
+    const d = new Date(), m = d.getMonth() + 1, day = d.getDate();
+    return (m === 10 && day >= 24) || (m === 11 && day <= 2) || /[?&]halloween\b/.test(location.search);
+  })();
+  // 萬聖限定主花：沿用玫瑰／鬱金香的花型（含盛開、半開、花苞）
+  HEADS.darkrose = HEADS.rose;
+  HEADS.hwtulip = HEADS.tulip;
   const VARIANTS = { full: '盛開', semi: '半開', bud: '花苞' };
   const budArt = (h, c) => {
     const { cx, base: b } = h, front = petal(cx, b, -32, 0, 'point', 22, 5.6, LEAF) + petal(cx, b, 32, 0, 'point', 22, 5.6, LEAF);
@@ -617,6 +625,7 @@
   // 新花例項：隨機變體（有花頭的主花才有花苞／半開）＋ 微色差
   // 現實比例基準尺寸（鎖定，不開放手動縮放）：大花＞中花＞小配花；葉材枝條較長
   const BASE_SIZE = {
+    darkrose: .96, hwtulip: .96, ghostdaisy: .9, deadbranch: 1.04,
     carnation: .92, lisianthus: .94, dahlia: 1.04, anemone: .9, calla: .98, cosmos: .9, oriental: 1.04, protea: 1.06, camellia: .92, iris: .98,
     lavender: .94, waxflower: .9, statice: .92, veronica: .94, forgetmenot: .86, solidago: .96, craspedia: .9, bunnytail: .88, snapdragon: .96, sweetpea: .9,
     ruscus: 1.04, pittosporum: 1.0, monstera: .98, ivy: 1.0, dustymiller: .94, pampas: 1.06, wheat: 1.0, hypericum: .9, lunaria: .96, pepperberry: 1.0,
@@ -636,6 +645,19 @@
   const DRAW = {
     ...bloomDraw(),
 
+    // 🎃 幽靈小白菊：灰白花瓣、深色花心，最大那朵帶著搞怪小臉
+    ghostdaisy: c => DRAW.chamomile(c) + dot(54.5, 59.5, 1.7, '#FFFFFF') + dot(61.5, 59.5, 1.7, '#FFFFFF') +
+      `<ellipse cx="58" cy="65" rx="1.6" ry="2" fill="#FFFFFF"/>`,
+    // 🎃 枯枝與萬聖漿果：扭曲的深色枯枝＋末端的漿果串
+    deadbranch: c => {
+      const A = [[60, 298], [57, 220], [38, 160], [28, 64]], B = [[60, 298], [63, 214], [84, 150], [94, 74]], M = [[59, 240], [52, 170], [66, 112], [58, 36]];
+      const branch = (P, w) => `<path d="${bzPath(P)}" fill="none" stroke="${INK}" stroke-width="${w + 1.6}" stroke-linecap="round"/><path d="${bzPath(P)}" fill="none" stroke="#6B5444" stroke-width="${w}" stroke-linecap="round"/>`;
+      const twigs = P => along(P, .35, .92, 5, (x, y, a, i) => { const sd = i % 2 ? 1 : -1, r = (a + sd * 48) * Math.PI / 180, L = 16 - i * 1.6;
+        return line(`M${f1(x)} ${f1(y)} q ${f1(Math.sin(r) * L * .6)} ${f1(-Math.cos(r) * L * .4)} ${f1(Math.sin(r) * L)} ${f1(-Math.cos(r) * L)}`); });
+      const berries = (x, y) => [[0, 0], [-6, 4], [6, 3], [-2, -6], [5, -5], [1, 7]].map(([dx, dy]) => C(x + dx, y + dy, 3.6, c.p) + dot(x + dx - 1.1, y + dy - 1.2, .9, '#FFFFFF')).join('');
+      return branch(A, 2.2) + branch(B, 2.2) + branch(M, 1.8) + twigs(A) + twigs(B) + twigs(M) +
+        berries(28, 62) + berries(94, 72) + berries(58, 36) + berries(...bz(B, .62)) + C(...bz(A, .55), 3.2, c.d);
+    },
     pinecone: () => {
       let s = STEM(82) + holly(60, 112, 32, 9, -64, '#6F8A68') + holly(60, 112, 32, 9, 64, '#7D9774') +
         C(55, 106, 4.4, '#B5655F') + C(65, 106, 4.4, '#B5655F') + C(60, 99, 4.4, '#B5655F') +
@@ -955,6 +977,15 @@
       colors: [{ n: '酒紅', p: '#A7444F', d: '#6E2E36' }, { n: '蜜桃', p: '#EBA088', d: '#B66A55' }, { n: '奶白', p: '#F2E8D2', d: '#B9A27A' }] },
     lunaria: { name: '銀扇草', en: 'Lunaria', tab: 'foliage', slot: 'foliage', meaning: '誠實與財富', h: 280, thumb: '20 26 80 110',
       colors: [{ n: '銀白', p: '#F1EEE6', d: '#B5AA94' }] },
+    // ---------- 🎃 萬聖節限定花材 ----------
+    darkrose: { name: '暗夜黑玫瑰', en: 'Black Baccara', tab: 'halloween', slot: 'main', seasonal: '🎃 萬聖限定', meaning: '神祕而永恆的愛', h: 278, thumb: '12 6 96 104',
+      colors: [{ n: '黑巴卡拉', p: '#5A2A3E', d: '#3A1A28', l: '#7E4258' }, { n: '魅影夜紫', p: '#5B3F6E', d: '#3E2A50', l: '#7E62A0' }] },
+    hwtulip: { name: '南瓜紅鬱金香', en: 'Pumpkin Tulip', tab: 'halloween', slot: 'main', seasonal: '🎃 萬聖限定', meaning: '熱烈又調皮的告白', h: 282, thumb: '20 0 80 104',
+      colors: [{ n: '南瓜紅', p: '#D2553A', d: '#A83E2A', l: '#EE8A64' }, { n: '焦糖橘', p: '#E08A3C', d: '#B8682A', l: '#F2B57A' }] },
+    ghostdaisy: { name: '幽靈小白菊', en: 'Ghost Daisy', tab: 'halloween', slot: 'filler', seasonal: '🎃 萬聖限定', meaning: '藏在夜裡的小小守候', h: 262, thumb: '10 22 100 100',
+      colors: [{ n: '幽靈白', p: '#F4F2F8', c: '#4A4458' }, { n: '月光灰紫', p: '#DCD6E8', c: '#3E3A48' }] },
+    deadbranch: { name: '枯枝與萬聖漿果', en: 'Twig & Berries', tab: 'halloween', slot: 'foliage', seasonal: '🎃 萬聖限定', meaning: '夜色中的奇妙驚喜', h: 300, thumb: '14 20 92 150',
+      colors: [{ n: '黑漿果', p: '#2E2633', d: '#1A1520' }, { n: '南瓜橘漿果', p: '#E07B39', d: '#B35A22' }] },
     pepperberry: { name: '胡椒果', en: 'Pepperberry', tab: 'foliage', slot: 'foliage', meaning: '熱情與好運', h: 292, thumb: '24 30 72 150',
       colors: [{ n: '粉紅', p: '#E9A1AE', d: '#C97A8A' }, { n: '酒紅', p: '#A6434F', d: '#7E2F3B' }] },
   };
@@ -966,7 +997,8 @@
     { id: 'main', label: '主花', count: '16+2' }, { id: 'filler', label: '配花', count: '15' },
     { id: 'foliage', label: '葉材與果實', count: '14' }, { id: 'wrap', label: '包裝與緞帶' }, { id: 'card', label: '標籤與背景' },
   ];
-  const FLOWER_TABS = ['main', 'filler', 'foliage'];
+  if (HALLOWEEN) TABS.unshift({ id: 'halloween', label: '🎃 萬聖節限定', count: '限時' });
+  const FLOWER_TABS = ['halloween', 'main', 'filler', 'foliage'];
 
   // 智慧落點：對齊收腰支點的扇形槽位（角度 / 縮放）
   // 支點 = 收腰綁點：所有花莖都穿過綁結，旋轉時以綁點為圓心擺動；
@@ -1019,6 +1051,7 @@
     { id: 'blue', n: '霧霾藍', c: '#C2CFD8' }, { id: 'black', n: '曜石黑', c: '#3A3839' }, { id: 'kraft', n: '經典牛皮', c: '#C8A986' },
     { id: 'cream', n: '奶油白', c: '#F7F4EB' },
   ];
+  const HW_COLORS = [{ id: 'pumpkin', n: '🎃 暗夜南瓜橘', c: '#D9813B' }, { id: 'phantom', n: '🎃 魅影夜紫', c: '#4B3A5C' }];
   const TISSUE_COLORS = [
     { id: 'white', n: '純白', c: '#FFFFFF' }, { id: 'apricot', n: '奶油杏', c: '#F5E6D3' },
     { id: 'pink', n: '淺霧粉', c: '#F2DCDC' }, { id: 'beige', n: '復古米', c: '#EDE3CC' },
@@ -1027,6 +1060,7 @@
     { id: 'gold', n: '香檳金', c: '#D9C08C' }, { id: 'wine', n: '復古酒紅', c: '#8E3B46' }, { id: 'cream', n: '奶油白', c: '#F3EBDD' },
     { id: 'forest', n: '森林墨綠', c: '#3F5B4A' }, { id: 'caramel', n: '焦糖棕', c: '#A86F3E' }, { id: 'rose', n: '乾燥玫瑰粉', c: '#C99293' },
   ];
+  if (HALLOWEEN) { OUTER_COLORS.push(...HW_COLORS); TIE_COLORS.push(...HW_COLORS); }
   const OUTERS = {
     geo: { name: '極簡幾何圓錐包', short: '幾何圓錐', en: 'Geometric Cone' },
     korean: { name: '韓系多層次歐雅紙', short: '韓系歐雅紙', en: 'Korean Layered' },
@@ -1430,7 +1464,16 @@
     midnight: { emoji: '●', name: '午夜墨綠', short: '午夜墨綠', dark: true, bg: '#2E3833',
       decor: () => { const R = rng(19); let h = ''; for (let i = 0; i < 22; i++) h += `<span class="dotty" style="left:${f1(4 + R() * 92)}%;top:${f1(4 + R() * 90)}%"></span>`; return h; }, gobo: '' },
   };
-  const SCENE_ORDER = ['paper', 'grey', 'sun', 'wood', 'midnight'];
+  SCENES.halloween = { emoji: '🎃', name: '萬聖節搞怪微醺夜', short: '🎃 萬聖夜', dark: true,
+    bg: 'radial-gradient(ellipse at 50% 108%, rgba(222,128,52,.42), transparent 58%), linear-gradient(180deg, #241C33 0%, #33263F 55%, #432A33 100%)',
+    decor: () => {
+      const R = rng(31); let h = '';
+      for (let i = 0; i < 26; i++) h += `<span class="dotty" style="left:${f1(3 + R() * 94)}%;top:${f1(3 + R() * 70)}%;opacity:${f1(.25 + R() * .5)};background:${i % 4 ? '#F3E6C8' : '#F2A65A'}"></span>`;
+      const bat = (x, y, s) => `<svg viewBox="0 0 40 16" width="${s}" style="position:absolute;left:${x}%;top:${y}%;opacity:.5"><path d="M20 6 C 17 2, 12 1, 8 4 C 6 1, 2 1, 0 4 C 4 5, 7 8, 8 11 C 11 8, 15 9, 18 12 L 20 10 L 22 12 C 25 9, 29 8, 32 11 C 33 8, 36 5, 40 4 C 38 1, 34 1, 32 4 C 28 1, 23 2, 20 6 Z" fill="#14101C"/></svg>`;
+      return h + `<svg viewBox="0 0 40 40" width="46" style="position:absolute;right:9%;top:7%;opacity:.85"><path d="M26 4 A 16 16 0 1 0 36 30 A 13 13 0 1 1 26 4 Z" fill="#F3E2B8"/></svg>` + bat(12, 14, 30) + bat(24, 8, 20) + bat(70, 30, 24);
+    },
+    gobo: '<div style="background:radial-gradient(ellipse at 50% 92%, rgba(255,150,70,.18), transparent 55%);mix-blend-mode:screen"></div>' };
+  const SCENE_ORDER = ['paper', 'grey', 'sun', 'wood', 'midnight', ...(HALLOWEEN ? ['halloween'] : [])];
   const sceneDecor = sc => typeof sc.decor === 'function' ? sc.decor() : sc.decor;
   function renderScene() {
     const sc = SCENES[state.scene];
@@ -1531,7 +1574,7 @@
   /* ---------- 工作台 ---------- */
   function renderWorkspace() {
     $('#tabs').innerHTML = TABS.map(t =>
-      `<button data-act="tab" data-val="${t.id}" class="shrink-0 rounded-full px-3 py-1.5 text-[12.5px] border transition ${state.tab === t.id ? 'bg-[#333] text-white border-[#333]' : 'bg-white text-[#555] border-[#D5D5CE]'}">${t.label}${t.count ? `<span class="ml-1 text-[10px] opacity-70">${t.count}</span>` : ''}</button>`).join('');
+      `<button data-act="tab" data-val="${t.id}" class="shrink-0 rounded-full px-3 py-1.5 text-[12.5px] border transition ${t.id === 'halloween' ? (state.tab === t.id ? 'bg-[#C9682A] text-white border-[#C9682A]' : 'bg-[#FFF1E4] text-[#A8501E] border-[#E8B48A]') : state.tab === t.id ? 'bg-[#333] text-white border-[#333]' : 'bg-white text-[#555] border-[#D5D5CE]'}">${t.label}${t.count ? `<span class="ml-1 text-[10px] opacity-70">${t.count}</span>` : ''}</button>`).join('');
 
     const panel = $('#panel');
     const cardCls = on => `mat-card rounded-xl border bg-white p-1.5 flex flex-col items-center text-center cursor-pointer ${on ? 'is-active' : 'border-[#E0E0DA]'}`;
@@ -1856,7 +1899,7 @@
           <div><div class="text-[9.5px] tracking-[.22em] text-[#888]">DIGITAL ORDER</div><div class="text-[17px] font-semibold mt-0.5">花束訂製單</div></div>
           <div class="mono text-right text-[10px] leading-[1.5] text-[#888]">#${no}<br>${date}（${week}）</div>
         </div>
-        <div class="px-5"><div id="pv" class="relative overflow-hidden rounded-xl border border-[#E2E2DC] mx-auto" style="width:270px;height:250px"></div></div>
+        <div class="px-5"><div id="pv" class="relative overflow-hidden rounded-xl border border-[#E2E2DC] mx-auto" style="width:270px;height:300px"></div></div>
         <div class="sec !pb-3">
           <h4>花材 ${total} 枝</h4>
           <div class="flex flex-wrap gap-1.5">${order.map(chip).join('')}</div>
@@ -1886,7 +1929,17 @@
     clone.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
     clone.removeAttribute('id'); clone.classList.remove('xray', 'is3d', 'is3d-out');
     clone.querySelectorAll('.flower').forEach(el => { const f = get(el.dataset.id); el.style.transform = `rotate(${f.rot}deg) scale(${f.scale})`; });
-    clone.style.cssText = 'left:50%;top:48%;transform:translate(-50%,-50%) scale(.66);pointer-events:none';
+    // 量出整束花（包裝＋花材＋小卡）在畫布座標的實際範圍，再等比縮放進預覽框並保留 14px 留白
+    const sr = stage.getBoundingClientRect(), k = sr.width / 360;
+    let x0 = 0, y0 = 0, x1 = 360, y1 = 480;
+    stage.querySelectorAll('.flower svg > *:not(defs), #cardEl').forEach(el => {
+      const r = el.getBoundingClientRect(); if (!r.width && !r.height) return;
+      x0 = Math.min(x0, (r.left - sr.left) / k); x1 = Math.max(x1, (r.right - sr.left) / k);
+      y0 = Math.min(y0, (r.top - sr.top) / k); y1 = Math.max(y1, (r.bottom - sr.top) / k);
+    });
+    const PW = 270, PH = 300, PAD = 14, fitS = Math.min((PW - PAD * 2) / (x1 - x0), (PH - PAD * 2) / (y1 - y0));
+    const ox = (PW - (x1 - x0) * fitS) / 2 - x0 * fitS, oy = (PH - (y1 - y0) * fitS) / 2 - y0 * fitS;
+    clone.style.cssText = `left:0;top:0;transform-origin:0 0;transform:translate(${ox.toFixed(1)}px, ${oy.toFixed(1)}px) scale(${fitS.toFixed(4)});pointer-events:none`;
     const pvScene = $('#scene').cloneNode(true), pvGobo = $('#gobo').cloneNode(true);
     pvScene.removeAttribute('id'); pvGobo.removeAttribute('id'); pvGobo.style.transform = '';
     pv.append(pvScene, clone, pvGobo);
@@ -2023,7 +2076,15 @@
   let popIds = new Map(), luckyBusy = false;
 
   // 25% 觸發季節限定特調，其餘四個主題平均抽
-  const pickTheme = () => Math.random() < .25 ? THEMES[4] : pick(THEMES.slice(0, 4));
+  THEMES.push({ id: 'halloween', scenes: ['halloween'], cardStyle: 'hang', cardTone: 'stone', emoji: '🎃', name: '萬聖節搞怪微醺夜', en: 'Halloween Night',
+    mains: { darkrose: ['黑巴卡拉', '魅影夜紫'], hwtulip: ['南瓜紅', '焦糖橘'] }, // 主花只用萬聖限定花材
+    fillers: { ghostdaisy: ['幽靈白', '月光灰紫'], hypericum: ['酒紅'], pepperberry: ['酒紅'], bunnytail: ['奶茶'] },
+    foliage: ['deadbranch', 'deadbranch', 'eucalyptus', 'ruscus'],
+    outer: [['korean', 'phantom'], ['cone', 'pumpkin'], ['craft', 'phantom'], ['korean', 'pumpkin']], tissue: [['tulle', 'white'], ['news', 'beige']],
+    tie: [['long', 'pumpkin'], ['chiffon', 'phantom'], ['jute', 'pumpkin'], ['lace', 'phantom']],
+    fortune: '今晚不給糖就搗蛋！讓一點神祕和調皮溜進生活，你會發現平凡的日子也藏著魔法。', card: 'Trick or Treat！今晚的你最迷人 🎃' });
+  // 萬聖節期間：今日幸運花束一律抽萬聖節特調；其他日子：25% 季節限定特調，其餘四個主題平均抽
+  const pickTheme = () => HALLOWEEN ? THEMES[5] : Math.random() < .25 ? THEMES[4] : pick(THEMES.slice(0, 4));
 
   function generateLucky(th) {
     state.flowers = []; state.sel = null; state.focus = null; popIds = new Map();
@@ -2117,7 +2178,7 @@
     const th = pickTheme();
     generateLucky(th);
     renderWraps(); renderRibbon(); renderTag(); renderScene();
-    state.tab = 'main'; state.activeMat = state.flowers[state.flowers.length - 1].type;
+    state.tab = HALLOWEEN ? 'halloween' : 'main'; state.activeMat = HALLOWEEN ? 'darkrose' : state.flowers[state.flowers.length - 1].type;
     renderFlowers(); renderWorkspace();
     setTimeout(() => { showFortune(th); luckyBusy = false; $('#btnLucky').disabled = false; }, 650);
   }
@@ -2207,7 +2268,7 @@
       scale: 3, backgroundColor: '#FFFFFF', logging: false,
       onclone: doc => {
         const pv = doc.getElementById('pv');
-        pv.innerHTML = `<img src="${photo}" style="width:100%;height:100%;object-fit:cover">`;
+        pv.innerHTML = `<img src="${photo}" style="width:100%;height:100%;object-fit:contain">`;
         doc.querySelectorAll('.order-detail').forEach(d => { d.open = true; d.querySelector('summary').remove(); });
       },
     });
@@ -2408,6 +2469,11 @@
   }
 
   /* ================= 初始化 ================= */
+  if (HALLOWEEN) {
+    state.tab = 'halloween'; state.activeMat = 'darkrose';
+    $('#btnLucky').textContent = '🎃 萬聖幸運花束';
+    setTimeout(() => toast('🎃 萬聖節限定上線：限定花材、包裝與萬聖夜背景'), 700);
+  }
   renderScene(); renderWraps(); renderRibbon(); renderTag(); renderFlowers(); renderWorkspace(); fit();
   bindTilt(canvasWrap, mainTilt); syncModeUI();
   if (document.fonts) document.fonts.ready.then(syncModeUI);
