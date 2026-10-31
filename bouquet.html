@@ -68,6 +68,11 @@
   .deco-btn::after { content: ""; position: absolute; inset: -9px; }
   .deco-rot { right: -19px; bottom: -19px; cursor: grab; }
   .deco-del { right: -19px; top: -19px; }
+  /* 🏳️‍🌈 彩虹驕傲分頁與節慶切換 */
+  .pride-tab { background: #fff; color: #5B4A8A; border-color: transparent !important; background-image: linear-gradient(#fff, #fff), linear-gradient(90deg, #E46A6A, #F09A55, #F2CF55, #74B874, #5F92D8, #9C72C8); background-origin: border-box; background-clip: padding-box, border-box; }
+  .pride-tab.on { color: #fff; background-image: linear-gradient(90deg, #E46A6A, #F09A55, #F2CF55, #74B874, #5F92D8, #9C72C8); text-shadow: 0 1px 2px rgba(0,0,0,.25); }
+  .fest-switch { position: absolute; top: 8px; z-index: 30; width: 32px; height: 32px; border-radius: 999px; background: #fff; border: 1px solid #CFCFC8; font-size: 15px; display: flex; align-items: center; justify-content: center; }
+  .fest-switch:active { transform: scale(.92); }
   .deco-card { border-radius: 14px; border: 1px solid #E8D9C8; background: #FFFCF7; transition: transform .15s, border-color .2s; }
   .deco-card:active { transform: scale(.94); }
   .stage.xray .layer-front { opacity: .4; }
@@ -223,6 +228,15 @@
 <!-- 共用 SVG 定義：內襯印刷紋樣 -->
 <svg id="globalDefs" width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
+    <!-- 🏳️‍🌈 彩虹驕傲：柔霧漸層紙、彩虹與跨性別條紋（絲帶、愛心貼紙） -->
+    <linearGradient id="rbPaper" x1="0" y1="0" x2="1" y2="1"><stop offset="0.000" stop-color="#f5c6c6"/><stop offset="0.200" stop-color="#f9d9be"/><stop offset="0.400" stop-color="#faedbe"/><stop offset="0.600" stop-color="#cae4ca"/><stop offset="0.800" stop-color="#c2d6f0"/><stop offset="1.000" stop-color="#d9c9ea"/></linearGradient>
+    <linearGradient id="rbPaperDark" x1="0" y1="0" x2="1" y2="1"><stop offset="0.000" stop-color="#f1b2b2"/><stop offset="0.200" stop-color="#f7caa7"/><stop offset="0.400" stop-color="#f8e6a7"/><stop offset="0.600" stop-color="#b7dab7"/><stop offset="0.800" stop-color="#acc6eb"/><stop offset="1.000" stop-color="#ccb6e2"/></linearGradient>
+    <linearGradient id="rbPaperLight" x1="0" y1="0" x2="1" y2="1"><stop offset="0.000" stop-color="#f9dede"/><stop offset="0.200" stop-color="#fce9da"/><stop offset="0.400" stop-color="#fcf4da"/><stop offset="0.600" stop-color="#e0efe0"/><stop offset="0.800" stop-color="#dce7f6"/><stop offset="1.000" stop-color="#e9e0f3"/></linearGradient>
+    <linearGradient id="rbStripes" x1="0" y1="0" x2="0" y2="1"><stop offset="0.0000" stop-color="#E46A6A" stop-opacity="1"/><stop offset="0.1667" stop-color="#E46A6A" stop-opacity="1"/><stop offset="0.1667" stop-color="#F09A55" stop-opacity="1"/><stop offset="0.3333" stop-color="#F09A55" stop-opacity="1"/><stop offset="0.3333" stop-color="#F2CF55" stop-opacity="1"/><stop offset="0.5000" stop-color="#F2CF55" stop-opacity="1"/><stop offset="0.5000" stop-color="#74B874" stop-opacity="1"/><stop offset="0.6667" stop-color="#74B874" stop-opacity="1"/><stop offset="0.6667" stop-color="#5F92D8" stop-opacity="1"/><stop offset="0.8333" stop-color="#5F92D8" stop-opacity="1"/><stop offset="0.8333" stop-color="#9C72C8" stop-opacity="1"/><stop offset="1.0000" stop-color="#9C72C8" stop-opacity="1"/></linearGradient>
+    <linearGradient id="rbStripesDark" x1="0" y1="0" x2="0" y2="1"><stop offset="0.0000" stop-color="#bf5c5b" stop-opacity="1"/><stop offset="0.1667" stop-color="#bf5c5b" stop-opacity="1"/><stop offset="0.1667" stop-color="#c9824a" stop-opacity="1"/><stop offset="0.3333" stop-color="#c9824a" stop-opacity="1"/><stop offset="0.3333" stop-color="#caad4a" stop-opacity="1"/><stop offset="0.5000" stop-color="#caad4a" stop-opacity="1"/><stop offset="0.5000" stop-color="#659a63" stop-opacity="1"/><stop offset="0.6667" stop-color="#659a63" stop-opacity="1"/><stop offset="0.6667" stop-color="#557cb3" stop-opacity="1"/><stop offset="0.8333" stop-color="#557cb3" stop-opacity="1"/><stop offset="0.8333" stop-color="#8562a6" stop-opacity="1"/><stop offset="1.0000" stop-color="#8562a6" stop-opacity="1"/></linearGradient>
+    <linearGradient id="rbRing" x1="0" y1="0" x2="1" y2="0"><stop offset="0.000" stop-color="#E46A6A"/><stop offset="0.200" stop-color="#F09A55"/><stop offset="0.400" stop-color="#F2CF55"/><stop offset="0.600" stop-color="#74B874"/><stop offset="0.800" stop-color="#5F92D8"/><stop offset="1.000" stop-color="#9C72C8"/></linearGradient>
+    <linearGradient id="transStripes" x1="0" y1="0" x2="0" y2="1"><stop offset="0.0000" stop-color="#7FC4EA" stop-opacity="1"/><stop offset="0.2000" stop-color="#7FC4EA" stop-opacity="1"/><stop offset="0.2000" stop-color="#F2B6C6" stop-opacity="1"/><stop offset="0.4000" stop-color="#F2B6C6" stop-opacity="1"/><stop offset="0.4000" stop-color="#FFFFFF" stop-opacity="1"/><stop offset="0.6000" stop-color="#FFFFFF" stop-opacity="1"/><stop offset="0.6000" stop-color="#F2B6C6" stop-opacity="1"/><stop offset="0.8000" stop-color="#F2B6C6" stop-opacity="1"/><stop offset="0.8000" stop-color="#7FC4EA" stop-opacity="1"/><stop offset="1.0000" stop-color="#7FC4EA" stop-opacity="1"/></linearGradient>
+    <linearGradient id="transStripesDark" x1="0" y1="0" x2="0" y2="1"><stop offset="0.0000" stop-color="#72accc" stop-opacity="1"/><stop offset="0.2000" stop-color="#72accc" stop-opacity="1"/><stop offset="0.2000" stop-color="#d4a0ad" stop-opacity="1"/><stop offset="0.4000" stop-color="#d4a0ad" stop-opacity="1"/><stop offset="0.4000" stop-color="#dfdede" stop-opacity="1"/><stop offset="0.6000" stop-color="#dfdede" stop-opacity="1"/><stop offset="0.6000" stop-color="#d4a0ad" stop-opacity="1"/><stop offset="0.8000" stop-color="#d4a0ad" stop-opacity="1"/><stop offset="0.8000" stop-color="#72accc" stop-opacity="1"/><stop offset="1.0000" stop-color="#72accc" stop-opacity="1"/></linearGradient>
     <!-- 英文報紙段落 -->
     <pattern id="news" width="64" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(-6)">
       <path d="M2 3 H19 M22 3 H30 M33 3 H48 M51 3 H62 M2 7 H11 M14 7 H32 M35 7 H43 M46 7 H62" stroke="#4A403A" stroke-opacity=".3" stroke-width="1.1" stroke-linecap="round" />
@@ -288,6 +302,7 @@
 
     <!-- 🔮 今日幸運花束 -->
     <button id="btnLucky" class="lucky-btn absolute top-2 left-3 z-30 rounded-full px-3 py-[7px] text-[12px] leading-tight transition">✦ 今日幸運花束</button>
+    <button id="btnFest" class="fest-switch hidden" title="切換節慶主題"></button>
     <div id="fortune" class="fortune hide absolute left-3 right-3 top-[48px] z-[35] rounded-xl bg-white border border-[#D5D5CE] px-3 py-2" role="status" aria-live="polite">
       <div class="flex items-center gap-2">
         <div class="min-w-0 flex-1">
@@ -571,6 +586,15 @@
     const d = new Date(), m = d.getMonth() + 1, day = d.getDate();
     return (m === 10 && day >= 24) || (m === 11 && day <= 2) || /[?&]halloween\b/.test(location.search);
   })();
+  // 🏳️‍🌈 台灣同志遊行（10 月最後一個週末前後）：10/24 ~ 11/2；網址加 ?pride 可強制預覽
+  const PRIDE = (() => {
+    const d = new Date(), m = d.getMonth() + 1, day = d.getDate();
+    return (m === 10 && day >= 24) || (m === 11 && day <= 2) || /[?&]pride\b/.test(location.search);
+  })();
+  const FESTIVALS = [...(PRIDE ? ['pride'] : []), ...(HALLOWEEN ? ['halloween'] : [])];
+  const FEST_INFO = { pride: { emoji: '🏳️‍🌈', tab: 'pride', lucky: '🏳️‍🌈 彩虹幸運花束', mat: 'prRose' }, halloween: { emoji: '🎃', tab: 'halloween', lucky: '🎃 萬聖幸運花束', mat: 'darkrose' } };
+  // 彩虹限定主花：紅玫瑰、橘向日葵、黃鬱金香、紫繡球（沿用原花型，含盛開／半開／花苞）
+  HEADS.prRose = HEADS.rose; HEADS.prSunflower = HEADS.sunflower; HEADS.prTulip = HEADS.tulip; HEADS.prHydrangea = HEADS.hydrangea;
   // 萬聖限定主花：沿用玫瑰／鬱金香的花型（含盛開、半開、花苞）
   HEADS.darkrose = HEADS.rose;
   HEADS.hwtulip = HEADS.tulip;
@@ -644,6 +668,7 @@
   // 新花例項：隨機變體（有花頭的主花才有花苞／半開）＋ 微色差
   // 現實比例基準尺寸（鎖定，不開放手動縮放）：大花＞中花＞小配花；葉材枝條較長
   const BASE_SIZE = {
+    prRose: .96, prSunflower: 1.06, prTulip: .96, prHydrangea: 1.04, prDianthus: .92, prStar: .9, rainbowBreath: .92,
     darkrose: .96, hwtulip: .96, ghostdaisy: .9, deadbranch: 1.04,
     carnation: .92, lisianthus: .94, dahlia: 1.04, anemone: .9, calla: .98, cosmos: .9, oriental: 1.04, protea: 1.06, camellia: .92, iris: .98,
     lavender: .94, waxflower: .9, statice: .92, veronica: .94, forgetmenot: .86, solidago: .96, craspedia: .9, bunnytail: .88, snapdragon: .96, sweetpea: .9,
@@ -664,6 +689,28 @@
   const DRAW = {
     ...bloomDraw(),
 
+    // 🏳️‍🌈 綠石竹（Green Trick）：毛茸茸的綠色小球
+    prDianthus: c => {
+      const ball = (x, y, r) => { let s = C(x, y, r, c.d); for (let i = 0; i < 26; i++) { const a = i * 2.39996, rr = r * Math.sqrt((i + .5) / 26); s += lens(x + rr * Math.cos(a), y + rr * Math.sin(a) + 2, r * .42, r * .1, (i * 47) % 360, i % 3 ? c.p : c.l); } return s; };
+      return line('M60 298 C 60 230, 60 180, 60 120') + line('M60 150 C 50 130, 44 112, 40 96') + line('M60 140 C 70 122, 78 108, 82 92') +
+        pair(220, 30, 4, 46, LEAF2) + pair(180, 24, 3.4, 42) + ball(40, 92, 15) + ball(82, 88, 14) + ball(60, 64, 19);
+    },
+    // 🏳️‍🌈 藍星花（Tweedia）：一簇粉藍色五瓣小星花
+    prStar: c => {
+      const tips = [[60, 52], [42, 66], [78, 64], [34, 94], [86, 92], [56, 88], [70, 108]];
+      return line('M60 298 C 60 230, 61 180, 60 140') + pair(230, 30, 8, 44, '#A9B9A4') + pair(196, 24, 7, 40, '#B7C4A7') +
+        tips.map(([x, y]) => line(`M60 140 Q ${(60 + x) / 2} ${(140 + y) / 2 + 8} ${x} ${y}`)).join('') +
+        tips.map(([x, y], i) => star5(x, y, i % 3 ? 7 : 8.5, i % 2 ? c.p : c.l, c.d)).join('');
+    },
+    // 🏳️‍🌈 彩虹滿天星：每一小簇都是不同的彩虹色
+    rainbowBreath: () => {
+      const RB = ['#E46A6A', '#F09A55', '#F2CF55', '#74B874', '#5F92D8', '#9C72C8'];
+      const tips = [[60, 30], [38, 42], [82, 42], [24, 66], [96, 66], [44, 80], [76, 80], [60, 58]];
+      const rosette = (x, y, col) => C(x, y, 3, col) + dot(x, y, .9, '#FFFFFF');
+      return STEM(140) + tips.map(([x, y]) => line(`M60 140 L${x} ${y}`)).join('') + pair(215, 22, 6, 58, LEAF2) +
+        tips.map(([x, y], i) => { const col = RB[i % 6]; return line(`M${x} ${y} L${x - 5} ${y + 3} M${x} ${y} L${x + 5} ${y + 3} M${x} ${y} L${x} ${y - 5}`, .7) +
+          rosette(x, y, col) + rosette(x - 5, y + 3, col) + rosette(x + 5, y + 3, col) + rosette(x, y - 5, col); }).join('');
+    },
     // 🎃 幽靈小白菊：灰白花瓣、深色花心，最大那朵帶著搞怪小臉
     ghostdaisy: c => DRAW.chamomile(c) + dot(54.5, 59.5, 1.7, '#FFFFFF') + dot(61.5, 59.5, 1.7, '#FFFFFF') +
       `<ellipse cx="58" cy="65" rx="1.6" ry="2" fill="#FFFFFF"/>`,
@@ -996,6 +1043,21 @@
       colors: [{ n: '酒紅', p: '#A7444F', d: '#6E2E36' }, { n: '蜜桃', p: '#EBA088', d: '#B66A55' }, { n: '奶白', p: '#F2E8D2', d: '#B9A27A' }] },
     lunaria: { name: '銀扇草', en: 'Lunaria', tab: 'foliage', slot: 'foliage', meaning: '誠實與財富', h: 280, thumb: '20 26 80 110',
       colors: [{ n: '銀白', p: '#F1EEE6', d: '#B5AA94' }] },
+    // ---------- 🏳️‍🌈 彩虹驕傲限定花材（紅橙黃綠藍紫） ----------
+    prRose: { name: '驕傲紅玫瑰', en: 'Pride Red Rose', tab: 'pride', slot: 'main', seasonal: '🏳️‍🌈 驕傲限定', meaning: '生命與熱烈的愛', h: 278, thumb: '12 6 96 104',
+      colors: [{ n: '彩虹紅', p: '#E05A5E', d: '#B8424A', l: '#F09294' }] },
+    prSunflower: { name: '活力橘向日葵', en: 'Orange Sunflower', tab: 'pride', slot: 'main', seasonal: '🏳️‍🌈 驕傲限定', meaning: '療癒與向光的勇氣', h: 290, thumb: '6 6 108 108',
+      colors: [{ n: '彩虹橘', p: '#F0954A', d: '#D4762E' }] },
+    prTulip: { name: '陽光黃鬱金香', en: 'Yellow Tulip', tab: 'pride', slot: 'main', seasonal: '🏳️‍🌈 驕傲限定', meaning: '陽光般的希望', h: 282, thumb: '20 0 80 104',
+      colors: [{ n: '彩虹黃', p: '#F4D05A', d: '#DDB33A', l: '#FAE6A0' }] },
+    prDianthus: { name: '自然綠石竹', en: 'Green Dianthus', tab: 'pride', slot: 'filler', seasonal: '🏳️‍🌈 驕傲限定', meaning: '自然與和平的共存', h: 266, thumb: '18 40 84 74',
+      colors: [{ n: '彩虹綠', p: '#8CC77A', d: '#5E9A55', l: '#B6DDA4' }] },
+    prStar: { name: '寧靜藍星花', en: 'Blue Star', tab: 'pride', slot: 'filler', seasonal: '🏳️‍🌈 驕傲限定', meaning: '寧靜與和諧', h: 262, thumb: '22 38 76 80',
+      colors: [{ n: '彩虹藍', p: '#7FA8E2', l: '#A9C6EE', d: '#3E5E9A' }] },
+    prHydrangea: { name: '靈魂紫繡球', en: 'Purple Hydrangea', tab: 'pride', slot: 'base', seasonal: '🏳️‍🌈 驕傲限定', meaning: '靈魂與多元的團聚', h: 252, thumb: '2 4 116 140',
+      colors: [{ n: '彩虹紫', p: '#B08AD8', d: '#8B66B8', l: '#CDB4EA' }] },
+    rainbowBreath: { name: '彩虹滿天星', en: 'Rainbow Baby\'s Breath', tab: 'pride', slot: 'filler', seasonal: '🏳️‍🌈 驕傲限定', meaning: '包容每一種顏色的愛', h: 272, thumb: '10 6 100 110',
+      colors: [{ n: '六色彩虹', p: '#E46A6A' }] },
     // ---------- 🎃 萬聖節限定花材 ----------
     darkrose: { name: '暗夜黑玫瑰', en: 'Black Baccara', tab: 'halloween', slot: 'main', seasonal: '🎃 萬聖限定', meaning: '神祕而永恆的愛', h: 278, thumb: '12 6 96 104',
       colors: [{ n: '黑巴卡拉', p: '#5A2A3E', d: '#3A1A28', l: '#7E4258' }, { n: '魅影夜紫', p: '#5B3F6E', d: '#3E2A50', l: '#7E62A0' }] },
@@ -1016,8 +1078,12 @@
     { id: 'main', label: '主花', count: '16+2' }, { id: 'filler', label: '配花', count: '15' },
     { id: 'foliage', label: '葉材與果實', count: '14' }, { id: 'wrap', label: '包裝與緞帶' }, { id: 'card', label: '標籤與背景' },
   ];
-  if (HALLOWEEN) TABS.unshift({ id: 'halloween', label: '🎃 萬聖節限定', count: '限時' }, { id: 'deco', label: '🦇 萬聖節裝飾', count: '7' });
-  const FLOWER_TABS = ['halloween', 'main', 'filler', 'foliage'];
+  TABS.unshift(...[
+    ...(PRIDE ? [{ id: 'pride', label: '🏳️‍🌈 彩虹驕傲限定', count: '限時', fest: 'pride' }] : []),
+    ...(HALLOWEEN ? [{ id: 'halloween', label: '🎃 萬聖節限定', count: '限時', fest: 'halloween' }] : []),
+    ...(FESTIVALS.length ? [{ id: 'deco', label: '✨ 節慶裝飾', count: '' }] : []),
+  ]);
+  const FLOWER_TABS = ['pride', 'halloween', 'main', 'filler', 'foliage'];
 
   // 智慧落點：對齊收腰支點的扇形槽位（角度 / 縮放）
   // 支點 = 收腰綁點：所有花莖都穿過綁結，旋轉時以綁點為圓心擺動；
@@ -1040,7 +1106,7 @@
     flowers: [], sel: null, mode3d: false, fortune: null, focus: null, activeMat: 'rose', tab: 'main', wrapSub: 'outer', finished: false,
     wrap: { outer: 'korean', outerColor: 'oat', tissue: 'tissue', tissueColor: 'white', tie: 'long', tieColor: 'cream' },
     card: { style: 'label', tone: 'white', to: '親愛的你', msg: '願你被世界溫柔以待', sign: '想你的人', x: 196, y: 372 },
-    cardSub: 'style', scene: 'paper', decos: [], selDeco: null,
+    cardSub: 'style', scene: 'paper', decos: [], selDeco: null, festival: FESTIVALS[0] || null,
     curColor: Object.fromEntries(Object.keys(MAT).map(k => [k, 0])),
   };
   let uidN = 1, lastAdded = null, scale = 1, drag = null;
@@ -1080,6 +1146,13 @@
     { id: 'forest', n: '森林墨綠', c: '#3F5B4A' }, { id: 'caramel', n: '焦糖棕', c: '#A86F3E' }, { id: 'rose', n: '乾燥玫瑰粉', c: '#C99293' },
   ];
   if (HALLOWEEN) { OUTER_COLORS.push(...HW_COLORS); TIE_COLORS.push(...HW_COLORS); }
+  // 🏳️‍🌈 彩虹限定：漸層／條紋色票用 grad 指到共用漸層，sw 是色票圓點的顯示樣式
+  const RB_SW = 'linear-gradient(135deg, #E46A6A, #F09A55, #F2CF55, #74B874, #5F92D8, #9C72C8)';
+  if (PRIDE) {
+    OUTER_COLORS.push({ id: 'rainbow', n: '🏳️‍🌈 彩虹漸層柔霧紙', c: '#F3E1E6', grad: 'rbPaper', sw: RB_SW }, { id: 'whitegold', n: '🏳️‍🌈 純白燙金平權紙', c: '#FBF8F1', foil: true, sw: 'linear-gradient(135deg, #FFFFFF 55%, #D9B76A)' }, { id: 'earth', n: '🏳️‍🌈 大地牛皮紙', c: '#B98B5C' });
+    TIE_COLORS.push({ id: 'rainbow', n: '🏳️‍🌈 彩虹絲帶', c: '#9C72C8', grad: 'rbStripes', sw: 'linear-gradient(180deg, #E46A6A 0 17%, #F09A55 17% 33%, #F2CF55 33% 50%, #74B874 50% 67%, #5F92D8 67% 83%, #9C72C8 83%)' },
+      { id: 'trans', n: '🏳️‍🌈 粉藍粉白絲帶', c: '#7FC4EA', grad: 'transStripes', sw: 'linear-gradient(180deg, #7FC4EA 0 20%, #F2B6C6 20% 40%, #FFFFFF 40% 60%, #F2B6C6 60% 80%, #7FC4EA 80%)' });
+  }
   const OUTERS = {
     geo: { name: '極簡幾何圓錐包', short: '幾何圓錐', en: 'Geometric Cone' },
     korean: { name: '韓系多層次歐雅紙', short: '韓系歐雅紙', en: 'Korean Layered' },
@@ -1112,6 +1185,9 @@
   const mix = (a, b, t) => '#' + rgb(a).map((v, i) => Math.round(v + (rgb(b)[i] - v) * t).toString(16).padStart(2, '0')).join('');
   const isDark = h => { const [r, g, b] = rgb(h); return r * .3 + g * .59 + b * .11 < 100; };
   const paperOf = c => {
+    const col = [...OUTER_COLORS].find(x => x.c === c);
+    if (col?.grad) return { base: `url(#${col.grad})`, dark: `url(#${col.grad}Dark)`, light: `url(#${col.grad}Light)`, ink: INK, fold: INK, gold: '#C9A55A' };
+    if (col?.foil) return { base: c, dark: '#EFE9DC', light: '#FFFFFF', ink: INK, fold: '#C9A55A', gold: '#C9A55A' };
     const dark = isDark(c);
     return { base: c, dark: mix(c, '#2B2420', .1), light: mix(c, '#FFFFFF', dark ? .14 : .3), ink: dark ? '#1A1A1A' : INK, fold: dark ? '#FFFFFF' : INK, gold: '#C9B07A' };
   };
@@ -1300,7 +1376,8 @@
   const WAIST = { korean: { cx: 181, y: 344, hw: 17.5 }, craft: { cx: 181, y: 342, hw: 17.5 }, cello: { cx: 181, y: 342, hw: 17.5 }, cone: { cx: 180, y: 344, hw: 17 }, geo: { cx: 180, y: 340, hw: 50 } };
   // 緞帶與綁繩：綁在收腰支點（180, 338）
   function tieSVG(w, vb) {
-    const base = colorOf(TIE_COLORS, w.tieColor).c, c = base, d = mix(base, '#2B2420', .22), l = mix(base, '#FFFFFF', .4);
+    const tc = colorOf(TIE_COLORS, w.tieColor), base = tc.c;
+    const c = tc.grad ? `url(#${tc.grad})` : base, d = tc.grad ? `url(#${tc.grad}Dark)` : mix(base, '#2B2420', .22), l = mix(base, '#FFFFFF', .4);
     const mirror = path => path.replace(/(-?\d+\.?\d*) (-?\d+\.?\d*)/g, (m, x, y) => `${f1(360 - +x)} ${y}`);
     const loopL = 'M178 338 C 158 310, 120 302, 116 322 C 112 346, 148 358, 178 342 Z';
     const knot = `<path d="M172 331 C 176 327, 186 327, 190 331 C 193 337, 191 346, 186 349 C 180 351, 174 349, 172 345 C 170 340, 170 336, 172 331 Z" fill="${d}" ${S}/>`;
@@ -1499,7 +1576,38 @@
       <text x="64" y="38" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="13.5" fill="#F3E2B8">Happy Halloween!</text>
       <text x="64" y="56" text-anchor="middle" font-family="Inter, 'Noto Sans TC', 'PingFang TC', sans-serif" font-size="9" letter-spacing="1" fill="#E2C27A">帶著微醺魔法的一天</text></svg>` },
   };
-  const DECO_STICKERS = ['ghost', 'pumpkin', 'bat', 'web', 'star'], DECO_CARDS = ['cardTreat', 'cardMagic'];
+  // 🏳️‍🌈 彩虹驕傲貼紙與小插卡
+  const RBC = ['#E46A6A', '#F09A55', '#F2CF55', '#74B874', '#5F92D8', '#9C72C8'];
+  const rbCard = (t1, t2, big) => `<svg viewBox="0 0 128 82">
+      <rect x="1" y="1" width="126" height="80" rx="5" fill="#FFFDF8" ${DS}/>
+      ${RBC.map((c, i) => `<rect x="${(6 + i * 19.33).toFixed(2)}" y="6" width="19.6" height="5" fill="${c}"/>`).join('')}
+      <rect x="6" y="6" width="116" height="70" rx="3" fill="none" stroke="${DI}" stroke-width=".7" opacity=".35"/>
+      <text x="64" y="${big ? 40 : 38}" text-anchor="middle" font-family="${big ? "Inter, 'Noto Sans TC', 'PingFang TC', sans-serif" : "Georgia, 'Times New Roman', serif"}" ${big ? 'font-weight="600"' : 'font-style="italic"'} font-size="${big ? 11.5 : 13.5}" fill="${DI}">${t1}</text>
+      <text x="64" y="57" text-anchor="middle" font-family="${big ? "Georgia, 'Times New Roman', serif" : "Inter, 'Noto Sans TC', 'PingFang TC', sans-serif"}" ${big ? 'font-style="italic"' : ''} font-size="${big ? 9 : 9.5}" letter-spacing=".5" fill="#7A6A60">${t2}</text>
+      <path d="M58 66 C 58 63, 62 63, 62 66 C 62 69, 58 71, 58 71 C 58 71, 54 69, 54 66 C 54 63, 58 63, 58 66 Z" transform="translate(6 0)" fill="url(#rbStripes)" stroke="${DI}" stroke-width=".6"/></svg>`;
+  Object.assign(DECOS, {
+    prideFlag: { name: '彩虹旗', w: 64, h: 56, svg: () => `<svg viewBox="0 0 70 62">
+      <path d="M8 6 L 8 60" stroke="#8C7360" stroke-width="3" stroke-linecap="round"/><circle cx="8" cy="5" r="3" fill="#E2C27A" ${DS}/>
+      ${RBC.map((c, i) => { const y = 8 + i * 6; return `<path d="M9 ${y} C 24 ${y - 5}, 38 ${y + 5}, 64 ${y} L 64 ${y + 6} C 38 ${y + 11}, 24 ${y + 1}, 9 ${y + 6} Z" fill="${c}"/>`; }).join('')}
+      <path d="M9 8 C 24 3, 38 13, 64 8 L 64 44 C 38 49, 24 39, 9 44 Z" fill="none" ${DS}/></svg>` },
+    prideHeart: { name: '愛心彩虹', w: 54, h: 50, svg: () => `<svg viewBox="0 0 60 56">
+      <path d="M30 52 C 12 40, 4 30, 4 18 C 4 9, 11 3, 19 3 C 24 3, 28 6, 30 10 C 32 6, 36 3, 41 3 C 49 3, 56 9, 56 18 C 56 30, 48 40, 30 52 Z" fill="url(#rbStripes)" ${DS}/>
+      <path d="M12 13 C 14 9, 18 8, 21 8" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".8"/></svg>` },
+    peace: { name: '和平符號', w: 52, h: 52, svg: () => `<svg viewBox="0 0 56 56">
+      <circle cx="28" cy="28" r="24" fill="#FFFDF8" stroke="url(#rbRing)" stroke-width="6"/><circle cx="28" cy="28" r="27" fill="none" ${DS}/>
+      <path d="M28 6 L 28 50 M28 28 L 13 43 M28 28 L 43 43" stroke="${DI}" stroke-width="3" stroke-linecap="round" fill="none"/></svg>` },
+    slogan: { name: '平權標語', w: 92, h: 36, svg: () => `<svg viewBox="0 0 100 40">
+      <rect x="2" y="2" width="96" height="36" rx="18" fill="#FFFDF8" ${DS}/>
+      <rect x="12" y="29" width="76" height="3" rx="1.5" fill="url(#rbRing)"/>
+      <text x="50" y="22" text-anchor="middle" font-family="Inter, 'Helvetica Neue', sans-serif" font-weight="700" font-size="11.5" letter-spacing="1.2" fill="${DI}">LOVE IS LOVE</text></svg>` },
+    cardLove: { name: 'Love is Love 小插卡', card: true, w: 128, h: 82, svg: () => rbCard('Love is Love.', '願你被世界溫柔相待') },
+    cardBorn: { name: '生而為你 小插卡', card: true, w: 128, h: 82, svg: () => rbCard('生而為妳/你，無須抱歉', 'Born this way', true) },
+    cardShine: { name: '攜手同行 小插卡', card: true, w: 128, h: 82, svg: () => rbCard('攜手同行，光芒萬丈', 'Walk together, shine bright', true) },
+  });
+  const DECO_SETS = {
+    pride: { title: '🏳️‍🌈 彩虹驕傲', stickers: ['prideFlag', 'prideHeart', 'peace', 'slogan'], cards: ['cardLove', 'cardBorn', 'cardShine'] },
+    halloween: { title: '🎃 萬聖節', stickers: ['ghost', 'pumpkin', 'bat', 'web', 'star'], cards: ['cardTreat', 'cardMagic'] },
+  };
   const getDeco = id => state.decos.find(d => d.id === id);
   const decoTransform = d => `translate(-50%, -50%) rotate(${d.rot.toFixed(1)}deg) scale(${d.scale.toFixed(3)})`;
   function decoHTML(d) {
@@ -1571,7 +1679,15 @@
       return h + `<svg viewBox="0 0 40 40" width="46" style="position:absolute;right:9%;top:7%;opacity:.85"><path d="M26 4 A 16 16 0 1 0 36 30 A 13 13 0 1 1 26 4 Z" fill="#F3E2B8"/></svg>` + bat(12, 14, 30) + bat(24, 8, 20) + bat(70, 30, 24);
     },
     gobo: '<div style="background:radial-gradient(ellipse at 50% 92%, rgba(255,150,70,.18), transparent 55%);mix-blend-mode:screen"></div>' };
-  const SCENE_ORDER = ['paper', 'grey', 'sun', 'wood', 'midnight', ...(HALLOWEEN ? ['halloween'] : [])];
+  SCENES.pride = { emoji: '🏳️‍🌈', name: '彩虹光影灑落的窗邊', short: '🏳️‍🌈 彩虹光影',
+    bg: 'radial-gradient(ellipse at 85% 8%, rgba(255,247,226,.95), transparent 55%), linear-gradient(160deg, #FBF5EC 0%, #F6EEF4 55%, #EEF1F8 100%)',
+    decor: () => `<svg viewBox="0 0 400 520" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;opacity:.55">` +
+      ['#E46A6A', '#F09A55', '#F2CF55', '#74B874', '#5F92D8', '#9C72C8'].map((col, i) => `<path d="M${430 - i * 22} -20 L${452 - i * 22} -20 L${92 - i * 22} 540 L${70 - i * 22} 540 Z" fill="${col}" opacity=".28"/>`).join('') + '</svg>' +
+      [[12, 18], [26, 74], [78, 64], [88, 30], [50, 90]].map(([x, y], i) => `<span class="dotty" style="left:${x}%;top:${y}%;width:5px;height:5px;opacity:.7;background:${['#E46A6A', '#F09A55', '#F2CF55', '#74B874', '#5F92D8', '#9C72C8'][i]}"></span>`).join(''),
+    // 花束上的淡淡彩虹光暈
+    gobo: '<div style="background:linear-gradient(118deg, rgba(228,106,106,.16) 8%, rgba(240,154,85,.14) 22%, rgba(242,207,85,.14) 36%, rgba(116,184,116,.12) 50%, rgba(95,146,216,.13) 64%, rgba(156,114,200,.15) 78%, transparent 92%);mix-blend-mode:soft-light"></div>' +
+      '<div style="background:radial-gradient(ellipse at 88% 6%, rgba(255,255,255,.55), transparent 45%)"></div>' };
+  const SCENE_ORDER = ['paper', 'grey', 'sun', 'wood', 'midnight', ...(HALLOWEEN ? ['halloween'] : []), ...(PRIDE ? ['pride'] : [])];
   const sceneDecor = sc => typeof sc.decor === 'function' ? sc.decor() : sc.decor;
   function renderScene() {
     const sc = SCENES[state.scene];
@@ -1672,7 +1788,7 @@
   /* ---------- 工作台 ---------- */
   function renderWorkspace() {
     $('#tabs').innerHTML = TABS.map(t =>
-      `<button data-act="tab" data-val="${t.id}" class="shrink-0 rounded-full px-3 py-1.5 text-[12.5px] border transition ${t.id === 'halloween' || t.id === 'deco' ? (state.tab === t.id ? 'bg-[#C9682A] text-white border-[#C9682A]' : 'bg-[#FFF1E4] text-[#A8501E] border-[#E8B48A]') : state.tab === t.id ? 'bg-[#333] text-white border-[#333]' : 'bg-white text-[#555] border-[#D5D5CE]'}">${t.label}${t.count ? `<span class="ml-1 text-[10px] opacity-70">${t.count}</span>` : ''}</button>`).join('');
+      `<button data-act="tab" data-val="${t.id}" class="shrink-0 rounded-full px-3 py-1.5 text-[12.5px] border transition ${t.id === 'pride' ? (state.tab === t.id ? 'pride-tab on' : 'pride-tab') : t.id === 'halloween' || t.id === 'deco' ? (state.tab === t.id ? 'bg-[#C9682A] text-white border-[#C9682A]' : 'bg-[#FFF1E4] text-[#A8501E] border-[#E8B48A]') : state.tab === t.id ? 'bg-[#333] text-white border-[#333]' : 'bg-white text-[#555] border-[#D5D5CE]'}">${t.label}${t.count ? `<span class="ml-1 text-[10px] opacity-70">${t.count}</span>` : ''}</button>`).join('');
 
     const panel = $('#panel');
     const cardCls = on => `mat-card rounded-xl border bg-white p-1.5 flex flex-col items-center text-center cursor-pointer ${on ? 'is-active' : 'border-[#E0E0DA]'}`;
@@ -1698,7 +1814,7 @@
       const swRow = `<div class="flex items-center justify-between gap-2 mt-1.5">
           <div class="min-w-0 text-[11px] leading-tight text-ink/65 truncate"><b class="text-ink">${styles[w[sKey]].name}</b>${noColor ? '' : ` · ${curC.n}`}</div>
           <div class="flex gap-1.5 shrink-0">${noColor ? '<span class="text-[10.5px] text-ink/45">極簡無襯紙</span>' : colors.map(c =>
-            `<button data-act="wrapset" data-key="${cKey}" data-val="${c.id}" title="${c.n}" aria-label="${c.n}" class="sw sm ${w[cKey] === c.id ? 'on' : ''}" style="background-color:${c.c}"></button>`).join('')}</div>
+            `<button data-act="wrapset" data-key="${cKey}" data-val="${c.id}" title="${c.n}" aria-label="${c.n}" class="sw sm ${w[cKey] === c.id ? 'on' : ''}" style="background:${c.sw || c.c}"></button>`).join('')}</div>
         </div>`;
       const stack = (parts, vb) => `<div class="relative w-full h-full pointer-events-none">${parts.map(svg => `<div class="absolute inset-0">${svg.replace('<svg viewBox', '<svg style="width:100%;height:100%" viewBox')}</div>`).join('')}</div>`;
       const preview = id => {
@@ -1717,13 +1833,15 @@
       const cell = (k, cls) => `<button data-act="deco" data-val="${k}" class="deco-card ${cls} flex flex-col items-center justify-center p-1.5" aria-label="加入${DECOS[k].name}">
           <div class="pointer-events-none flex items-center justify-center" style="height:46px;width:100%">${DECOS[k].svg().replace('<svg ', `<svg style="max-height:46px;max-width:100%" `)}</div>
           <div class="text-[10.5px] mt-1 leading-tight text-[#6B5A50]">${DECOS[k].name}</div></button>`;
+      const sets = [...FESTIVALS].sort((x, y) => (y === state.festival) - (x === state.festival)).map(f => DECO_SETS[f]);
       panel.innerHTML = `<div class="swatch-bar sticky top-0 z-10 -mx-3 px-3 pt-1 pb-2 mb-1.5 border-b border-[#DADAD3] flex items-center justify-between gap-2">
-          <div class="min-w-0"><div class="text-[13px] font-medium">🦇 萬聖節裝飾貼紙</div><div class="text-[10.5px] text-[#888] leading-tight">點一下貼到畫布 · 拖曳移動 · 右下角把手旋轉縮放 · × 刪除</div></div>
-          <button data-act="decoclear" class="shrink-0 rounded-full border border-[#D5D5CE] bg-white px-2.5 py-1 text-[11px]">清除裝飾</button></div>
-        <div class="text-[11px] tracking-[.12em] text-[#999] mb-1">小巧貼紙</div>
-        <div class="grid grid-cols-5 gap-1.5">${DECO_STICKERS.map(k => cell(k, '')).join('')}</div>
-        <div class="text-[11px] tracking-[.12em] text-[#999] mt-2.5 mb-1">祝福小插卡</div>
-        <div class="grid grid-cols-2 gap-1.5">${DECO_CARDS.map(k => cell(k, '')).join('')}</div>`;
+          <div class="min-w-0"><div class="text-[13px] font-medium">✨ 節慶裝飾貼紙與小插卡</div><div class="text-[10.5px] text-[#888] leading-tight">點一下貼到畫布 · 拖曳移動 · 右下角把手旋轉縮放 · × 刪除</div></div>
+          <button data-act="decoclear" class="shrink-0 rounded-full border border-[#D5D5CE] bg-white px-2.5 py-1 text-[11px]">清除裝飾</button></div>` +
+        sets.map(set => `<div class="text-[12px] font-medium text-[#6B5A50] mt-1 mb-1">${set.title}</div>
+          <div class="text-[10.5px] tracking-[.12em] text-[#999] mb-1">小巧貼紙</div>
+          <div class="grid grid-cols-5 gap-1.5">${set.stickers.map(k => cell(k, '')).join('')}</div>
+          <div class="text-[10.5px] tracking-[.12em] text-[#999] mt-2 mb-1">祝福小插卡</div>
+          <div class="grid grid-cols-2 gap-1.5 mb-3">${set.cards.map(k => cell(k, '')).join('')}</div>`).join('');
     } else {
       const c = state.card, sub = state.cardSub;
       const subs = [['style', '標籤款式與位置', '3款標籤'], ['text', '標籤文字', '含靈感金句'], ['scene', '空間背景', '5款平面場景']];
@@ -1947,7 +2065,7 @@
     const hit = e.target.closest('[data-act]'); if (hit && hit.dataset.act !== 'add') SFX.tap(); // 加花另有音效
     const t = e.target.closest('[data-act]'); if (!t) return;
     const { act, val } = t.dataset;
-    if (act === 'tab') state.tab = val;
+    if (act === 'tab') { state.tab = val; const t = TABS.find(x => x.id === val); if (t?.fest && t.fest !== state.festival) setFestival(t.fest); }
     else if (act === 'add') return addFlower(val);
     else if (act === 'color') {
       const k = state.activeMat, tgt = swatchTarget();
@@ -2224,8 +2342,17 @@
     outer: [['korean', 'phantom'], ['cone', 'pumpkin'], ['craft', 'phantom'], ['korean', 'pumpkin']], tissue: [['tulle', 'white'], ['news', 'beige']],
     tie: [['long', 'pumpkin'], ['chiffon', 'phantom'], ['jute', 'pumpkin'], ['lace', 'phantom']],
     fortune: '今晚不給糖就搗蛋！讓一點神祕和調皮溜進生活，你會發現平凡的日子也藏著魔法。', card: 'Trick or Treat！今晚的你最迷人 🎃' });
-  // 萬聖節期間：今日幸運花束一律抽萬聖節特調；其他日子：25% 季節限定特調，其餘四個主題平均抽
-  const pickTheme = () => HALLOWEEN ? THEMES[5] : Math.random() < .25 ? THEMES[4] : pick(THEMES.slice(0, 4));
+  THEMES.push({ id: 'pride', rainbow: true, scenes: ['pride'], cardStyle: 'label', cardTone: 'white', emoji: '🏳️‍🌈', name: '平權彩虹特調', en: 'Rainbow Pride',
+    // 紅、橙、黃、紫為主花，綠、藍＋彩虹滿天星為配花：每次都湊齊完整彩虹光譜
+    mains: { prRose: ['彩虹紅'], prSunflower: ['彩虹橘'], prTulip: ['彩虹黃'], prHydrangea: ['彩虹紫'] },
+    fillers: { prDianthus: ['彩虹綠'], prStar: ['彩虹藍'], rainbowBreath: ['六色彩虹'] },
+    foliage: ['eucalyptus', 'ruscus', 'olive', 'fern'],
+    outer: [['korean', 'rainbow'], ['korean', 'whitegold'], ['cone', 'rainbow'], ['craft', 'earth']], tissue: [['tissue', 'white'], ['tulle', 'white']],
+    tie: [['long', 'rainbow'], ['chiffon', 'rainbow'], ['long', 'trans'], ['lace', 'trans']],
+    fortune: '愛沒有標準答案，每一種顏色都值得被看見。今天就大方地做自己，和喜歡的人一起閃閃發光。', card: 'Love is Love. 願你被世界溫柔相待' });
+  // 節慶期間依目前切換的節慶抽特調；其他日子：25% 季節限定特調，其餘四個主題平均抽
+  const pickTheme = () => state.festival === 'pride' ? THEMES.find(t => t.id === 'pride') : state.festival === 'halloween' ? THEMES[5]
+    : Math.random() < .25 ? THEMES[4] : pick(THEMES.slice(0, 4));
 
   function generateLucky(th) {
     state.flowers = []; state.sel = null; state.focus = null; popIds = new Map();
@@ -2250,7 +2377,7 @@
 
     // 中核心｜主花 3~4 朵：中間最高且盛開，兩側較低、外傾，前後遮擋、高低錯落
     const mk = shuffleArr(Object.keys(th.mains));
-    let types = Array.from({ length: rint(3, 4) }, (_, i) => mk[i % mk.length] && (i < 2 || Math.random() < .6) ? mk[i % mk.length] : mk[0]);
+    let types = th.rainbow ? mk : Array.from({ length: rint(3, 4) }, (_, i) => mk[i % mk.length] && (i < 2 || Math.random() < .6) ? mk[i % mk.length] : mk[0]);
     if (th.seasonal) {
       const m = new Date().getMonth() + 1, sp = m >= 3 && m <= 8 ? 'peony' : 'pinecone';
       types[Math.random() < .5 ? 0 : 1] = sp;
@@ -2270,7 +2397,8 @@
     for (let i = 1; i < angles.length; i++) if (angles[i] - angles[i - 1] > 8) gaps.push((angles[i] + angles[i - 1]) / 2);
     gaps.push(angles[0] - R(7, 11), angles[angles.length - 1] + R(7, 11));
     const fk = shuffleArr(Object.keys(th.fillers));
-    shuffleArr(gaps).slice(0, rint(2, 4)).forEach((a, i) => {
+    while (th.rainbow && gaps.length < fk.length) gaps.push(pick([-1, 1]) * R(4, 30)); // 彩虹特調：綠、藍、彩虹滿天星都要插到
+    shuffleArr(gaps).slice(0, th.rainbow ? fk.length : rint(2, 4)).forEach((a, i) => {
       const t = fk[i % fk.length];
       place(t, colorFor(t, th.fillers[t]), clamp(a + R(-3, 3), -33, 33), R(-32, -16));
     });
@@ -2319,7 +2447,8 @@
     const th = pickTheme();
     generateLucky(th);
     renderWraps(); renderRibbon(); renderTag(); renderScene();
-    state.tab = HALLOWEEN ? 'halloween' : 'main'; state.activeMat = HALLOWEEN ? 'darkrose' : state.flowers[state.flowers.length - 1].type;
+    const fi = FEST_INFO[state.festival];
+    state.tab = fi ? fi.tab : 'main'; state.activeMat = fi ? fi.mat : state.flowers[state.flowers.length - 1].type;
     renderFlowers(); renderWorkspace();
     setTimeout(() => { showFortune(th); luckyBusy = false; $('#btnLucky').disabled = false; }, 650);
   }
@@ -2651,10 +2780,24 @@
   }
 
   /* ================= 初始化 ================= */
-  if (HALLOWEEN) {
-    state.tab = 'halloween'; state.activeMat = 'darkrose';
-    $('#btnLucky').textContent = '🎃 萬聖幸運花束';
-    setTimeout(() => toast('🎃 萬聖節限定上線：限定花材、包裝與萬聖夜背景'), 700);
+  // 節慶主題：彩虹驕傲與萬聖節並列，可用左上角小按鈕或分頁自由切換
+  function setFestival(f, announce) {
+    if (!FEST_INFO[f]) return;
+    state.festival = f;
+    const fi = FEST_INFO[f], other = FESTIVALS.find(x => x !== f);
+    $('#btnLucky').textContent = fi.lucky;
+    const fb = $('#btnFest');
+    fb.classList.toggle('hidden', !other);
+    if (other) { fb.textContent = FEST_INFO[other].emoji; fb.title = `切換到${other === 'pride' ? '彩虹驕傲' : '萬聖節'}主題`; }
+    requestAnimationFrame(() => (fb.style.left = `${$('#btnLucky').offsetLeft + $('#btnLucky').offsetWidth + 6}px`));
+    if (announce) { state.tab = fi.tab; state.activeMat = fi.mat; renderWorkspace(); toast(f === 'pride' ? '🏳️‍🌈 已切換到彩虹驕傲主題' : '🎃 已切換到萬聖節主題'); }
+  }
+  $('#btnFest').onclick = () => { SFX.tap(); setFestival(FESTIVALS.find(x => x !== state.festival), true); };
+  if (state.festival) {
+    const fi = FEST_INFO[state.festival];
+    state.tab = fi.tab; state.activeMat = fi.mat;
+    setFestival(state.festival);
+    setTimeout(() => toast(PRIDE ? '🏳️‍🌈 彩虹驕傲限定上線！也可以切換到 🎃 萬聖節主題' : '🎃 萬聖節限定上線：限定花材、包裝與萬聖夜背景'), 700);
   }
   renderScene(); renderWraps(); renderRibbon(); renderTag(); renderFlowers(); renderWorkspace(); fit();
   bindTilt(canvasWrap, mainTilt); syncModeUI();
