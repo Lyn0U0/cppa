@@ -591,7 +591,7 @@
     const d = new Date(), m = d.getMonth() + 1, day = d.getDate();
     return (m === 10 && day >= 24) || (m === 11 && day <= 2) || /[?&]pride\b/.test(location.search);
   })();
-  const FESTIVALS = [...(PRIDE ? ['pride'] : []), ...(HALLOWEEN ? ['halloween'] : [])];
+  const FESTIVALS = [...(HALLOWEEN ? ['halloween'] : []), ...(PRIDE ? ['pride'] : [])];
   const FEST_INFO = { pride: { emoji: '🏳️‍🌈', tab: 'pride', lucky: '🏳️‍🌈 彩虹幸運花束', mat: 'prRose' }, halloween: { emoji: '🎃', tab: 'halloween', lucky: '🎃 萬聖幸運花束', mat: 'darkrose' } };
   // 彩虹限定主花：紅玫瑰、橘向日葵、黃鬱金香、紫繡球（沿用原花型，含盛開／半開／花苞）
   HEADS.prRose = HEADS.rose; HEADS.prSunflower = HEADS.sunflower; HEADS.prTulip = HEADS.tulip; HEADS.prHydrangea = HEADS.hydrangea;
@@ -1079,9 +1079,8 @@
     { id: 'foliage', label: '葉材與果實', count: '14' }, { id: 'wrap', label: '包裝與緞帶' }, { id: 'card', label: '標籤與背景' },
   ];
   TABS.unshift(...[
-    ...(PRIDE ? [{ id: 'pride', label: '🏳️‍🌈 彩虹驕傲限定', count: '限時', fest: 'pride' }] : []),
     ...(HALLOWEEN ? [{ id: 'halloween', label: '🎃 萬聖節限定', count: '限時', fest: 'halloween' }] : []),
-    ...(FESTIVALS.length ? [{ id: 'deco', label: '✨ 節慶裝飾', count: '' }] : []),
+    ...(PRIDE ? [{ id: 'pride', label: '🏳️‍🌈 彩虹驕傲限定', count: '限時', fest: 'pride' }] : []),
   ]);
   const FLOWER_TABS = ['pride', 'halloween', 'main', 'filler', 'foliage'];
 
@@ -1604,6 +1603,20 @@
     cardBorn: { name: '生而為你 小插卡', card: true, w: 128, h: 82, svg: () => rbCard('生而為妳/你，無須抱歉', 'Born this way', true) },
     cardShine: { name: '攜手同行 小插卡', card: true, w: 128, h: 82, svg: () => rbCard('攜手同行，光芒萬丈', 'Walk together, shine bright', true) },
   });
+  // 節慶分頁的限定花材下方：同主題的裝飾貼紙與小插卡
+  function decoSectionHTML(set) {
+    const cell = k => `<button data-act="deco" data-val="${k}" class="deco-card flex flex-col items-center justify-center p-1.5" aria-label="加入${DECOS[k].name}">
+        <div class="pointer-events-none flex items-center justify-center" style="height:46px;width:100%">${DECOS[k].svg().replace('<svg ', `<svg style="max-height:46px;max-width:100%" `)}</div>
+        <div class="text-[10.5px] mt-1 leading-tight text-[#6B5A50]">${DECOS[k].name}</div></button>`;
+    return `<div class="mt-4 pt-3 border-t border-dashed border-[#DADAD3]">
+        <div class="flex items-center justify-between gap-2 mb-1.5">
+          <div class="min-w-0"><div class="text-[13px] font-medium">${set.title}裝飾貼紙與小插卡</div><div class="text-[10.5px] text-[#888] leading-tight">點一下貼到畫布 · 拖曳移動 · 右下角把手旋轉縮放 · × 刪除</div></div>
+          <button data-act="decoclear" class="shrink-0 rounded-full border border-[#D5D5CE] bg-white px-2.5 py-1 text-[11px]">清除裝飾</button></div>
+        <div class="text-[10.5px] tracking-[.12em] text-[#999] mb-1">小巧貼紙</div>
+        <div class="grid grid-cols-5 gap-1.5">${set.stickers.map(cell).join('')}</div>
+        <div class="text-[10.5px] tracking-[.12em] text-[#999] mt-2 mb-1">祝福小插卡</div>
+        <div class="grid grid-cols-2 gap-1.5 mb-2">${set.cards.map(cell).join('')}</div></div>`;
+  }
   const DECO_SETS = {
     pride: { title: '🏳️‍🌈 彩虹驕傲', stickers: ['prideFlag', 'prideHeart', 'peace', 'slogan'], cards: ['cardLove', 'cardBorn', 'cardShine'] },
     halloween: { title: '🎃 萬聖節', stickers: ['ghost', 'pumpkin', 'bat', 'web', 'star'], cards: ['cardTreat', 'cardMagic'] },
@@ -1804,7 +1817,7 @@
           <div class="text-[12px] font-medium mt-0.5 leading-tight">${m.name}</div><div class="text-[8px] tracking-[.06em] text-[#999] leading-tight uppercase truncate w-full">${m.en}</div>
           <div class="text-[9px] text-[#777] leading-[1.25] mt-0.5 line-clamp-2 min-h-[22px]">${m.meaning}</div>
           <div class="flex gap-[3px] mt-1 h-[7px] relative z-[1]">${m.colors.length > 1 ? m.colors.map(c => `<span class="mini-dot" style="background:${c.p}"></span>`).join('') : ''}</div>
-        </div>`).join('') + `</div>`;
+        </div>`).join('') + `</div>` + (DECO_SETS[state.tab] ? decoSectionHTML(DECO_SETS[state.tab]) : '');
     } else if (state.tab === 'wrap') {
       const w = state.wrap, [, styles, colors, sKey, cKey, cols] = WRAP_SUBS[state.wrapSub];
       const subBar = `<div class="flex gap-1.5">${Object.entries(WRAP_SUBS).map(([id, [label, , , , , , hint]]) =>
@@ -1829,19 +1842,6 @@
             <div class="text-[11px] font-medium mt-1 leading-tight">${st.short}</div>
             <div class="text-[8px] tracking-[.05em] text-[#999] leading-tight uppercase">${st.en}</div>
           </div>`).join('') + `</div>`;
-    } else if (state.tab === 'deco') {
-      const cell = (k, cls) => `<button data-act="deco" data-val="${k}" class="deco-card ${cls} flex flex-col items-center justify-center p-1.5" aria-label="加入${DECOS[k].name}">
-          <div class="pointer-events-none flex items-center justify-center" style="height:46px;width:100%">${DECOS[k].svg().replace('<svg ', `<svg style="max-height:46px;max-width:100%" `)}</div>
-          <div class="text-[10.5px] mt-1 leading-tight text-[#6B5A50]">${DECOS[k].name}</div></button>`;
-      const sets = [...FESTIVALS].sort((x, y) => (y === state.festival) - (x === state.festival)).map(f => DECO_SETS[f]);
-      panel.innerHTML = `<div class="swatch-bar sticky top-0 z-10 -mx-3 px-3 pt-1 pb-2 mb-1.5 border-b border-[#DADAD3] flex items-center justify-between gap-2">
-          <div class="min-w-0"><div class="text-[13px] font-medium">✨ 節慶裝飾貼紙與小插卡</div><div class="text-[10.5px] text-[#888] leading-tight">點一下貼到畫布 · 拖曳移動 · 右下角把手旋轉縮放 · × 刪除</div></div>
-          <button data-act="decoclear" class="shrink-0 rounded-full border border-[#D5D5CE] bg-white px-2.5 py-1 text-[11px]">清除裝飾</button></div>` +
-        sets.map(set => `<div class="text-[12px] font-medium text-[#6B5A50] mt-1 mb-1">${set.title}</div>
-          <div class="text-[10.5px] tracking-[.12em] text-[#999] mb-1">小巧貼紙</div>
-          <div class="grid grid-cols-5 gap-1.5">${set.stickers.map(k => cell(k, '')).join('')}</div>
-          <div class="text-[10.5px] tracking-[.12em] text-[#999] mt-2 mb-1">祝福小插卡</div>
-          <div class="grid grid-cols-2 gap-1.5 mb-3">${set.cards.map(k => cell(k, '')).join('')}</div>`).join('');
     } else {
       const c = state.card, sub = state.cardSub;
       const subs = [['style', '標籤款式與位置', '3款標籤'], ['text', '標籤文字', '含靈感金句'], ['scene', '空間背景', '5款平面場景']];
@@ -2125,7 +2125,7 @@
     setTimeout(() => { $('#receiptModal').classList.remove('hide'); petalRain(); SFX.unwrap(); prepareImages(); }, 200);
   }
   function backToEdit() {
-    prerender = null;
+    prerender = null; cutoutPre = null;
     $('#receiptModal').classList.add('hide');
     if (pvTilt) pvTilt.on = false;
     pvTilt = null;
@@ -2176,9 +2176,10 @@
         </div>
       </div>
 
-      <div class="mt-5 grid grid-cols-2 gap-2 w-[310px]">
+      <div class="mt-5 grid grid-cols-3 gap-2 w-[310px]">
         <button id="btnClaim" class="act rounded-2xl bg-[#4A403A] text-white">💐<span>領取花束</span><small class="text-[9.5px] opacity-70 mt-0.5">存到相簿</small></button>
         <button id="btnOrder" class="act rounded-2xl border border-[#CFCFC8] bg-white">🧾<span>下載訂單</span></button>
+        <button id="btnCutout" class="act rounded-2xl border border-[#CFCFC8] bg-white" style="background-image:repeating-conic-gradient(#EEEDE8 0 25%, #fff 0 50%);background-size:12px 12px">🌸<span>透明背景</span><small class="text-[9.5px] opacity-70 mt-0.5">去背 PNG</small></button>
       </div>
       <button id="btnBack" class="mt-3 text-[13px] text-[#777] underline underline-offset-4">← 返回修改</button>`;
 
@@ -2204,6 +2205,7 @@
     pv.append(pvScene, clone, pvGobo);
     $('#btnBack').onclick = backToEdit;
     $('#btnClaim').onclick = e => runAction(e.currentTarget, claimBouquet);
+    $('#btnCutout').onclick = e => runAction(e.currentTarget, cutoutBouquet);
     $('#btnOrder').onclick = e => runAction(e.currentTarget, downloadOrder);
   }
 
@@ -2486,12 +2488,13 @@
   }
   let orderMeta = { no: '', date: '' };
   // 產生花束圖（3 倍解析度）
-  async function bouquetCanvas() {
+  async function bouquetCanvas(transparent = false) {
       const comp = flowerComposite(), defs = $('#globalDefs defs').outerHTML, s = Math.min(canvasWrap.clientWidth / 360, canvasWrap.clientHeight / 480);
       return html2canvas(canvasWrap, {
-        scale: 3, backgroundColor: '#FAF6EE', useCORS: true, logging: false,
-        ignoreElements: el => el.matches?.('#toolbar, #btnLucky, #fortune, .mode-ui, #tiltHint, .sel-layer, .empty-hint, .magic, .deco-ui, .fx-spark'),
+        scale: 3, backgroundColor: transparent ? null : '#FAF6EE', useCORS: true, logging: false,
+        ignoreElements: el => el.matches?.('#toolbar, #btnLucky, #btnFest, #fortune, .mode-ui, #tiltHint, .sel-layer, .empty-hint, .magic, .deco-ui, .fx-spark' + (transparent ? ', #scene, #gobo' : '')),
         onclone: doc => {
+          if (transparent) doc.getElementById('canvasWrap').style.background = 'transparent'; // 去背：拿掉空間背景與光影
           const st = doc.getElementById('stage');
           st.classList.remove('is3d', 'is3d-out', 'xray');
           st.style.transform = `translate(-50%, -50%) scale(${s})`;
@@ -2548,7 +2551,7 @@
     SFX.success(); toast(`${label}已下載`);
   }
   // 預先產生圖片：開啟訂製單時就在背景畫好，點按鈕時可立刻呼叫分享（避免手機判定「不是使用者操作」）
-  let prerender = null;
+  let prerender = null, cutoutPre = null;
   function prepareImages() {
     prerender = (async () => {
       await new Promise(r => setTimeout(r, 900)); // 等訂製單動畫結束再畫，避免卡頓
@@ -2556,6 +2559,7 @@
       const canvas = await bouquetCanvas();
       return { canvas, blob: await toBlob(canvas) };
     })().catch(() => null);
+    cutoutPre = prerender.then(async () => { const canvas = await bouquetCanvas(true); return { canvas, blob: await toBlob(canvas) }; }).catch(() => null);
   }
   async function runAction(btn, fn) {
     if (!window.html2canvas) return toast('匯出元件載入中，請稍後再試');
@@ -2566,6 +2570,12 @@
   }
   const stamp = () => new Date().toISOString().slice(0, 10);
   // 💐 領取花束：下載花束成品圖
+  // 🌸 透明背景：只有花束（包裝、花材、小卡與貼紙），沒有空間背景，可直接疊到其他圖片上
+  async function cutoutBouquet() {
+    const pre = cutoutPre && await cutoutPre;
+    const canvas = pre?.canvas || await bouquetCanvas(true);
+    await saveImage(canvas, `my-bouquet-transparent-${stamp()}.png`, '透明背景花束', pre?.blob);
+  }
   async function claimBouquet() {
     const pre = prerender && await prerender;
     const canvas = pre?.canvas || await bouquetCanvas();
@@ -2797,7 +2807,7 @@
     const fi = FEST_INFO[state.festival];
     state.tab = fi.tab; state.activeMat = fi.mat;
     setFestival(state.festival);
-    setTimeout(() => toast(PRIDE ? '🏳️‍🌈 彩虹驕傲限定上線！也可以切換到 🎃 萬聖節主題' : '🎃 萬聖節限定上線：限定花材、包裝與萬聖夜背景'), 700);
+    setTimeout(() => toast(state.festival === 'halloween' && PRIDE ? '🎃 萬聖節限定上線！也可以切換到 🏳️‍🌈 彩虹驕傲主題' : PRIDE ? '🏳️‍🌈 彩虹驕傲限定上線！' : '🎃 萬聖節限定上線：限定花材、包裝與萬聖夜背景'), 700);
   }
   renderScene(); renderWraps(); renderRibbon(); renderTag(); renderFlowers(); renderWorkspace(); fit();
   bindTilt(canvasWrap, mainTilt); syncModeUI();
