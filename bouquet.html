@@ -79,6 +79,16 @@
   .lucky-menu button:active { transform: scale(.96); }
   .lucky-menu .lm-halloween { background: #FFF1E4; border-color: #E8B48A; color: #A8501E; }
   .lucky-menu .lm-pride { color: #5B4A8A; border-color: transparent; background-image: linear-gradient(#fff, #fff), linear-gradient(90deg, #E46A6A, #F09A55, #F2CF55, #74B874, #5F92D8, #9C72C8); background-origin: border-box; background-clip: padding-box, border-box; }
+  /* 總計包花數標籤 */
+  .bq-counter { position: absolute; top: 48px; left: 12px; z-index: 29; display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px;
+    font-size: 11px; line-height: 1.3; color: #6B5B52; background: rgba(255,255,255,.82); border: 1px solid #EADFD5; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); pointer-events: none; white-space: nowrap; }
+  .bq-counter b { font-weight: 600; color: #B4566E; display: inline-block; font-variant-numeric: tabular-nums; }
+  .bq-receipt .bq-num { display: inline-block; animation: bqBump .7s .5s cubic-bezier(.3,1.6,.5,1) both; }
+  .bq-counter b.bump { animation: bqBump .6s cubic-bezier(.3,1.6,.5,1); }
+  .bq-counter .plus { position: absolute; right: 8px; top: -2px; font-size: 11px; font-weight: 600; color: #B4566E; opacity: 0; pointer-events: none; }
+  .bq-counter .plus.go { animation: bqPlus 1s ease-out; }
+  @keyframes bqBump { 0% { transform: scale(1); } 35% { transform: scale(1.35) translateY(-2px); color: #E0708A; } 100% { transform: scale(1); } }
+  @keyframes bqPlus { 0% { opacity: 0; transform: translateY(4px); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
   .deco-card { border-radius: 14px; border: 1px solid #E8D9C8; background: #FFFCF7; transition: transform .15s, border-color .2s; }
   .deco-card:active { transform: scale(.94); }
   .stage.xray .layer-front { opacity: .4; }
@@ -310,6 +320,7 @@
     <!-- 🔮 今日幸運花束 -->
     <button id="btnLucky" class="lucky-btn absolute top-2 left-3 z-30 rounded-full px-3 py-[7px] text-[12px] leading-tight transition">✦ 今日幸運花束</button>
     <div id="luckyMenu" class="lucky-menu hide" role="menu" aria-label="選擇幸運花束主題"></div>
+    <div id="bqCounter" class="bq-counter" aria-live="polite"></div>
     <div id="fortune" class="fortune hide absolute left-3 right-3 bottom-2 z-[35] rounded-xl bg-white border border-[#D5D5CE] px-3 py-2" role="status" aria-live="polite">
       <div class="flex items-center gap-2">
         <div class="min-w-0 flex-1">
@@ -1942,6 +1953,49 @@
     clearTimeout(toastT); toastT = setTimeout(() => t.classList.add('hide'), 1600);
   }
 
+  /* ---------- 總計包花數 ----------
+     每次「完成包裝」成功 +1，存在 localStorage（重新整理不歸零）。
+     同一束花沒改動就重複按完成包裝不重複計數。
+     COUNTER_API 留空＝只算這台裝置；填入後端網址後改為全站總數：
+       GET  {COUNTER_API}       → { count: 1288 }
+       POST {COUNTER_API}/hit   → { count: 1289 } */
+  const BouquetCounter = (() => {
+    const COUNTER_API = '';
+    const KEY = 'totalBouquetsCreated';
+    const el = $('#bqCounter');
+    let total = 0, global = false, lastSig = null, pending = false;
+    try { total = parseInt(localStorage.getItem(KEY), 10) || 0; } catch {}
+    const sig = () => JSON.stringify([state.flowers.map(f => [f.type, f.color, f.rot, f.ext, f.v]), state.wrap, state.card]);
+    function render(bump) {
+      const n = total.toLocaleString('en-US');
+      el.innerHTML = global ? `🌸 全站已累積綻放 <b>${n}</b> 束幸福<span class="plus" aria-hidden="true">+1</span>`
+        : total ? `🌸 你已綻放 <b>${n}</b> 束幸福<span class="plus" aria-hidden="true">+1</span>` : `🌸 包好第一束，開始累積幸福`;
+      if (bump) {
+        const b = el.querySelector('b'), p = el.querySelector('.plus');
+        b?.classList.add('bump'); p?.classList.add('go');
+      }
+    }
+    async function api(path, opts) {
+      const r = await fetch(COUNTER_API + path, opts); if (!r.ok) throw r.status;
+      const n = parseInt((await r.json()).count, 10); if (!Number.isFinite(n)) throw 'bad';
+      return n;
+    }
+    if (COUNTER_API) api('').then(n => { total = n; global = true; render(); }).catch(() => {});
+    render();
+    return {
+      count() {
+        const s = sig(); if (s === lastSig) return; lastSig = s;
+        if (global) { total++; api('/hit', { method: 'POST' }).then(n => { total = n; render(); }).catch(() => {}); }
+        else { total++; try { localStorage.setItem(KEY, String(total)); } catch {} }
+        // 收據會蓋住畫布，標籤先更新數字，等返回編輯時再跳 +1
+        render(); pending = true;
+      },
+      get total() { return total; },
+      get global() { return global; },
+      replay() { if (pending) { pending = false; requestAnimationFrame(() => render(true)); } }
+    };
+  })();
+
   /* ---------- 畫布縮放與座標 ---------- */
   canvasWrap.addEventListener('scroll', () => { canvasWrap.scrollLeft = 0; canvasWrap.scrollTop = 0; });
   function fit() {
@@ -2128,6 +2182,7 @@
     if (!state.flowers.length) return toast('先放幾朵花進花束吧 🌷');
     state.finished = true; select(null); state.selDeco = null; renderDecos();
     app.classList.add('finished');
+    BouquetCounter.count();
     buildReceipt();
     setTimeout(() => { $('#receiptModal').classList.remove('hide'); petalRain(); SFX.unwrap(); prepareImages(); }, 200);
   }
@@ -2137,6 +2192,7 @@
     if (pvTilt) pvTilt.on = false;
     pvTilt = null;
     state.finished = false; app.classList.remove('finished');
+    BouquetCounter.replay();
   }
   function buildReceipt() {
     const now = new Date(), pad = n => String(n).padStart(2, '0');
@@ -2183,7 +2239,8 @@
         </div>
       </div>
 
-      <div class="mt-5 grid grid-cols-3 gap-2 w-[310px]">
+      <div class="bq-receipt mt-4 text-[12px] text-[#8A7468]">🌸 這是${BouquetCounter.global ? '全站' : '你'}綻放的第 <b class="bq-num text-[#B4566E] font-semibold">${BouquetCounter.total.toLocaleString('en-US')}</b> 束幸福</div>
+      <div class="mt-3 grid grid-cols-3 gap-2 w-[310px]">
         <button id="btnClaim" class="act rounded-2xl bg-[#4A403A] text-white">💐<span>領取花束</span><small class="text-[9.5px] opacity-70 mt-0.5">存到相簿</small></button>
         <button id="btnOrder" class="act rounded-2xl border border-[#CFCFC8] bg-white">🧾<span>下載訂單</span></button>
         <button id="btnCutout" class="act rounded-2xl border border-[#CFCFC8] bg-white" style="background-image:repeating-conic-gradient(#EEEDE8 0 25%, #fff 0 50%);background-size:12px 12px">🌸<span>透明背景</span><small class="text-[9.5px] opacity-70 mt-0.5">去背 PNG</small></button>
@@ -2513,7 +2570,7 @@
       const comp = flowerComposite(), defs = $('#globalDefs defs').outerHTML, s = Math.min(canvasWrap.clientWidth / 360, canvasWrap.clientHeight / 480);
       return html2canvas(canvasWrap, {
         scale: 3, backgroundColor: transparent ? null : '#FAF6EE', useCORS: true, logging: false,
-        ignoreElements: el => el.matches?.('#toolbar, #btnLucky, #luckyMenu, #fortune, .mode-ui, #tiltHint, .sel-layer, .empty-hint, .magic, .deco-ui, .fx-spark' + (transparent ? ', #scene, #gobo' : '')),
+        ignoreElements: el => el.matches?.('#toolbar, #btnLucky, #luckyMenu, #bqCounter, #fortune, .mode-ui, #tiltHint, .sel-layer, .empty-hint, .magic, .deco-ui, .fx-spark' + (transparent ? ', #scene, #gobo' : '')),
         onclone: doc => {
           if (transparent) doc.getElementById('canvasWrap').style.background = 'transparent'; // 去背：拿掉空間背景與光影
           const st = doc.getElementById('stage');
