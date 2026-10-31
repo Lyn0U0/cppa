@@ -72,10 +72,10 @@
   .pride-tab { background: #fff; color: #5B4A8A; border-color: transparent !important; background-image: linear-gradient(#fff, #fff), linear-gradient(90deg, #E46A6A, #F09A55, #F2CF55, #74B874, #5F92D8, #9C72C8); background-origin: border-box; background-clip: padding-box, border-box; }
   .pride-tab.on { color: #fff; background-image: linear-gradient(90deg, #E46A6A, #F09A55, #F2CF55, #74B874, #5F92D8, #9C72C8); text-shadow: 0 1px 2px rgba(0,0,0,.25); }
   /* 幸運花束選單：點按鈕往下展開，順序固定（萬聖節在前） */
-  .lucky-menu { position: absolute; top: 48px; left: 12px; z-index: 36; display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 16px;
+  .lucky-menu { position: absolute; top: 48px; left: 12px; z-index: 36; display: flex; flex-direction: row; gap: 8px; padding: 6px; border-radius: 999px;
     background: #fff; border: 1px solid #DAD6CC; box-shadow: 0 10px 24px -10px rgba(74,64,58,.4); transform-origin: 20px 0; transition: opacity .2s, transform .22s cubic-bezier(.3,1.3,.5,1); }
   .lucky-menu.hide { opacity: 0; transform: translateY(-6px) scale(.96); pointer-events: none; }
-  .lucky-menu button { text-align: left; white-space: nowrap; border-radius: 999px; padding: 7px 14px; font-size: 12.5px; border: 1px solid #E4DED2; background: #FFFCF7; }
+  .lucky-menu button { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 999px; font-size: 19px; line-height: 1; color: #4A403A; border: 1.5px solid #E4DED2; background: #FFFCF7; }
   .lucky-menu button:active { transform: scale(.96); }
   .lucky-menu .lm-halloween { background: #FFF1E4; border-color: #E8B48A; color: #A8501E; }
   .lucky-menu .lm-pride { color: #5B4A8A; border-color: transparent; background-image: linear-gradient(#fff, #fff), linear-gradient(90deg, #E46A6A, #F09A55, #F2CF55, #74B874, #5F92D8, #9C72C8); background-origin: border-box; background-clip: padding-box, border-box; }
@@ -2466,9 +2466,10 @@
   $('#btnLucky').onclick = () => {
     if (!FESTIVALS.length) return drawLucky(null);
     SFX.tap();
-    luckyMenu.innerHTML = FESTIVALS.map(f => `<button data-fest="${f}" class="lm-${f}" role="menuitem">${FEST_INFO[f].lucky}</button>`).join('') +
-      `<button data-fest="" role="menuitem">✦ 經典幸運花束</button>`;
+    luckyMenu.innerHTML = FESTIVALS.map(f => `<button data-fest="${f}" class="lm-${f}" role="menuitem" title="${FEST_INFO[f].lucky.replace(/^\S+\s/, '')}" aria-label="${FEST_INFO[f].lucky.replace(/^\S+\s/, '')}">${FEST_INFO[f].emoji}</button>`).join('') +
+      `<button data-fest="" role="menuitem" title="經典幸運花束" aria-label="經典幸運花束">✦</button>`;
     luckyMenu.classList.toggle('hide');
+    if (!luckyMenu.classList.contains('hide')) $('#toast').classList.add('hide');
   };
   luckyMenu.addEventListener('click', e => {
     const b = e.target.closest('[data-fest]'); if (!b) return;
@@ -2816,7 +2817,7 @@
   if (state.festival) {
     const fi = FEST_INFO[state.festival];
     state.tab = fi.tab; state.activeMat = fi.mat;
-    setTimeout(() => toast(PRIDE && HALLOWEEN ? '🎃 萬聖節 × 🏳️‍🌈 彩虹驕傲限定上線！點「今日幸運花束」選主題' : PRIDE ? '🏳️‍🌈 彩虹驕傲限定上線！' : '🎃 萬聖節限定上線：限定花材、包裝與萬聖夜背景'), 700);
+    setTimeout(() => $('#luckyMenu').classList.contains('hide') && toast(PRIDE && HALLOWEEN ? '🎃 萬聖節 × 🏳️‍🌈 彩虹驕傲限定上線！點「今日幸運花束」選主題' : PRIDE ? '🏳️‍🌈 彩虹驕傲限定上線！' : '🎃 萬聖節限定上線：限定花材、包裝與萬聖夜背景'), 700);
   }
   renderScene(); renderWraps(); renderRibbon(); renderTag(); renderFlowers(); renderWorkspace(); fit();
   bindTilt(canvasWrap, mainTilt); syncModeUI();
