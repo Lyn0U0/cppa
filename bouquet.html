@@ -1954,17 +1954,18 @@
   }
 
   /* ---------- 總計包花數 ----------
-     每次「完成包裝」成功 +1，存在 localStorage（重新整理不歸零）。
-     同一束花沒改動就重複按完成包裝不重複計數。
-     COUNTER_API 留空＝只算這台裝置；填入後端網址後改為全站總數：
-       GET  {COUNTER_API}       → { count: 1288 }
-       POST {COUNTER_API}/hit   → { count: 1289 } */
+     每次「完成包裝」成功 +1（同一束沒改動不重複計數）。
+     全站總數存在 Firebase Realtime Database 的 counter/total，透過 REST 讀寫，
+     並以串流（EventSource）即時接收別人包好的花。
+     連不上資料庫時退回只算這台裝置（localStorage）。 */
   const BouquetCounter = (() => {
-    const COUNTER_API = '';
+    const DB = 'https://happybouquet-b640e-default-rtdb.firebaseio.com';
+    const URL_TOTAL = DB + '/counter/total.json';
     const KEY = 'totalBouquetsCreated';
     const el = $('#bqCounter');
-    let total = 0, global = false, lastSig = null, pending = false;
-    try { total = parseInt(localStorage.getItem(KEY), 10) || 0; } catch {}
+    let mine = 0, total = 0, global = false, lastSig = null, pending = false;
+    try { mine = parseInt(localStorage.getItem(KEY), 10) || 0; } catch {}
+    total = mine;
     const sig = () => JSON.stringify([state.flowers.map(f => [f.type, f.color, f.rot, f.ext, f.v]), state.wrap, state.card]);
     function render(bump) {
       const n = total.toLocaleString('en-US');
@@ -1975,18 +1976,43 @@
         b?.classList.add('bump'); p?.classList.add('go');
       }
     }
-    async function api(path, opts) {
-      const r = await fetch(COUNTER_API + path, opts); if (!r.ok) throw r.status;
-      const n = parseInt((await r.json()).count, 10); if (!Number.isFinite(n)) throw 'bad';
-      return n;
+    // 收到全站新數字：別人包好花時直接跳動；收據開著時等返回再跳
+    function apply(n) {
+      if (!Number.isFinite(n)) return;
+      const was = global; global = true;
+      if (was && (n === total || (n < total && total - n < 3))) return; // 沒變化，或樂觀 +1 尚未寫回時不倒退
+      const grew = was && n > total;
+      total = n;
+      if (grew && !state.finished) render(true); else { render(); if (grew) pending = true; }
     }
-    if (COUNTER_API) api('').then(n => { total = n; global = true; render(); }).catch(() => {});
+    function listen() {
+      if (!('EventSource' in window)) return;
+      const es = new EventSource(URL_TOTAL);
+      const on = e => { try { const d = JSON.parse(e.data); if (d.path === '/') apply(Number(d.data) || 0); } catch {} };
+      es.addEventListener('put', on); es.addEventListener('patch', on);
+    }
+    async function increment() {
+      // 優先用伺服器端遞增（多人同時按也不會算錯）；被規則拒絕時改用 ETag 比對寫入
+      try {
+        const r = await fetch(URL_TOTAL, { method: 'PUT', body: JSON.stringify({ '.sv': { increment: 1 } }) });
+        if (r.ok) return apply(Number(await r.json()));
+      } catch {}
+      for (let i = 0; i < 5; i++) {
+        const g = await fetch(URL_TOTAL, { headers: { 'X-Firebase-ETag': 'true' } });
+        const tag = g.headers.get('ETag'), cur = Number(await g.json()) || 0;
+        const w = await fetch(URL_TOTAL, { method: 'PUT', headers: { 'if-match': tag }, body: String(cur + 1) });
+        if (w.ok) return apply(cur + 1);
+        if (w.status !== 412) return;
+      }
+    }
+    fetch(URL_TOTAL).then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(n => { apply(Number(n) || 0); listen(); }).catch(() => {});
     render();
     return {
       count() {
         const s = sig(); if (s === lastSig) return; lastSig = s;
-        if (global) { total++; api('/hit', { method: 'POST' }).then(n => { total = n; render(); }).catch(() => {}); }
-        else { total++; try { localStorage.setItem(KEY, String(total)); } catch {} }
+        mine++; try { localStorage.setItem(KEY, String(mine)); } catch {}
+        if (global) { total++; increment().catch(() => {}); } else total = mine;
         // 收據會蓋住畫布，標籤先更新數字，等返回編輯時再跳 +1
         render(); pending = true;
       },
