@@ -55,7 +55,21 @@
   .layer-front { transform-origin: 180px 340px; } /* 左右側翼以收腰中心為軸 */
   .layer-back { z-index: 1; } .layer-tissue { z-index: 2; } .layer-flowers { z-index: 3; } .layer-front { z-index: 4; }
   .layer-ribbon { z-index: 5; } .layer-card { z-index: 6; pointer-events: none; }
-  .layer-card.tucked { z-index: 3; } /* 插地標籤：與花材同層、在後面插入，前包裝紙（4）與緞帶（5）蓋住木棒下半段 */ .sel-layer { z-index: 7; pointer-events: none; }
+  .layer-card.tucked { z-index: 3; } /* 插地標籤：與花材同層、在後面插入，前包裝紙（4）與緞帶（5）蓋住木棒下半段 */ .sel-layer { z-index: 9; pointer-events: none; }
+  /* 🦇 萬聖節裝飾貼紙：在所有圖層最上面，可自由拖曳、旋轉、縮放 */
+  .layer-deco { z-index: 8; pointer-events: none; }
+  .stage.is3d .layer-deco { transform: translateZ(22px); }
+  .deco { position: absolute; pointer-events: auto; cursor: grab; touch-action: none; transform-origin: center; }
+  .deco > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .deco-ui { position: absolute; inset: 0; pointer-events: none; }
+  .deco-frame { position: absolute; inset: -6px; border: 1.4px dashed #C9682A; border-radius: 10px; }
+  .deco-btn { position: absolute; width: 26px; height: 26px; border-radius: 999px; background: #fff; border: 1px solid #C9682A; color: #C9682A;
+    display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; pointer-events: auto; touch-action: none; box-shadow: 0 2px 6px rgba(0,0,0,.15); }
+  .deco-btn::after { content: ""; position: absolute; inset: -9px; }
+  .deco-rot { right: -19px; bottom: -19px; cursor: grab; }
+  .deco-del { right: -19px; top: -19px; }
+  .deco-card { border-radius: 14px; border: 1px solid #E8D9C8; background: #FFFCF7; transition: transform .15s, border-color .2s; }
+  .deco-card:active { transform: scale(.94); }
   .stage.xray .layer-front { opacity: .4; }
 
   /* ---------- 微景深（圖鑑排列為主，只保留極輕微的前後層次） ---------- */
@@ -255,6 +269,7 @@
       <div class="layer layer-front fold-r" id="foldR"></div>
       <div class="layer layer-ribbon" id="layerRibbon"></div>
       <div class="layer layer-card" id="layerCard"></div>
+      <div class="layer layer-deco" id="layerDeco"></div>
       <div class="layer sel-layer">
         <div id="selBox" class="sel-box">
           <div id="selGuide" class="sel-guide"></div>
@@ -1001,7 +1016,7 @@
     { id: 'main', label: '主花', count: '16+2' }, { id: 'filler', label: '配花', count: '15' },
     { id: 'foliage', label: '葉材與果實', count: '14' }, { id: 'wrap', label: '包裝與緞帶' }, { id: 'card', label: '標籤與背景' },
   ];
-  if (HALLOWEEN) TABS.unshift({ id: 'halloween', label: '🎃 萬聖節限定', count: '限時' });
+  if (HALLOWEEN) TABS.unshift({ id: 'halloween', label: '🎃 萬聖節限定', count: '限時' }, { id: 'deco', label: '🦇 萬聖節裝飾', count: '7' });
   const FLOWER_TABS = ['halloween', 'main', 'filler', 'foliage'];
 
   // 智慧落點：對齊收腰支點的扇形槽位（角度 / 縮放）
@@ -1025,7 +1040,7 @@
     flowers: [], sel: null, mode3d: false, fortune: null, focus: null, activeMat: 'rose', tab: 'main', wrapSub: 'outer', finished: false,
     wrap: { outer: 'korean', outerColor: 'oat', tissue: 'tissue', tissueColor: 'white', tie: 'long', tieColor: 'cream' },
     card: { style: 'label', tone: 'white', to: '親愛的你', msg: '願你被世界溫柔以待', sign: '想你的人', x: 196, y: 372 },
-    cardSub: 'style', scene: 'paper',
+    cardSub: 'style', scene: 'paper', decos: [], selDeco: null,
     curColor: Object.fromEntries(Object.keys(MAT).map(k => [k, 0])),
   };
   let uidN = 1, lastAdded = null, scale = 1, drag = null;
@@ -1430,6 +1445,85 @@
     positionCard();
   }
   // 吊掛標籤離收腰處夠近時，自動用細線連到綁結
+  /* ================= 🦇 萬聖節裝飾貼紙與小插卡 ================= */
+  const DI = '#4A403A', DS = `stroke="${DI}" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"`;
+  const DECOS = {
+    ghost: { name: '小幽靈', w: 54, h: 62, svg: () => `<svg viewBox="0 0 60 70">
+      <path d="M30 4 C 14 4, 8 18, 8 32 L 8 61 Q 13 55, 18 61 Q 23 67, 28 61 Q 33 55, 38 61 Q 43 67, 48 61 Q 51 57, 52 61 L 52 32 C 52 18, 46 4, 30 4 Z" fill="#FBF8F2" ${DS}/>
+      <path d="M16 20 C 18 13, 23 10, 28 9" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+      <ellipse cx="22.5" cy="30" rx="3.2" ry="4.3" fill="#3A3340"/><ellipse cx="37.5" cy="30" rx="3.2" ry="4.3" fill="#3A3340"/>
+      <circle cx="23.6" cy="28.4" r="1.1" fill="#fff"/><circle cx="38.6" cy="28.4" r="1.1" fill="#fff"/>
+      <ellipse cx="16.5" cy="37" rx="3.2" ry="2" fill="#F2B8BE" opacity=".8"/><ellipse cx="43.5" cy="37" rx="3.2" ry="2" fill="#F2B8BE" opacity=".8"/>
+      <ellipse cx="30" cy="39" rx="2.6" ry="3.2" fill="#3A3340"/></svg>` },
+    pumpkin: { name: '笑臉小南瓜', w: 60, h: 54, svg: () => `<svg viewBox="0 0 70 62">
+      <path d="M35 14 C 33 8, 36 4, 41 3" fill="none" stroke="#6E7A3E" stroke-width="3.6" stroke-linecap="round"/><path d="M35 14 C 33 8, 36 4, 41 3" fill="none" stroke="${DI}" stroke-width="1.2" stroke-linecap="round" opacity=".6"/>
+      <path d="M40 10 C 47 4, 54 8, 51 13 C 47 12, 43 12, 40 10 Z" fill="#8FA77E" ${DS}/>
+      <ellipse cx="18" cy="36" rx="14" ry="20" fill="#D9742F" ${DS}/><ellipse cx="52" cy="36" rx="14" ry="20" fill="#D9742F" ${DS}/>
+      <ellipse cx="35" cy="36" rx="17" ry="22" fill="#E8873A" ${DS}/>
+      <path d="M22 26 C 24 18, 30 15, 34 15" fill="none" stroke="#F6C08A" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M23 31 L 29 25 L 31 33 Z M47 31 L 41 25 L 39 33 Z" fill="#4A2E1E"/>
+      <path d="M20 41 Q 35 55, 50 41 L 46 44 L 43 41 L 39 45 L 35 42 L 31 45 L 27 41 L 24 44 Z" fill="#4A2E1E"/>
+      <path d="M27 44 Q 35 49, 43 44" fill="none" stroke="#F2C84B" stroke-width="1" opacity=".7"/></svg>` },
+    bat: { name: '神祕小蝙蝠', w: 72, h: 36, svg: () => `<svg viewBox="0 0 80 40">
+      <path d="M40 15 C 34 6, 22 4, 12 10 C 14 14, 13 18, 8 20 C 14 21, 18 26, 18 31 C 24 26, 31 27, 35 31 C 36 26, 38 24, 40 24 C 42 24, 44 26, 45 31 C 49 27, 56 26, 62 31 C 62 26, 66 21, 72 20 C 67 18, 66 14, 68 10 C 58 4, 46 6, 40 15 Z" fill="#3A2F45" ${DS}/>
+      <path d="M34 14 L 35 7 L 38 12 L 42 12 L 45 7 L 46 14 C 47 21, 33 21, 34 14 Z" fill="#3A2F45" ${DS}/>
+      <circle cx="37.6" cy="15" r="1.7" fill="#F6E7B8"/><circle cx="42.4" cy="15" r="1.7" fill="#F6E7B8"/>
+      <path d="M38.6 19 L 39.2 21 L 39.8 19 M40.2 19 L 40.8 21 L 41.4 19" fill="#fff" stroke="#fff" stroke-width=".6"/>
+      <path d="M22 13 C 26 11, 30 12, 33 15 M58 13 C 54 11, 50 12, 47 15" fill="none" stroke="#6B5A80" stroke-width="1" stroke-linecap="round"/></svg>` },
+    web: { name: '蜘蛛網', w: 78, h: 78, svg: () => {
+      const rays = [0, 18, 36, 54, 72, 90].map(a => { const r = a * Math.PI / 180; return `M2 2 L ${f1(2 + 74 * Math.cos(r))} ${f1(2 + 74 * Math.sin(r))}`; }).join(' ');
+      const rings = [16, 30, 45, 60].map(R => { let d = ''; for (let i = 0; i <= 5; i++) { const a = i * 18 * Math.PI / 180, b = (i + 1) * 18 * Math.PI / 180, m = (a + b) / 2, rr = R * .86;
+        d += `${i ? '' : `M ${f1(2 + R * Math.cos(a))} ${f1(2 + R * Math.sin(a))}`}${i < 5 ? ` Q ${f1(2 + rr * Math.cos(m))} ${f1(2 + rr * Math.sin(m))} ${f1(2 + R * Math.cos(b))} ${f1(2 + R * Math.sin(b))}` : ''}`; } return d; }).join(' ');
+      return `<svg viewBox="0 0 80 80"><path d="${rays} ${rings}" fill="none" stroke="#5E556A" stroke-width="1.2" stroke-linecap="round"/>
+        <path d="M2 2 L 78 2 M2 2 L 2 78" fill="none" stroke="#5E556A" stroke-width="1.6"/>
+        <path d="M50 38 L 50 52" stroke="#5E556A" stroke-width=".8"/><ellipse cx="50" cy="56" rx="3.6" ry="4.4" fill="#2E2633"/><circle cx="50" cy="51" r="2.4" fill="#2E2633"/>
+        <path d="M47 54 l -5 -3 M47 57 l -5 1 M53 54 l 5 -3 M53 57 l 5 1 M47 59 l -4 4 M53 59 l 4 4" stroke="#2E2633" stroke-width="1" stroke-linecap="round"/>
+        <circle cx="49.2" cy="50.5" r=".6" fill="#fff"/><circle cx="50.8" cy="50.5" r=".6" fill="#fff"/></svg>`; } },
+    star: { name: '魔法星星', w: 50, h: 50, svg: () => `<svg viewBox="0 0 56 56">
+      <path d="M26 6 L 31.5 19.5 L 46 20.5 L 35 30 L 38.5 44.5 L 26 36.5 L 13.5 44.5 L 17 30 L 6 20.5 L 20.5 19.5 Z" fill="#F2C84B" ${DS}/>
+      <path d="M20 22 L 23 15" stroke="#FFF3C4" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="22" cy="28" r="1.4" fill="${DI}"/><circle cx="30" cy="28" r="1.4" fill="${DI}"/><path d="M23.5 32 Q 26 34.5, 28.5 32" fill="none" stroke="${DI}" stroke-width="1.2" stroke-linecap="round"/>
+      <path d="M47 6 L 48.5 10 L 52.5 11.5 L 48.5 13 L 47 17 L 45.5 13 L 41.5 11.5 L 45.5 10 Z" fill="#E7D3F2" ${DS}/>
+      <path d="M49 40 L 50 42.5 L 52.5 43.5 L 50 44.5 L 49 47 L 48 44.5 L 45.5 43.5 L 48 42.5 Z" fill="#F6E7B8" stroke="${DI}" stroke-width="1"/></svg>` },
+    cardTreat: { name: 'Trick or Treat 小插卡', card: true, w: 128, h: 82, svg: () => `<svg viewBox="0 0 128 82">
+      <rect x="1" y="1" width="126" height="80" rx="5" fill="#D7B98E" ${DS}/><rect x="6" y="6" width="116" height="70" rx="3" fill="none" stroke="${DI}" stroke-width=".8" stroke-dasharray="3 2.5" opacity=".55"/>
+      <path d="M1 1 L 127 1 L 127 81 L 1 81 Z" fill="url(#kraftTex)"/>
+      <text x="64" y="30" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="12.5" fill="${DI}">Trick or Treat?</text>
+      <text x="64" y="47" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="10.5" fill="${DI}">But you are the treat!</text>
+      <path d="M44 58 L 84 58" stroke="${DI}" stroke-width=".7" opacity=".5"/>
+      <g transform="translate(58 61) scale(.18)"><ellipse cx="18" cy="36" rx="14" ry="20" fill="#D9742F"/><ellipse cx="52" cy="36" rx="14" ry="20" fill="#D9742F"/><ellipse cx="35" cy="36" rx="17" ry="22" fill="#E8873A"/></g></svg>` },
+    cardMagic: { name: '微醺魔法小插卡', card: true, w: 128, h: 82, svg: () => `<svg viewBox="0 0 128 82">
+      <rect x="1" y="1" width="126" height="80" rx="5" fill="#3E2E52" ${DS}/><rect x="6" y="6" width="116" height="70" rx="3" fill="none" stroke="#E2C27A" stroke-width="1"/>
+      <path d="M100 13 A 7 7 0 1 0 106 24 A 5.6 5.6 0 1 1 100 13 Z" fill="#F3E2B8"/>
+      <path d="M18 18 l 1 2.4 l 2.4 1 l -2.4 1 l -1 2.4 l -1 -2.4 l -2.4 -1 l 2.4 -1 Z M110 58 l .8 2 l 2 .8 l -2 .8 l -.8 2 l -.8 -2 l -2 -.8 l 2 -.8 Z" fill="#E2C27A"/>
+      <text x="64" y="38" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="13.5" fill="#F3E2B8">Happy Halloween!</text>
+      <text x="64" y="56" text-anchor="middle" font-family="Inter, 'Noto Sans TC', 'PingFang TC', sans-serif" font-size="9" letter-spacing="1" fill="#E2C27A">帶著微醺魔法的一天</text></svg>` },
+  };
+  const DECO_STICKERS = ['ghost', 'pumpkin', 'bat', 'web', 'star'], DECO_CARDS = ['cardTreat', 'cardMagic'];
+  const getDeco = id => state.decos.find(d => d.id === id);
+  const decoTransform = d => `translate(-50%, -50%) rotate(${d.rot.toFixed(1)}deg) scale(${d.scale.toFixed(3)})`;
+  function decoHTML(d) {
+    const def = DECOS[d.kind], sel = d.id === state.selDeco && !state.finished, k = (1 / d.scale).toFixed(3);
+    return `<div class="deco" data-deco="${d.id}" style="left:${d.x}px;top:${d.y}px;width:${def.w}px;height:${def.h}px;transform:${decoTransform(d)}">${def.svg()}` +
+      (sel ? `<div class="deco-ui"><span class="deco-frame"></span>` +
+        `<button class="deco-btn deco-del" data-deco-del title="刪除" style="transform:scale(${k})">×</button>` +
+        `<button class="deco-btn deco-rot" data-deco-rot title="拖曳旋轉／縮放" style="transform:scale(${k})">⟳</button></div>` : '') + '</div>';
+  }
+  function renderDecos() { $('#layerDeco').innerHTML = state.decos.map(decoHTML).join(''); }
+  function applyDeco(d) {
+    const el = $('#layerDeco').querySelector(`[data-deco="${d.id}"]`); if (!el) return;
+    el.style.left = d.x + 'px'; el.style.top = d.y + 'px'; el.style.transform = decoTransform(d);
+    el.querySelectorAll('.deco-btn').forEach(b => (b.style.transform = `scale(${(1 / d.scale).toFixed(3)})`));
+  }
+  function selectDeco(id) { if (state.selDeco === id) return; state.selDeco = id; renderDecos(); }
+  function addDeco(kind) {
+    const def = DECOS[kind], d = { id: 'd' + uidN++, kind, x: 180 + (Math.random() - .5) * 60, y: (def.card ? 250 : 200) + (Math.random() - .5) * 60,
+      rot: def.card ? (Math.random() - .5) * 10 : (Math.random() - .5) * 24, scale: 1 };
+    state.decos.push(d); if (state.sel) select(null); state.selDeco = d.id; renderDecos();
+    sparkleAt($('#layerDeco').querySelector(`[data-deco="${d.id}"]`)); SFX.tap(); SFX.rustle(.6);
+    toast(`已貼上「${def.name}」：拖曳移動，右下角把手旋轉縮放`);
+  }
+
   const CARD_SCALE = .9; // 小卡整體縮小 10%，當作點綴不搶花的焦點
   function positionCard() {
     const c = state.card, el = $('#cardEl');
@@ -1578,7 +1672,7 @@
   /* ---------- 工作台 ---------- */
   function renderWorkspace() {
     $('#tabs').innerHTML = TABS.map(t =>
-      `<button data-act="tab" data-val="${t.id}" class="shrink-0 rounded-full px-3 py-1.5 text-[12.5px] border transition ${t.id === 'halloween' ? (state.tab === t.id ? 'bg-[#C9682A] text-white border-[#C9682A]' : 'bg-[#FFF1E4] text-[#A8501E] border-[#E8B48A]') : state.tab === t.id ? 'bg-[#333] text-white border-[#333]' : 'bg-white text-[#555] border-[#D5D5CE]'}">${t.label}${t.count ? `<span class="ml-1 text-[10px] opacity-70">${t.count}</span>` : ''}</button>`).join('');
+      `<button data-act="tab" data-val="${t.id}" class="shrink-0 rounded-full px-3 py-1.5 text-[12.5px] border transition ${t.id === 'halloween' || t.id === 'deco' ? (state.tab === t.id ? 'bg-[#C9682A] text-white border-[#C9682A]' : 'bg-[#FFF1E4] text-[#A8501E] border-[#E8B48A]') : state.tab === t.id ? 'bg-[#333] text-white border-[#333]' : 'bg-white text-[#555] border-[#D5D5CE]'}">${t.label}${t.count ? `<span class="ml-1 text-[10px] opacity-70">${t.count}</span>` : ''}</button>`).join('');
 
     const panel = $('#panel');
     const cardCls = on => `mat-card rounded-xl border bg-white p-1.5 flex flex-col items-center text-center cursor-pointer ${on ? 'is-active' : 'border-[#E0E0DA]'}`;
@@ -1619,6 +1713,17 @@
             <div class="text-[11px] font-medium mt-1 leading-tight">${st.short}</div>
             <div class="text-[8px] tracking-[.05em] text-[#999] leading-tight uppercase">${st.en}</div>
           </div>`).join('') + `</div>`;
+    } else if (state.tab === 'deco') {
+      const cell = (k, cls) => `<button data-act="deco" data-val="${k}" class="deco-card ${cls} flex flex-col items-center justify-center p-1.5" aria-label="加入${DECOS[k].name}">
+          <div class="pointer-events-none flex items-center justify-center" style="height:46px;width:100%">${DECOS[k].svg().replace('<svg ', `<svg style="max-height:46px;max-width:100%" `)}</div>
+          <div class="text-[10.5px] mt-1 leading-tight text-[#6B5A50]">${DECOS[k].name}</div></button>`;
+      panel.innerHTML = `<div class="swatch-bar sticky top-0 z-10 -mx-3 px-3 pt-1 pb-2 mb-1.5 border-b border-[#DADAD3] flex items-center justify-between gap-2">
+          <div class="min-w-0"><div class="text-[13px] font-medium">🦇 萬聖節裝飾貼紙</div><div class="text-[10.5px] text-[#888] leading-tight">點一下貼到畫布 · 拖曳移動 · 右下角把手旋轉縮放 · × 刪除</div></div>
+          <button data-act="decoclear" class="shrink-0 rounded-full border border-[#D5D5CE] bg-white px-2.5 py-1 text-[11px]">清除裝飾</button></div>
+        <div class="text-[11px] tracking-[.12em] text-[#999] mb-1">小巧貼紙</div>
+        <div class="grid grid-cols-5 gap-1.5">${DECO_STICKERS.map(k => cell(k, '')).join('')}</div>
+        <div class="text-[11px] tracking-[.12em] text-[#999] mt-2.5 mb-1">祝福小插卡</div>
+        <div class="grid grid-cols-2 gap-1.5">${DECO_CARDS.map(k => cell(k, '')).join('')}</div>`;
     } else {
       const c = state.card, sub = state.cardSub;
       const subs = [['style', '標籤款式與位置', '3款標籤'], ['text', '標籤文字', '含靈感金句'], ['scene', '空間背景', '5款平面場景']];
@@ -1736,6 +1841,20 @@
     if (state.finished || state.mode3d || e.target.closest('#toolbar, .mode-ui, #btnLucky, #fortune')) return;
     const handle = e.target.closest('#handle');
     const fl = e.target.closest('.flower');
+    const decoEl = e.target.closest('.deco');
+    if (decoEl) {
+      const d = getDeco(decoEl.dataset.deco), p = toStage(e);
+      if (e.target.closest('[data-deco-del]')) { state.decos = state.decos.filter(x => x !== d); state.selDeco = null; renderDecos(); SFX.tap(); return; }
+      if (state.sel) select(null);
+      if (e.target.closest('[data-deco-rot]')) {
+        drag = { mode: 'deco-rot', d, pid: e.pointerId, a0: Math.atan2(p.y - d.y, p.x - d.x), r0: Math.max(12, Math.hypot(p.x - d.x, p.y - d.y)), rot0: d.rot, s0: d.scale };
+      } else {
+        if (state.selDeco !== d.id) { selectDeco(d.id); SFX.tap(); }
+        drag = { mode: 'deco', d, pid: e.pointerId, px: p.x, py: p.y, x0: d.x, y0: d.y, moved: false };
+      }
+      e.preventDefault(); return;
+    }
+    if (state.selDeco) selectDeco(null);
     if (handle && state.sel) {
       const f = get(state.sel), p = toStage(e);
       drag = { mode: 'rot', f, pid: e.pointerId, a0: knotAngle(p), rot0: f.rot };
@@ -1756,6 +1875,20 @@
   window.addEventListener('pointermove', e => {
     if (!drag || e.pointerId !== drag.pid) return;
     const p = toStage(e), f = drag.f;
+    if (drag.mode === 'deco' || drag.mode === 'deco-rot') {
+      const d = drag.d;
+      if (drag.mode === 'deco') {
+        const dx = p.x - drag.px, dy = p.y - drag.py;
+        if (!drag.moved) { if (Math.hypot(dx, dy) < 3) return; drag.moved = true; SFX.rustle(.4); }
+        d.x = clamp(drag.x0 + dx, -20, 380); d.y = clamp(drag.y0 + dy, -20, 500);
+      } else {
+        const r0 = d.rot;
+        d.rot = drag.rot0 + (Math.atan2(p.y - d.y, p.x - d.x) - drag.a0) * 180 / Math.PI;
+        d.scale = clamp(drag.s0 * Math.hypot(p.x - d.x, p.y - d.y) / drag.r0, .4, 2.6);
+        SFX.slide(d.rot, Math.min(4, Math.abs(d.rot - r0)));
+      }
+      return applyDeco(d);
+    }
     if (drag.mode === 'card') {
       const dx = p.x - drag.px, dy = p.y - drag.py;
       if (!drag.moved) { if (Math.hypot(dx, dy) < 4) return; drag.moved = true; $('#cardEl').classList.add('dragging'); }
@@ -1835,6 +1968,8 @@
       const m = $('#cMsg'); if (m) m.value = state.card.msg;
       return;
     } else if (act === 'scene') { state.scene = val; renderScene(); }
+    else if (act === 'deco') return addDeco(val);
+    else if (act === 'decoclear') { if (!state.decos.length) return toast('畫布上還沒有裝飾'); state.decos = []; state.selDeco = null; renderDecos(); toast('已清除所有裝飾'); }
     renderWorkspace();
   });
 
@@ -1855,8 +1990,9 @@
 
   /* ---------- 頂部列 ---------- */
   $('#btnClear').onclick = () => {
-    if (!state.flowers.length) return toast('花束已經是空的');
+    if (!state.flowers.length && !state.decos.length) return toast('花束已經是空的');
     state.flowers = []; state.sel = null; state.focus = null; state.fortune = null; hideFortune();
+    state.decos = []; state.selDeco = null; renderDecos();
     renderFlowers(); renderWorkspace(); toast('已清空，重新開始吧');
   };
   $('#btnShuffle').onclick = reshuffle;
@@ -1865,7 +2001,7 @@
   /* ---------- 完成：花語收據 ---------- */
   function finish() {
     if (!state.flowers.length) return toast('先放幾朵花進花束吧 🌷');
-    state.finished = true; select(null);
+    state.finished = true; select(null); state.selDeco = null; renderDecos();
     app.classList.add('finished');
     buildReceipt();
     setTimeout(() => { $('#receiptModal').classList.remove('hide'); petalRain(); SFX.unwrap(); prepareImages(); }, 200);
@@ -1930,14 +2066,14 @@
 
     // 成品照片：以平面圖鑑方式呈現（不傾斜）
     const clone = stage.cloneNode(true), pv = $('#pv');
-    clone.querySelectorAll('.sel-layer, .empty-hint').forEach(n => n.remove());
+    clone.querySelectorAll('.sel-layer, .empty-hint, .deco-ui').forEach(n => n.remove());
     clone.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
     clone.removeAttribute('id'); clone.classList.remove('xray', 'is3d', 'is3d-out');
     clone.querySelectorAll('.flower').forEach(el => { const f = get(el.dataset.id); el.style.transform = `rotate(${f.rot}deg) scale(${f.scale})`; });
     // 量出整束花（包裝＋花材＋小卡）在畫布座標的實際範圍，再等比縮放進預覽框並保留 14px 留白
     const sr = stage.getBoundingClientRect(), k = sr.width / 360;
     let x0 = 0, y0 = 0, x1 = 360, y1 = 480;
-    stage.querySelectorAll('.flower svg > *:not(defs), #cardEl').forEach(el => {
+    stage.querySelectorAll('.flower svg > *:not(defs), #cardEl, .deco > svg').forEach(el => {
       const r = el.getBoundingClientRect(); if (!r.width && !r.height) return;
       x0 = Math.min(x0, (r.left - sr.left) / k); x1 = Math.max(x1, (r.right - sr.left) / k);
       y0 = Math.min(y0, (r.top - sr.top) / k); y1 = Math.max(y1, (r.bottom - sr.top) / k);
@@ -2225,7 +2361,7 @@
       const comp = flowerComposite(), defs = $('#globalDefs defs').outerHTML, s = Math.min(canvasWrap.clientWidth / 360, canvasWrap.clientHeight / 480);
       return html2canvas(canvasWrap, {
         scale: 3, backgroundColor: '#FAF6EE', useCORS: true, logging: false,
-        ignoreElements: el => el.matches?.('#toolbar, #btnLucky, #fortune, .mode-ui, #tiltHint, .sel-layer, .empty-hint, .magic'),
+        ignoreElements: el => el.matches?.('#toolbar, #btnLucky, #fortune, .mode-ui, #tiltHint, .sel-layer, .empty-hint, .magic, .deco-ui, .fx-spark'),
         onclone: doc => {
           const st = doc.getElementById('stage');
           st.classList.remove('is3d', 'is3d-out', 'xray');
