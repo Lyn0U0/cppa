@@ -71,8 +71,14 @@
   /* 🏳️‍🌈 彩虹驕傲分頁與節慶切換 */
   .pride-tab { background: #fff; color: #5B4A8A; border-color: transparent !important; background-image: linear-gradient(#fff, #fff), linear-gradient(90deg, #E46A6A, #F09A55, #F2CF55, #74B874, #5F92D8, #9C72C8); background-origin: border-box; background-clip: padding-box, border-box; }
   .pride-tab.on { color: #fff; background-image: linear-gradient(90deg, #E46A6A, #F09A55, #F2CF55, #74B874, #5F92D8, #9C72C8); text-shadow: 0 1px 2px rgba(0,0,0,.25); }
-  .fest-switch { position: absolute; top: 8px; z-index: 30; width: 32px; height: 32px; border-radius: 999px; background: #fff; border: 1px solid #CFCFC8; font-size: 15px; display: flex; align-items: center; justify-content: center; }
-  .fest-switch:active { transform: scale(.92); }
+  /* 幸運花束選單：點按鈕往下展開，順序固定（萬聖節在前） */
+  .lucky-menu { position: absolute; top: 48px; left: 12px; z-index: 36; display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 16px;
+    background: #fff; border: 1px solid #DAD6CC; box-shadow: 0 10px 24px -10px rgba(74,64,58,.4); transform-origin: 20px 0; transition: opacity .2s, transform .22s cubic-bezier(.3,1.3,.5,1); }
+  .lucky-menu.hide { opacity: 0; transform: translateY(-6px) scale(.96); pointer-events: none; }
+  .lucky-menu button { text-align: left; white-space: nowrap; border-radius: 999px; padding: 7px 14px; font-size: 12.5px; border: 1px solid #E4DED2; background: #FFFCF7; }
+  .lucky-menu button:active { transform: scale(.96); }
+  .lucky-menu .lm-halloween { background: #FFF1E4; border-color: #E8B48A; color: #A8501E; }
+  .lucky-menu .lm-pride { color: #5B4A8A; border-color: transparent; background-image: linear-gradient(#fff, #fff), linear-gradient(90deg, #E46A6A, #F09A55, #F2CF55, #74B874, #5F92D8, #9C72C8); background-origin: border-box; background-clip: padding-box, border-box; }
   .deco-card { border-radius: 14px; border: 1px solid #E8D9C8; background: #FFFCF7; transition: transform .15s, border-color .2s; }
   .deco-card:active { transform: scale(.94); }
   .stage.xray .layer-front { opacity: .4; }
@@ -302,7 +308,7 @@
 
     <!-- 🔮 今日幸運花束 -->
     <button id="btnLucky" class="lucky-btn absolute top-2 left-3 z-30 rounded-full px-3 py-[7px] text-[12px] leading-tight transition">✦ 今日幸運花束</button>
-    <button id="btnFest" class="fest-switch hidden" title="切換節慶主題"></button>
+    <div id="luckyMenu" class="lucky-menu hide" role="menu" aria-label="選擇幸運花束主題"></div>
     <div id="fortune" class="fortune hide absolute left-3 right-3 top-[48px] z-[35] rounded-xl bg-white border border-[#D5D5CE] px-3 py-2" role="status" aria-live="polite">
       <div class="flex items-center gap-2">
         <div class="min-w-0 flex-1">
@@ -1955,7 +1961,7 @@
 
   /* ---------- 拖曳 / 旋轉縮放 ---------- */
   canvasWrap.addEventListener('pointerdown', e => {
-    if (state.finished || state.mode3d || e.target.closest('#toolbar, .mode-ui, #btnLucky, #fortune')) return;
+    if (state.finished || state.mode3d || e.target.closest('#toolbar, .mode-ui, #btnLucky, #luckyMenu, #fortune')) return;
     const handle = e.target.closest('#handle');
     const fl = e.target.closest('.flower');
     const decoEl = e.target.closest('.deco');
@@ -2438,7 +2444,8 @@
   // 抽花時已自動把短句寫進小卡，這裡直接帶去編輯
   $('#fortuneToCard').onclick = () => { hideFortune(); openCardText(); };
 
-  async function drawLucky() {
+  async function drawLucky(fest) {
+    if (fest !== undefined) state.festival = fest; // 選單指定主題（null＝經典主題）
     if (luckyBusy || state.finished) return;
     luckyBusy = true; $('#btnLucky').disabled = true;
     select(null); hideFortune();
@@ -2453,7 +2460,21 @@
     renderFlowers(); renderWorkspace();
     setTimeout(() => { showFortune(th); luckyBusy = false; $('#btnLucky').disabled = false; }, 650);
   }
-  $('#btnLucky').onclick = drawLucky;
+  // 有節慶時：按鈕點下去往下展開選單（萬聖節在前）；沒有節慶時直接抽
+  const luckyMenu = $('#luckyMenu');
+  const closeLuckyMenu = () => luckyMenu.classList.add('hide');
+  $('#btnLucky').onclick = () => {
+    if (!FESTIVALS.length) return drawLucky(null);
+    SFX.tap();
+    luckyMenu.innerHTML = FESTIVALS.map(f => `<button data-fest="${f}" class="lm-${f}" role="menuitem">${FEST_INFO[f].lucky}</button>`).join('') +
+      `<button data-fest="" role="menuitem">✦ 經典幸運花束</button>`;
+    luckyMenu.classList.toggle('hide');
+  };
+  luckyMenu.addEventListener('click', e => {
+    const b = e.target.closest('[data-fest]'); if (!b) return;
+    closeLuckyMenu(); drawLucky(b.dataset.fest || null);
+  });
+  document.addEventListener('pointerdown', e => { if (!e.target.closest('#luckyMenu, #btnLucky')) closeLuckyMenu(); });
 
   /* ================= ⤓ 匯出 PNG（html2canvas） ================= */
   // html2canvas 不支援 clip-path 與 3D transform：匯出前在複本裡把花材合成成一張帶 clipPath 的 SVG，並攤平成 2D
@@ -2491,7 +2512,7 @@
       const comp = flowerComposite(), defs = $('#globalDefs defs').outerHTML, s = Math.min(canvasWrap.clientWidth / 360, canvasWrap.clientHeight / 480);
       return html2canvas(canvasWrap, {
         scale: 3, backgroundColor: transparent ? null : '#FAF6EE', useCORS: true, logging: false,
-        ignoreElements: el => el.matches?.('#toolbar, #btnLucky, #btnFest, #fortune, .mode-ui, #tiltHint, .sel-layer, .empty-hint, .magic, .deco-ui, .fx-spark' + (transparent ? ', #scene, #gobo' : '')),
+        ignoreElements: el => el.matches?.('#toolbar, #btnLucky, #luckyMenu, #fortune, .mode-ui, #tiltHint, .sel-layer, .empty-hint, .magic, .deco-ui, .fx-spark' + (transparent ? ', #scene, #gobo' : '')),
         onclone: doc => {
           if (transparent) doc.getElementById('canvasWrap').style.background = 'transparent'; // 去背：拿掉空間背景與光影
           const st = doc.getElementById('stage');
@@ -2789,24 +2810,13 @@
   }
 
   /* ================= 初始化 ================= */
-  // 節慶主題：彩虹驕傲與萬聖節並列，可用左上角小按鈕或分頁自由切換
-  function setFestival(f, announce) {
-    if (!FEST_INFO[f]) return;
-    state.festival = f;
-    const fi = FEST_INFO[f], other = FESTIVALS.find(x => x !== f);
-    $('#btnLucky').textContent = fi.lucky;
-    const fb = $('#btnFest');
-    fb.classList.toggle('hidden', !other);
-    if (other) { fb.textContent = FEST_INFO[other].emoji; fb.title = `切換到${other === 'pride' ? '彩虹驕傲' : '萬聖節'}主題`; }
-    requestAnimationFrame(() => (fb.style.left = `${$('#btnLucky').offsetLeft + $('#btnLucky').offsetWidth + 6}px`));
-    if (announce) { state.tab = fi.tab; state.activeMat = fi.mat; renderWorkspace(); toast(f === 'pride' ? '🏳️‍🌈 已切換到彩虹驕傲主題' : '🎃 已切換到萬聖節主題'); }
-  }
-  $('#btnFest').onclick = () => { SFX.tap(); setFestival(FESTIVALS.find(x => x !== state.festival), true); };
+  // 節慶主題：分頁切換花材；幸運花束按鈕固定不變，點下去展開選單選主題
+  function setFestival(f) { if (FEST_INFO[f]) state.festival = f; }
+  if (FESTIVALS.length) $('#btnLucky').textContent = '✦ 今日幸運花束 ▾';
   if (state.festival) {
     const fi = FEST_INFO[state.festival];
     state.tab = fi.tab; state.activeMat = fi.mat;
-    setFestival(state.festival);
-    setTimeout(() => toast(state.festival === 'halloween' && PRIDE ? '🎃 萬聖節限定上線！也可以切換到 🏳️‍🌈 彩虹驕傲主題' : PRIDE ? '🏳️‍🌈 彩虹驕傲限定上線！' : '🎃 萬聖節限定上線：限定花材、包裝與萬聖夜背景'), 700);
+    setTimeout(() => toast(PRIDE && HALLOWEEN ? '🎃 萬聖節 × 🏳️‍🌈 彩虹驕傲限定上線！點「今日幸運花束」選主題' : PRIDE ? '🏳️‍🌈 彩虹驕傲限定上線！' : '🎃 萬聖節限定上線：限定花材、包裝與萬聖夜背景'), 700);
   }
   renderScene(); renderWraps(); renderRibbon(); renderTag(); renderFlowers(); renderWorkspace(); fit();
   bindTilt(canvasWrap, mainTilt); syncModeUI();
