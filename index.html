@@ -1600,7 +1600,6 @@
       <rect x="12" y="29" width="76" height="3" rx="1.5" fill="url(#rbRing)"/>
       <text x="50" y="22" text-anchor="middle" font-family="Inter, 'Helvetica Neue', sans-serif" font-weight="700" font-size="11.5" letter-spacing="1.2" fill="${DI}">LOVE IS LOVE</text></svg>` },
     cardLove: { name: 'Love is Love 小插卡', card: true, w: 128, h: 82, svg: () => rbCard('Love is Love.', '願你被世界溫柔相待') },
-    cardBorn: { name: '生而為你 小插卡', card: true, w: 128, h: 82, svg: () => rbCard('生而為妳/你，無須抱歉', 'Born this way', true) },
     cardShine: { name: '攜手同行 小插卡', card: true, w: 128, h: 82, svg: () => rbCard('攜手同行，光芒萬丈', 'Walk together, shine bright', true) },
   });
   // 節慶分頁的限定花材下方：同主題的裝飾貼紙與小插卡
@@ -1618,7 +1617,7 @@
         <div class="grid grid-cols-2 gap-1.5 mb-2">${set.cards.map(cell).join('')}</div></div>`;
   }
   const DECO_SETS = {
-    pride: { title: '🏳️‍🌈 彩虹驕傲', stickers: ['prideFlag', 'prideHeart', 'peace', 'slogan'], cards: ['cardLove', 'cardBorn', 'cardShine'] },
+    pride: { title: '🏳️‍🌈 彩虹驕傲', stickers: ['prideFlag', 'prideHeart', 'peace', 'slogan'], cards: ['cardLove', 'cardShine'] },
     halloween: { title: '🎃 萬聖節', stickers: ['ghost', 'pumpkin', 'bat', 'web', 'star'], cards: ['cardTreat', 'cardMagic'] },
   };
   const getDeco = id => state.decos.find(d => d.id === id);
