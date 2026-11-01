@@ -404,7 +404,33 @@
 </div>
 
 <script>
-(() => {
+(async () => {
+  /* ---------- 限時主題開關（由 /admin 後台控制） ----------
+     開關存在 Firebase Realtime Database 的 config/festivals，所有訪客共用。
+     先用上次讀到的快取立即顯示；背景讀到新設定且使用者還沒開始包花時重新載入一次。
+     第一次造訪沒有快取時最多等 1.5 秒，讀不到就視為全部關閉。 */
+  const FEST_CFG = await (() => {
+    const URL_CFG = 'https://happybouquet-b640e-default-rtdb.firebaseio.com/config/festivals.json';
+    const KEY = 'bouquet.festivals', OFF = { halloween: false, pride: false };
+    let cached = null;
+    try { cached = JSON.parse(localStorage.getItem(KEY)); } catch {}
+    const remote = fetch(URL_CFG, { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)).then(v => {
+      const c = { halloween: !!v?.halloween, pride: !!v?.pride };
+      try { localStorage.setItem(KEY, JSON.stringify(c)); } catch {}
+      return c;
+    });
+    if (cached && typeof cached === 'object') {
+      remote.then(c => {
+        if (c.halloween === !!cached.halloween && c.pride === !!cached.pride) return;
+        let busy = true; try { busy = state.flowers.length > 0 || state.finished; } catch {}
+        let once = false; try { once = sessionStorage.getItem('bouquet.festReload') === '1'; sessionStorage.setItem('bouquet.festReload', '1'); } catch {}
+        if (!busy && !once) location.reload();
+      }).catch(() => {});
+      return Promise.resolve({ halloween: !!cached.halloween, pride: !!cached.pride });
+    }
+    return Promise.race([remote, new Promise(r => setTimeout(() => r(OFF), 1500))]).catch(() => OFF);
+  })();
+
   /* ================= 繪圖工具（極簡植物圖鑑：1px #555 線條＋平面色塊，無漸層） ================= */
   const INK = '#4A403A'; // 溫柔的深棕色細線（法式繪本感）
   const S = `stroke="${INK}" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"`;
@@ -609,16 +635,9 @@
         [125, 235, 180].map(a => { const r = a * Math.PI / 180; return line(`M${f1(60 + 4 * Math.sin(r))} ${f1(62 - 4 * Math.cos(r))} L${f1(60 + 15 * Math.sin(r))} ${f1(62 - 15 * Math.cos(r))}`).replace('stroke="' + INK + '"', 'stroke="#E9B53E"').replace('stroke-width="1"', 'stroke-width="2.4"'); }).join('') +
         [-32, 32, 0].map(a => petal(60, 62, a, 0, 'cup', 32, 9, soft(c.l, c.p), .7)).join('') },
   };
-  // 🎃 萬聖節限時：10/24 ~ 11/2 自動開啟；網址加 ?halloween 可強制預覽
-  const HALLOWEEN = (() => {
-    const d = new Date(), m = d.getMonth() + 1, day = d.getDate();
-    return (m === 10 && day >= 24) || (m === 11 && day <= 2) || /[?&]halloween\b/.test(location.search);
-  })();
-  // 🏳️‍🌈 台灣同志遊行（10 月最後一個週末前後）：10/24 ~ 11/2；網址加 ?pride 可強制預覽
-  const PRIDE = (() => {
-    const d = new Date(), m = d.getMonth() + 1, day = d.getDate();
-    return (m === 10 && day >= 24) || (m === 11 && day <= 2) || /[?&]pride\b/.test(location.search);
-  })();
+  // 🎃 萬聖節／🏳️‍🌈 彩虹驕傲：由後台開關決定；網址加 ?halloween、?pride 可在關閉時預覽
+  const HALLOWEEN = FEST_CFG.halloween || /[?&]halloween\b/.test(location.search);
+  const PRIDE = FEST_CFG.pride || /[?&]pride\b/.test(location.search);
   const FESTIVALS = [...(HALLOWEEN ? ['halloween'] : []), ...(PRIDE ? ['pride'] : [])];
   const FEST_INFO = { pride: { emoji: '🏳️‍🌈', tab: 'pride', lucky: '🏳️‍🌈 彩虹幸運花束', mat: 'prRose' }, halloween: { emoji: '🎃', tab: 'halloween', lucky: '🎃 萬聖幸運花束', mat: 'darkrose' } };
   // 彩虹限定主花：紅玫瑰、橘向日葵、黃鬱金香、紫繡球（沿用原花型，含盛開／半開／花苞）
