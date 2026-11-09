@@ -1,8 +1,18 @@
 import { Download, LoaderCircle, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import type { ExportFormat, ExportOptions } from '../engine/exporter';
+import { downloadBlob, type ExportFormat, type ExportOptions } from '../engine/exporter';
+
+export interface ExportResultView {
+  url: string;
+  fileName: string;
+  width: number;
+  height: number;
+  size: string;
+  blob: Blob;
+}
 
 interface ExportDialogProps {
+  result?: ExportResultView | null;
   open: boolean;
   width: number;
   height: number;
@@ -14,7 +24,7 @@ interface ExportDialogProps {
   onExport: (opts: ExportOptions) => void;
 }
 
-export function ExportDialog({ open, width, height, busy, progress, error, defaultOptions, onClose, onExport }: ExportDialogProps) {
+export function ExportDialog({ result, open, width, height, busy, progress, error, defaultOptions, onClose, onExport }: ExportDialogProps) {
   const [format, setFormat] = useState<ExportFormat>(defaultOptions.format);
   const [quality, setQuality] = useState(defaultOptions.quality);
 
@@ -44,6 +54,33 @@ export function ExportDialog({ open, width, height, busy, progress, error, defau
           </button>
         </div>
 
+        {result ? (
+          <div className="space-y-3">
+            <img src={result.url} alt="匯出結果" className="max-h-[45vh] w-full rounded-lg object-contain bg-paper" />
+            <p className="text-sm">
+              <span className="font-medium">匯出完成</span> · {result.fileName}
+              <span className="block text-xs text-muted">{result.width} × {result.height} px · {result.size}</span>
+            </p>
+            <p className="rounded-lg bg-paper px-3 py-2 text-xs leading-relaxed text-muted">
+              若沒有出現下載，可按「再次下載」，或在上方圖片按右鍵選「另存圖片」（手機請長按圖片）。
+            </p>
+            <button
+              type="button"
+              onClick={() => void downloadBlob(result.blob, result.fileName)}
+              className="flex w-full items-center justify-center gap-2 rounded-full border border-line py-2.5 text-sm hover:border-ink/40"
+            >
+              <Download size={15} /> 再次下載
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full rounded-full bg-ink py-3 text-sm font-medium text-paper hover:bg-ink/90"
+            >
+              完成
+            </button>
+          </div>
+        ) : (
+        <>
         <dl className="mb-4 grid grid-cols-2 gap-2 rounded-lg bg-paper px-3 py-2.5 text-sm">
           <dt className="text-muted">輸出尺寸</dt>
           <dd className="text-right tabular-nums">{width} × {height} px</dd>
@@ -112,6 +149,8 @@ export function ExportDialog({ open, width, height, busy, progress, error, defau
           {busy ? <LoaderCircle size={16} className="animate-spin" /> : <Download size={16} />}
           {busy ? '匯出中…' : `匯出 ${format === 'jpeg' ? 'JPG' : 'PNG'}`}
         </button>
+        </>
+        )}
       </div>
     </div>
   );

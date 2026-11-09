@@ -3,12 +3,13 @@ import { ImagePlus, LoaderCircle } from 'lucide-react';
 interface DropZoneProps {
   loading: boolean;
   onPick: () => void;
+  onSample: () => void;
 }
 
 /** Empty state shown before a photo is loaded. */
-export function DropZone({ loading, onPick }: DropZoneProps) {
+export function DropZone({ loading, onPick, onSample }: DropZoneProps) {
   return (
-    <div className="flex h-full items-center justify-center p-6">
+    <div className="flex h-full flex-col items-center justify-center gap-4 p-6">
       <button
         type="button"
         onClick={onPick}
@@ -23,6 +24,14 @@ export function DropZone({ loading, onPick }: DropZoneProps) {
         <span className="mt-6 max-w-sm text-xs leading-relaxed text-muted/80">
           所有處理都在你的瀏覽器本機完成，照片不會上傳到任何伺服器。調色只改變像素顏色，不會改動構圖或影像內容。
         </span>
+      </button>
+      <button
+        type="button"
+        onClick={onSample}
+        disabled={loading}
+        className="rounded-full border border-line bg-surface px-4 py-2 text-sm text-ink/80 hover:border-ink/30 disabled:opacity-50"
+      >
+        沒有照片？試用範例照片
       </button>
     </div>
   );

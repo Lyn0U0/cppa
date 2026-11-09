@@ -149,7 +149,28 @@ export async function exportImage(
   }
 }
 
-export function downloadBlob(blob: Blob, fileName: string): void {
+type ClaudeRuntime = { use?: (name: string) => Promise<unknown> };
+type DownloadsNs = { save: (r: { filename: string; data: Blob }) => Promise<{ status: string }> };
+
+/**
+ * Hand a file to the viewer. Inside a claude.ai artifact the page cannot
+ * start downloads itself, so the `downloads` capability is used there;
+ * everywhere else a regular <a download> link is clicked.
+ * Returns false only when the viewer declined or saving is unavailable.
+ */
+export async function downloadBlob(blob: Blob, fileName: string): Promise<boolean> {
+  const runtime = (window as unknown as { claude?: ClaudeRuntime }).claude;
+  if (runtime?.use) {
+    const downloads = (await runtime.use('downloads').catch(() => null)) as DownloadsNs | null;
+    if (downloads) {
+      try {
+        await downloads.save({ filename: fileName, data: blob });
+        return true;
+      } catch {
+        return false;
+      }
+    }
+  }
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -158,4 +179,5 @@ export function downloadBlob(blob: Blob, fileName: string): void {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  return true;
 }

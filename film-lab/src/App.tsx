@@ -14,12 +14,13 @@ import {
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { ControlPanel } from './components/ControlPanel';
 import { DropZone } from './components/DropZone';
-import { ExportDialog } from './components/ExportDialog';
+import { ExportDialog, type ExportResultView } from './components/ExportDialog';
 import { PresetStrip } from './components/PresetStrip';
 import { PreviewStage } from './components/PreviewStage';
 import { Toasts, type Toast, type ToastKind } from './components/Toasts';
 import { canRedo, canUndo, createHistory, historyReducer } from './editor/history';
 import { parseRecipe, serializeRecipe } from './editor/recipe';
+import { createSampleFile } from './editor/sample';
 import { renderPresetThumbnails } from './editor/thumbnails';
 import type { RendererKind } from './editor/usePreviewRenderer';
 import { toFilmLabError } from './engine/errors';
@@ -65,6 +66,7 @@ export default function App() {
   const [exportProgress, setExportProgress] = useState(0);
   const [exportError, setExportError] = useState<string | null>(null);
   const [exportOptions, setExportOptions] = useState<ExportOptions>({ format: 'jpeg', quality: 0.92 });
+  const [exportResult, setExportResult] = useState<ExportResultView | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const recipeInput = useRef<HTMLInputElement>(null);
@@ -111,6 +113,22 @@ export default function App() {
     },
     [loading, notify],
   );
+
+  const loadSample = useCallback(async () => {
+    handleFile(await createSampleFile());
+  }, [handleFile]);
+
+  // Demo builds open with the sample photo already loaded.
+  const demoStarted = useRef(false);
+  useEffect(() => {
+    if (import.meta.env.VITE_DEMO !== '1' || demoStarted.current) return;
+    demoStarted.current = true;
+    createSampleFile().then(async (f) => {
+      await handleFile(f);
+      dispatch({ type: 'load', state: { presetId: 'portra-warm', intensity: 100, adjustments: { ...NEUTRAL_ADJUSTMENTS } } });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Preset thumbnails, rendered by the same engine.
   useEffect(() => {
@@ -166,8 +184,15 @@ export default function App() {
     setExportProgress(0);
     try {
       const res = await exportImage(image.file, params, opts, setExportProgress);
-      downloadBlob(res.blob, res.fileName);
-      setExportOpen(false);
+      setExportResult({
+        url: URL.createObjectURL(res.blob),
+        fileName: res.fileName,
+        width: res.width,
+        height: res.height,
+        size: formatBytes(res.blob.size),
+        blob: res.blob,
+      });
+      void downloadBlob(res.blob, res.fileName);
       notify('success', `匯出完成：${res.fileName}（${res.width}×${res.height}，${formatBytes(res.blob.size)}）`);
     } catch (err) {
       const msg = toFilmLabError(err, 'export_failed').message;
@@ -185,8 +210,9 @@ export default function App() {
       await navigator.clipboard.writeText(json);
       notify('success', '已複製調色配方 JSON');
     } catch {
-      downloadBlob(new Blob([json], { type: 'application/json' }), 'filmlab-recipe.json');
-      notify('info', '已下載調色配方 JSON');
+      if (await downloadBlob(new Blob([json], { type: 'application/json' }), 'filmlab-recipe.json')) {
+        notify('info', '已下載調色配方 JSON');
+      }
     }
   };
   const loadRecipe = async (file: File | undefined) => {
@@ -236,7 +262,7 @@ export default function App() {
 
   return (
     <div
-      className="flex h-[100dvh] flex-col overflow-hidden bg-paper"
+      className="flex h-full flex-col overflow-hidden bg-paper"
       onDragOver={(e) => {
         e.preventDefault();
         if (!dragOver) setDragOver(true);
@@ -308,7 +334,7 @@ export default function App() {
 
       {!image ? (
         <main className="min-h-0 flex-1">
-          <DropZone loading={loading} onPick={() => fileInput.current?.click()} />
+          <DropZone loading={loading} onPick={() => fileInput.current?.click()} onSample={loadSample} />
         </main>
       ) : (
         <main className={`flex min-h-0 flex-1 ${isDesktop ? 'flex-row' : 'flex-col'}`}>
@@ -378,7 +404,14 @@ export default function App() {
           progress={exportProgress}
           error={exportError}
           defaultOptions={exportOptions}
-          onClose={() => setExportOpen(false)}
+          result={exportResult}
+          onClose={() => {
+            setExportOpen(false);
+            setExportResult((r) => {
+              if (r) URL.revokeObjectURL(r.url);
+              return null;
+            });
+          }}
           onExport={runExport}
         />
       )}
