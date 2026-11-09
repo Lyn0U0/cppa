@@ -1,0 +1,161 @@
+{
+  "version": 1,
+  "presets": [
+    {
+      "id": "portra-warm",
+      "name": "Portra Warm",
+      "description": "溫暖膚色、柔和反差的人像負片",
+      "adjustments": {
+        "exposure": 0.12,
+        "contrast": -10,
+        "temperature": 18,
+        "tint": 4,
+        "saturation": -8,
+        "highlights": -18,
+        "shadows": 14,
+        "fade": 10,
+        "grain": 18,
+        "vignette": 10
+      },
+      "color": {
+        "mixer": [1.06, -0.04, -0.02, 0.01, 1.0, -0.01, -0.03, 0.01, 1.02],
+        "shadowTint": [0.012, 0.0, -0.015],
+        "highlightTint": [0.025, 0.012, -0.022],
+        "fadeColor": [1.0, 0.94, 0.88],
+        "mono": 0,
+        "monoWeights": [0.2126, 0.7152, 0.0722],
+        "grainSize": 1.0
+      }
+    },
+    {
+      "id": "fuji-green",
+      "name": "Fuji Green",
+      "description": "清爽綠調、青色陰影的日系色彩",
+      "adjustments": {
+        "exposure": 0.05,
+        "contrast": 12,
+        "temperature": -8,
+        "tint": -10,
+        "saturation": 6,
+        "highlights": -12,
+        "shadows": 6,
+        "fade": 6,
+        "grain": 15,
+        "vignette": 8
+      },
+      "color": {
+        "mixer": [0.98, 0.04, -0.02, -0.05, 1.1, -0.05, -0.02, 0.08, 0.94],
+        "shadowTint": [-0.018, 0.01, 0.016],
+        "highlightTint": [0.008, 0.016, -0.012],
+        "fadeColor": [0.9, 1.0, 0.96],
+        "mono": 0,
+        "monoWeights": [0.2126, 0.7152, 0.0722],
+        "grainSize": 0.9
+      }
+    },
+    {
+      "id": "golden-hour",
+      "name": "Golden Hour",
+      "description": "夕陽金黃光、溫暖高光",
+      "adjustments": {
+        "exposure": 0.15,
+        "contrast": 8,
+        "temperature": 42,
+        "tint": 6,
+        "saturation": 12,
+        "highlights": -22,
+        "shadows": 10,
+        "fade": 5,
+        "grain": 10,
+        "vignette": 22
+      },
+      "color": {
+        "mixer": [1.08, -0.05, -0.03, 0.02, 1.0, -0.02, -0.04, -0.02, 1.06],
+        "shadowTint": [0.02, 0.002, -0.02],
+        "highlightTint": [0.05, 0.026, -0.04],
+        "fadeColor": [1.0, 0.9, 0.78],
+        "mono": 0,
+        "monoWeights": [0.2126, 0.7152, 0.0722],
+        "grainSize": 1.0
+      }
+    },
+    {
+      "id": "night-cinema",
+      "name": "Night Cinema",
+      "description": "青橙電影感、深邃夜色",
+      "adjustments": {
+        "exposure": -0.1,
+        "contrast": 24,
+        "temperature": -16,
+        "tint": -4,
+        "saturation": -10,
+        "highlights": -28,
+        "shadows": -6,
+        "fade": 4,
+        "grain": 24,
+        "vignette": 32
+      },
+      "color": {
+        "mixer": [1.04, -0.02, -0.02, -0.02, 1.02, 0.0, -0.04, 0.06, 0.98],
+        "shadowTint": [-0.032, 0.012, 0.038],
+        "highlightTint": [0.036, 0.012, -0.03],
+        "fadeColor": [0.86, 0.96, 1.0],
+        "mono": 0,
+        "monoWeights": [0.2126, 0.7152, 0.0722],
+        "grainSize": 1.2
+      }
+    },
+    {
+      "id": "soft-pastel",
+      "name": "Soft Pastel",
+      "description": "低反差、粉嫩奶油色調",
+      "adjustments": {
+        "exposure": 0.25,
+        "contrast": -28,
+        "temperature": 5,
+        "tint": 8,
+        "saturation": -22,
+        "highlights": -18,
+        "shadows": 26,
+        "fade": 35,
+        "grain": 8,
+        "vignette": 0
+      },
+      "color": {
+        "mixer": [1.02, 0.0, -0.02, 0.0, 1.0, 0.0, 0.0, -0.02, 1.02],
+        "shadowTint": [0.0, 0.01, 0.022],
+        "highlightTint": [0.02, 0.0, 0.014],
+        "fadeColor": [1.0, 0.94, 0.98],
+        "mono": 0,
+        "monoWeights": [0.2126, 0.7152, 0.0722],
+        "grainSize": 0.8
+      }
+    },
+    {
+      "id": "classic-mono",
+      "name": "Classic Mono",
+      "description": "經典黑白、銀鹽質感",
+      "adjustments": {
+        "exposure": 0.0,
+        "contrast": 26,
+        "temperature": 0,
+        "tint": 0,
+        "saturation": 0,
+        "highlights": -10,
+        "shadows": 4,
+        "fade": 8,
+        "grain": 32,
+        "vignette": 20
+      },
+      "color": {
+        "mixer": [1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "shadowTint": [0.0, 0.0, 0.004],
+        "highlightTint": [0.008, 0.004, -0.004],
+        "fadeColor": [1.0, 1.0, 1.0],
+        "mono": 1,
+        "monoWeights": [0.36, 0.5, 0.14],
+        "grainSize": 1.25
+      }
+    }
+  ]
+}
